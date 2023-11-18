@@ -1,8 +1,10 @@
 use std::default::Default;
+use std::fmt::Debug;
 use std::sync::Arc;
 
 use anyhow::Result;
 use oura::{
+  model::Event,
   pipelining::{BootstrapResult, SinkProvider, StageReceiver},
   sources::{AddressArg, BearerKind, IntersectArg, MagicArg, PointArg},
   utils::{ChainWellKnownInfo, Utils, WithUtils, PREPROD_MAGIC, PREVIEW_MAGIC},
@@ -55,7 +57,7 @@ impl NetworkMagic {
   }
 }
 
-pub struct IndexerConfig {
+pub struct IndexerConfig<E: Debug + ErrorPolicyProvider> {
   node_address: NodeAddress,
   network_magic: NetworkMagic,
   /// Slot number and hash as hex string
@@ -64,10 +66,12 @@ pub struct IndexerConfig {
   /// See: https://oura.txpipe.io/v1/advanced/rollback_buffer
   safe_block_depth: usize,
   event_filter: SelectionConfig,
+  /// Callback function to pass events to
+  callback_fn: fn(Event) -> Result<(), E>,
 }
 
 // This is based on: https://github.com/txpipe/oura/blob/27fb7e876471b713841d96e292ede40101b151d7/src/bin/oura/daemon.rs
-pub fn run_indexer(conf: IndexerConfig) -> Result<(), Error> {
+pub fn run_indexer<E: Debug + ErrorPolicyProvider>(conf: IndexerConfig<E>) -> Result<(), Error> {
   let chain = match conf.network_magic {
     NetworkMagic::PREPROD => ChainWellKnownInfo::preprod(),
     NetworkMagic::PREVIEW => ChainWellKnownInfo::preview(),
@@ -109,7 +113,11 @@ pub fn run_indexer(conf: IndexerConfig) -> Result<(), Error> {
   let (filter_handle, filter_rx) = conf.event_filter.bootstrap(source_rx)?;
   threads.push(filter_handle);
 
-  let sink_handle = bootstrap_custom_sink(CustomSink {}, utils, filter_rx)?;
+  let sink_handle = Callback {
+    f: conf.callback_fn,
+    utils,
+  }
+  .bootstrap(filter_rx)?;
   threads.push(sink_handle);
 
   for handle in threads {
@@ -120,12 +128,27 @@ pub fn run_indexer(conf: IndexerConfig) -> Result<(), Error> {
 }
 
 // TODO(chase): Implement custom callback based sink
-struct CustomSink {}
+struct Callback<E: Debug + ErrorPolicyProvider> {
+  f: fn(Event) -> Result<(), E>,
+  utils: Arc<Utils>,
+}
 
-fn bootstrap_custom_sink(
-  _sink: CustomSink,
-  _utils: Arc<Utils>,
-  _input: StageReceiver,
-) -> BootstrapResult {
-  todo!("Implement custom sink")
+impl<E: Debug + ErrorPolicyProvider> SinkProvider for Callback<E> {
+  fn bootstrap(&self, input: StageReceiver) -> BootstrapResult {
+    todo!("Implement custom sink")
+  }
+}
+
+pub enum ErrorPolicy<E> {
+  Retry,
+  Skip,
+  Exit,
+  Call(fn(E) -> ()),
+}
+
+pub trait ErrorPolicyProvider
+where
+  Self: Sized,
+{
+  fn get_error_policy(self) -> ErrorPolicy<Self>;
 }
