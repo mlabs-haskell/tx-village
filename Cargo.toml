@@ -23,6 +23,7 @@ cbor_event = "2.4.0"
 uplc = "0.0.29"
 clap = { version = "4.3.10", features = ["derive"] }
 oura = "1.8.1"
+pallas = "0.18.2"
 sqlx = { version = "0.7", features = [ "postgres", "chrono", "macros", "uuid", "json", "runtime-tokio", "tls-rustls" ] }
 async-trait = "0.1.74"
 

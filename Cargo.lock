@@ -1008,6 +1008,7 @@ dependencies = [
  "num-derive",
  "num-traits",
  "oura",
+ "pallas",
  "proptest",
  "serde",
  "serde_json",
