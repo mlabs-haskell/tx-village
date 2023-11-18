@@ -21,6 +21,8 @@ pub enum TransactionDbError {
 pub struct TransactionDbModel {
   pub transaction_id: String,
   pub status: TransactionStatus,
+  /// The block a transaction appeared on.
+  pub block: Option<u64>,
 }
 
 #[derive(Serialize, Deserialize, Debug, sqlx::Type, PartialEq, Eq, Clone)]
@@ -36,29 +38,58 @@ pub enum TransactionStatus {
 
 #[async_trait::async_trait]
 pub trait TransactionSql {
-  async fn set_tx_status(
+  async fn set_tx_awaiting_confirmation(
     self,
     tx_id: &str,
-    tx_status: TransactionStatus,
+    transaction_hex: &str,
+  ) -> Result<(), TransactionDbError>;
+  async fn set_tx_submitted(
+    self,
+    tx_id: &str,
+    transaction_block: u64,
   ) -> Result<(), TransactionDbError>;
 }
 
 #[async_trait::async_trait]
 impl<'c> TransactionSql for &'c mut PgConnection {
-  async fn set_tx_status(
+  async fn set_tx_submitted(
     self,
     tx_id: &str,
-    tx_status: TransactionStatus,
+    transaction_block: u64,
   ) -> Result<(), TransactionDbError> {
     let res = sqlx::query(
       r#"
         UPDATE transaction
-        SET status = $2
+        SET transaction_block = $2, status = 'submitted'
         WHERE id = $1
       "#,
     )
     .bind(tx_id)
-    .bind(tx_status)
+    .bind(transaction_block as i64)
+    .execute(self)
+    .await
+    .map_err(TransactionDbError::SomeSqlxError)?;
+
+    if res.rows_affected() != 1 {
+      Err(TransactionDbError::TxNotFound(tx_id.to_string()))
+    } else {
+      Ok(())
+    }
+  }
+  async fn set_tx_awaiting_confirmation(
+    self,
+    tx_id: &str,
+    transaction_hex: &str,
+  ) -> Result<(), TransactionDbError> {
+    let res = sqlx::query(
+      r#"
+        UPDATE transaction
+        SET transaction_hex = $2, status = 'awaiting_confirmation'
+        WHERE id = $1
+      "#,
+    )
+    .bind(tx_id)
+    .bind(transaction_hex)
     .execute(self)
     .await
     .map_err(TransactionDbError::SomeSqlxError)?;
