@@ -1,3 +1,5 @@
+mod database;
+
 use anyhow::Result;
 use clap::Parser;
 
