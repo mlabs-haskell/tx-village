@@ -1,3 +1,5 @@
+mod handler;
+
 use anyhow::Result;
 use clap::Parser;
 
