@@ -4,17 +4,14 @@ pub mod error;
 pub mod retry;
 pub mod types;
 
-use std::default::Default;
-use std::fmt::Debug;
-use std::sync::Arc;
+use std::{default::Default, fmt::Debug, future::Future, sync::Arc};
 
 use anyhow::Result;
 
-use oura::pipelining::{FilterProvider, SourceProvider};
+use oura::pipelining::{FilterProvider, SinkProvider, SourceProvider};
 use oura::sources::n2c::Config as N2CConfig;
 use oura::sources::n2n::Config as N2NConfig;
 use oura::{
-  pipelining::SinkProvider,
   sources::{AddressArg, BearerKind, IntersectArg, PointArg},
   utils::{ChainWellKnownInfo, Utils, WithUtils},
   Error,
@@ -28,8 +25,11 @@ use self::{
 };
 
 // This is based on: https://github.com/txpipe/oura/blob/27fb7e876471b713841d96e292ede40101b151d7/src/bin/oura/daemon.rs
-pub fn run_indexer<E: Debug + ErrorPolicyProvider + 'static>(
-  conf: IndexerConfig<E>,
+pub fn run_indexer<
+  E: Debug + ErrorPolicyProvider + 'static,
+  Fut: Future<Output = Result<(), E>> + 'static,
+>(
+  conf: IndexerConfig<Fut>,
 ) -> Result<(), Error> {
   let chain = match conf.network_magic {
     NetworkMagic::PREPROD => ChainWellKnownInfo::preprod(),

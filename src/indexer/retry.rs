@@ -1,4 +1,4 @@
-use std::{fmt::Debug, ops::Mul, time::Duration};
+use std::{fmt::Debug, future::Future, ops::Mul, time::Duration};
 
 use super::error::{ErrorPolicy, ErrorPolicyProvider};
 
@@ -33,15 +33,18 @@ fn compute_backoff_delay(policy: &RetryPolicy, retry: u32) -> Duration {
 /// Wrap an operation with retry logic.
 /// Retrying is based on ErrorPolicy associated with particular error.
 /// Retries are only performed for ErrorPolicy::Retry - other errors won't cause invocation of given operation again.
-pub fn perform_with_retry<E: Debug + ErrorPolicyProvider>(
-  op: impl Fn() -> Result<(), E>,
+pub async fn perform_with_retry<
+  E: Debug + ErrorPolicyProvider,
+  Fut: Future<Output = Result<(), E>>,
+>(
+  op: impl Fn() -> Fut,
   policy: &RetryPolicy,
 ) -> Result<(), E> {
   // The retry logic is based on: https://github.com/txpipe/oura/blob/27fb7e876471b713841d96e292ede40101b151d7/src/utils/retry.rs
   let mut retry = 0;
 
   loop {
-    let result = op();
+    let result = op().await;
 
     match result {
       Ok(_) => {

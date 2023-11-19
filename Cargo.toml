@@ -26,6 +26,7 @@ oura = "1.8.1"
 pallas = "0.18.2"
 sqlx = { version = "0.7", features = [ "postgres", "chrono", "macros", "uuid", "json", "runtime-tokio", "tls-rustls" ] }
 async-trait = "0.1.74"
+tokio = { version = "1.24.2", features = [ "full" ] }
 
 [build-dependencies]
 tokio = { version = "1.24.2", features = [ "full" ] }
