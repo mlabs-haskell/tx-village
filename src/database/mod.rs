@@ -48,6 +48,7 @@ pub trait TransactionSql {
     tx_id: &str,
     transaction_block: u64,
   ) -> Result<(), TransactionDbError>;
+  async fn rm_txs_after_block(self, transaction_block: u64) -> Result<(), TransactionDbError>;
 }
 
 #[async_trait::async_trait]
@@ -99,5 +100,19 @@ impl<'c> TransactionSql for &'c mut PgConnection {
     } else {
       Ok(())
     }
+  }
+  async fn rm_txs_after_block(self, transaction_block: u64) -> Result<(), TransactionDbError> {
+    sqlx::query(
+      r#"
+        DELETE transaction
+        WHERE transaction_block > $1
+      "#,
+    )
+    .bind(transaction_block as i64)
+    .execute(self)
+    .await
+    .map_err(TransactionDbError::SomeSqlxError)?;
+
+    Ok(())
   }
 }
