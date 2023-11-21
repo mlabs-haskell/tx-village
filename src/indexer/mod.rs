@@ -3,6 +3,7 @@ mod indexer;
 
 pub mod config;
 pub mod error;
+pub mod filter;
 pub mod retry;
 pub mod types;
 

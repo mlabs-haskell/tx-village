@@ -58,7 +58,10 @@ pub fn run_indexer<
   let mut threads = Vec::with_capacity(10);
   threads.push(source_handle);
 
-  let (filter_handle, filter_rx) = conf.event_filter.bootstrap(source_rx)?;
+  let (filter_handle, filter_rx) = conf
+    .event_filter
+    .to_selection_config()
+    .bootstrap(source_rx)?;
   threads.push(filter_handle);
 
   let sink_handle = Callback {

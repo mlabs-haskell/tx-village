@@ -1,6 +1,7 @@
-use oura::{filters::selection::Config as SelectionConfig, model::Event};
+use oura::model::Event;
 
 use super::{
+  filter::Filter,
   retry::RetryPolicy,
   types::{NetworkMagic, NodeAddress},
 };
@@ -13,7 +14,7 @@ pub struct IndexerConfig<Fut> {
   /// Minimum depth a block has to be from the tip for it to be considered "confirmed"
   /// See: https://oura.txpipe.io/v1/advanced/rollback_buffer
   pub safe_block_depth: usize,
-  pub event_filter: SelectionConfig,
+  pub event_filter: Filter,
   /// Callback function to pass events to
   pub callback_fn: fn(&Event) -> Fut,
   /// Retry policy - how much to retry for each event callback failure
