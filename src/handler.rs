@@ -12,9 +12,11 @@ pub struct Error(TransactionDbError);
 pub async fn on_chain_event(conn: &mut PgConnection, ev: Event) -> Result<(), Error> {
   match ev.data {
     // TODO(chase): Ignore "transaction not found" db errors.
-    EventData::Transaction(_) => conn
-      .set_tx_submitted(
+    EventData::Transaction(t) => conn
+      .save_tx(
+        // TODO(chase): These unwraps shouldn't fail but maybe they should still be checked.
         &ev.context.tx_hash.unwrap()[..],
+        &t.hash,
         ev.context.block_number.unwrap(),
       )
       .await

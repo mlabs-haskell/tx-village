@@ -1,5 +1,7 @@
-use serde::{Deserialize, Serialize};
-use sqlx::{FromRow, PgConnection, PgExecutor, Postgres};
+use sqlx::{
+  types::chrono::{DateTime, Utc},
+  FromRow, PgConnection, PgExecutor, Postgres,
+};
 use thiserror::Error;
 
 // We create a trait per table
@@ -17,35 +19,21 @@ pub enum TransactionDbError {
   SomeSqlxError(sqlx::Error),
 }
 
-#[derive(Serialize, Deserialize, Debug, FromRow, PartialEq, Eq)]
+#[derive(Debug, FromRow, PartialEq, Eq)]
 pub struct TransactionDbModel {
   pub transaction_id: String,
-  pub status: TransactionStatus,
+  pub transaction_hex: String,
   /// The block a transaction appeared on.
   pub block: Option<u64>,
-}
-
-#[derive(Serialize, Deserialize, Debug, sqlx::Type, PartialEq, Eq, Clone)]
-#[sqlx(type_name = "transaction_status", rename_all = "snake_case")]
-pub enum TransactionStatus {
-  AwaitingSignature,
-  AwaitingSubmission,
-  AwaitingConfirmation,
-  Submitted,
-  Success,
-  Cancelled,
+  pub deleted_on: Option<DateTime<Utc>>,
 }
 
 #[async_trait::async_trait]
 pub trait TransactionSql {
-  async fn set_tx_awaiting_confirmation(
+  async fn save_tx(
     self,
     tx_id: &str,
     transaction_hex: &str,
-  ) -> Result<(), TransactionDbError>;
-  async fn set_tx_submitted(
-    self,
-    tx_id: &str,
     transaction_block: u64,
   ) -> Result<(), TransactionDbError>;
   async fn rm_txs_after_block(self, transaction_block: u64) -> Result<(), TransactionDbError>;
@@ -53,58 +41,33 @@ pub trait TransactionSql {
 
 #[async_trait::async_trait]
 impl<'c> TransactionSql for &'c mut PgConnection {
-  async fn set_tx_submitted(
+  async fn save_tx(
     self,
     tx_id: &str,
+    transaction_hex: &str,
     transaction_block: u64,
   ) -> Result<(), TransactionDbError> {
-    let res = sqlx::query(
+    sqlx::query(
       r#"
-        UPDATE transaction
-        SET transaction_block = $2, status = 'submitted'
-        WHERE id = $1
+        INSERT INTO transaction (tx_id, transaction_hex, transaction_block)
+        VALUES ($1, $2, $3)
       "#,
     )
     .bind(tx_id)
+    .bind(transaction_hex)
+    // PostgreSQL doesn't have u64 support...
     .bind(transaction_block as i64)
     .execute(self)
     .await
     .map_err(TransactionDbError::SomeSqlxError)?;
 
-    if res.rows_affected() != 1 {
-      Err(TransactionDbError::TxNotFound(tx_id.to_string()))
-    } else {
-      Ok(())
-    }
-  }
-  async fn set_tx_awaiting_confirmation(
-    self,
-    tx_id: &str,
-    transaction_hex: &str,
-  ) -> Result<(), TransactionDbError> {
-    let res = sqlx::query(
-      r#"
-        UPDATE transaction
-        SET transaction_hex = $2, status = 'awaiting_confirmation'
-        WHERE id = $1
-      "#,
-    )
-    .bind(tx_id)
-    .bind(transaction_hex)
-    .execute(self)
-    .await
-    .map_err(TransactionDbError::SomeSqlxError)?;
-
-    if res.rows_affected() != 1 {
-      Err(TransactionDbError::TxNotFound(tx_id.to_string()))
-    } else {
-      Ok(())
-    }
+    Ok(())
   }
   async fn rm_txs_after_block(self, transaction_block: u64) -> Result<(), TransactionDbError> {
     sqlx::query(
       r#"
-        DELETE transaction
+        UPDATE transaction
+        SET deleted_on = CURRENT_TIMESTAMP
         WHERE transaction_block > $1
       "#,
     )
