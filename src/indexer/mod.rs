@@ -4,22 +4,19 @@ pub mod error;
 pub mod retry;
 pub mod types;
 
-use std::{default::Default, fmt::Debug, future::Future, sync::Arc};
+use std::{fmt::Debug, future::Future, sync::Arc};
 
 use anyhow::Result;
-
-use oura::pipelining::{FilterProvider, SinkProvider, SourceProvider};
-use oura::sources::n2c::Config as N2CConfig;
-use oura::sources::n2n::Config as N2NConfig;
 use oura::{
-  sources::{AddressArg, BearerKind, IntersectArg, PointArg},
+  pipelining::{FilterProvider, SinkProvider, SourceProvider},
+  sources::{AddressArg, BearerKind},
   utils::{ChainWellKnownInfo, Utils, WithUtils},
   Error,
 };
 
 use self::{
   callback::Callback,
-  config::{source_conf, IndexerConfig},
+  config::{n2c_config, n2n_config, IndexerConfig},
   error::ErrorPolicyProvider,
   types::{NetworkMagic, NodeAddress},
 };
@@ -40,12 +37,11 @@ pub fn run_indexer<
   let (source_handle, source_rx) = match conf.node_address {
     NodeAddress::UnixSocket(path) => WithUtils::new(
       {
-        source_conf!(
-          N2CConfig,
+        n2c_config(
           AddressArg(BearerKind::Unix, path),
           conf.network_magic,
           conf.since_slot,
-          conf.safe_block_depth
+          conf.safe_block_depth,
         )
       },
       utils.clone(),
@@ -53,12 +49,11 @@ pub fn run_indexer<
     .bootstrap(),
     NodeAddress::TcpAddress(hostname, port) => WithUtils::new(
       {
-        source_conf!(
-          N2NConfig,
+        n2n_config(
           AddressArg(BearerKind::Tcp, format!("{}:{}", hostname, port)),
           conf.network_magic,
           conf.since_slot,
-          conf.safe_block_depth
+          conf.safe_block_depth,
         )
       },
       utils.clone(),
