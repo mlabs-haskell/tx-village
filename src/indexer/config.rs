@@ -1,10 +1,4 @@
-use oura::sources::n2c::Config as N2CConfig;
-use oura::sources::n2c::Config as N2NConfig;
-use oura::{
-  filters::selection::Config as SelectionConfig,
-  model::Event,
-  sources::{AddressArg, IntersectArg, PointArg},
-};
+use oura::{filters::selection::Config as SelectionConfig, model::Event};
 
 use super::{
   retry::RetryPolicy,
@@ -28,42 +22,56 @@ pub struct IndexerConfig<Fut> {
   pub retry_policy: RetryPolicy,
 }
 
-pub fn n2c_config(
-  addr: AddressArg,
-  magic: NetworkMagic,
-  since_slot: (u64, String),
-  safe_block_depth: usize,
-) -> N2CConfig {
-  N2CConfig {
-    address: addr,
-    magic: Some(magic.to_magic_arg()),
-    intersect: Some(IntersectArg::Point(PointArg(since_slot.0, since_slot.1))),
-    mapper: Default::default(),
-    min_depth: safe_block_depth,
-    retry_policy: None,
-    finalize: None,
-    // Deprecated fields
-    since: None,
-    well_known: None,
+// Encapsulating usage of deprecated stuff (impossible to construct struct without it).
+// This avoids having to put "#![allow(deprecated)]" on the top of this file.
+pub mod deprecation_usage {
+  #![allow(deprecated)]
+
+  use oura::sources::n2c::Config as N2CConfig;
+  use oura::sources::n2c::Config as N2NConfig;
+  use oura::sources::{AddressArg, IntersectArg, PointArg};
+
+  use super::super::types::NetworkMagic;
+
+  pub fn n2c_config(
+    addr: AddressArg,
+    magic: NetworkMagic,
+    since_slot: (u64, String),
+    safe_block_depth: usize,
+  ) -> N2CConfig {
+    N2CConfig {
+      address: addr,
+      magic: Some(magic.to_magic_arg()),
+      intersect: Some(IntersectArg::Point(PointArg(since_slot.0, since_slot.1))),
+      mapper: Default::default(),
+      min_depth: safe_block_depth,
+      retry_policy: None,
+      finalize: None,
+      // Deprecated fields
+      since: None,
+      well_known: None,
+    }
+  }
+
+  pub fn n2n_config(
+    addr: AddressArg,
+    magic: NetworkMagic,
+    since_slot: (u64, String),
+    safe_block_depth: usize,
+  ) -> N2NConfig {
+    N2NConfig {
+      address: addr,
+      magic: Some(magic.to_magic_arg()),
+      intersect: Some(IntersectArg::Point(PointArg(since_slot.0, since_slot.1))),
+      mapper: Default::default(),
+      min_depth: safe_block_depth,
+      retry_policy: None,
+      finalize: None,
+      // Deprecated fields
+      since: None,
+      well_known: None,
+    }
   }
 }
 
-pub fn n2n_config(
-  addr: AddressArg,
-  magic: NetworkMagic,
-  since_slot: (u64, String),
-  safe_block_depth: usize,
-) -> N2NConfig {
-  N2NConfig {
-    address: addr,
-    magic: Some(magic.to_magic_arg()),
-    intersect: Some(IntersectArg::Point(PointArg(since_slot.0, since_slot.1))),
-    mapper: Default::default(),
-    min_depth: safe_block_depth,
-    retry_policy: None,
-    finalize: None,
-    // Deprecated fields
-    since: None,
-    well_known: None,
-  }
-}
+pub use self::deprecation_usage::*;
