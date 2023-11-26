@@ -1,3 +1,4 @@
-mod database;
+pub mod errors;
+mod types;
 
-pub use self::database::*;
+pub use self::types::*;

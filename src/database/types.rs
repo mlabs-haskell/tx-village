@@ -2,22 +2,8 @@ use sqlx::{
   types::chrono::{DateTime, Utc},
   FromRow, PgConnection, PgExecutor, Postgres,
 };
-use thiserror::Error;
 
-// We create a trait per table
-// To make methods work on Pool, PgConnection and Transaction,
-// We create an intermediary trait ConnectionLike that is only implemented by those types
-pub trait ConnectionLike<'c>: PgExecutor<'c> {}
-impl<'c> ConnectionLike<'c> for &'c mut PgConnection {}
-impl<'c> ConnectionLike<'c> for &sqlx::Pool<Postgres> {}
-
-#[derive(Error, Debug)]
-pub enum TransactionDbError {
-  #[error("Transaction with id {0} not found ")]
-  TxNotFound(String),
-  #[error("Sqlx error: {0}")]
-  SomeSqlxError(sqlx::Error),
-}
+use super::errors::TransactionDbError;
 
 #[derive(Debug, FromRow, PartialEq, Eq)]
 pub struct TransactionDbModel {
@@ -27,6 +13,13 @@ pub struct TransactionDbModel {
   pub block: Option<u64>,
   pub deleted_on: Option<DateTime<Utc>>,
 }
+
+// We create a trait per table
+// To make methods work on Pool, PgConnection and Transaction,
+// We create an intermediary trait ConnectionLike that is only implemented by those types
+pub trait ConnectionLike<'c>: PgExecutor<'c> {}
+impl<'c> ConnectionLike<'c> for &'c mut PgConnection {}
+impl<'c> ConnectionLike<'c> for &sqlx::Pool<Postgres> {}
 
 #[async_trait::async_trait]
 pub trait TransactionSql {

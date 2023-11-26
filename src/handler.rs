@@ -3,7 +3,7 @@ use oura::model::{Event, EventData};
 use sqlx::PgConnection;
 
 use infinity_query::{
-  database::{TransactionDbError, TransactionSql},
+  database::{errors::TransactionDbError, TransactionSql},
   indexer::error::{ErrorPolicy, ErrorPolicyProvider},
 };
 
