@@ -24,7 +24,7 @@ pub async fn on_chain_event(conn: &mut PgConnection, ev: Event) -> Result<(), Er
     EventData::RollBack {
       block_slot,
       block_hash: _,
-    } => conn.rm_txs_after_block(block_slot).await.map_err(Error),
+    } => conn.rollback_after_block(block_slot).await.map_err(Error),
     // Uninteresting events
     _ => Ok(()),
   }

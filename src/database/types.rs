@@ -29,7 +29,7 @@ pub trait TransactionSql {
     transaction_hex: &str,
     transaction_block: u64,
   ) -> Result<(), TransactionDbError>;
-  async fn rm_txs_after_block(self, transaction_block: u64) -> Result<(), TransactionDbError>;
+  async fn rollback_after_block(self, transaction_block: u64) -> Result<(), TransactionDbError>;
 }
 
 #[async_trait::async_trait]
@@ -56,7 +56,7 @@ impl<'c> TransactionSql for &'c mut PgConnection {
 
     Ok(())
   }
-  async fn rm_txs_after_block(self, transaction_block: u64) -> Result<(), TransactionDbError> {
+  async fn rollback_after_block(self, transaction_block: u64) -> Result<(), TransactionDbError> {
     sqlx::query(
       r#"
           UPDATE transaction
