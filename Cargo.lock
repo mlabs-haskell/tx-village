@@ -1013,8 +1013,11 @@ dependencies = [
  "serde",
  "serde_json",
  "sqlx",
+ "strum",
+ "strum_macros",
  "thiserror",
  "tokio",
+ "tracing",
  "uplc",
 ]
 

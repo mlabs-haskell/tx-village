@@ -1,5 +1,8 @@
 use std::{fmt::Debug, future::Future, ops::Mul, time::Duration};
 
+use strum_macros::Display;
+use tracing::{event, span, Level};
+
 use super::error::{ErrorPolicy, ErrorPolicyProvider};
 
 /// Influence retrying behavior.
@@ -40,43 +43,63 @@ pub async fn perform_with_retry<
   op: impl Fn() -> Fut,
   policy: &RetryPolicy,
 ) -> Result<(), E> {
+  let span = span!(Level::INFO, "perform_with_retry");
+  let _enter = span.enter();
+
   // The retry logic is based on: https://github.com/txpipe/oura/blob/27fb7e876471b713841d96e292ede40101b151d7/src/utils/retry.rs
   let mut retry = 0;
 
   loop {
+    event!(Level::DEBUG, task=%Events::TryingOperation, retry_count=retry);
     let result = op().await;
 
     match result {
       Ok(_) => {
+        event!(Level::INFO, task=%Events::OperationSuccess, retry_count=retry);
         break Ok(());
       }
       Err(err) => match err.get_error_policy() {
-        ErrorPolicy::Exit => break Err(err),
+        ErrorPolicy::Exit => {
+          event!(Level::INFO, task=%Events::OperationFailureExit, retry_count=retry);
+          break Err(err);
+        }
         ErrorPolicy::Skip => {
-          log::warn!("(skip) callback failed with: {:?}", err);
+          event!(Level::WARN, task=%Events::OperationFailureSkip, retry_count=retry, err=?err);
           break Ok(());
         }
         ErrorPolicy::Call(err_f) => {
+          event!(Level::WARN, task=%Events::OperationFailureCall, retry_count=retry);
           err_f(err);
           break Ok(());
         }
         ErrorPolicy::Retry if retry < policy.max_retries => {
-          log::warn!("(retry) callback failed with: {:?}", err);
+          event!(Level::WARN, task=%Events::OperationFailureRetry, retry_count=retry, err=?err);
 
           retry += 1;
 
           let backoff = compute_backoff_delay(policy, retry);
 
-          log::debug!(
-            "backoff for {}s until next retry #{}",
-            backoff.as_secs(),
-            retry
-          );
+          event!(Level::DEBUG, task=%Events::OperationRetryBackoff, backoff_secs=backoff.as_secs(), next_retry=retry);
 
           std::thread::sleep(backoff);
         }
-        _ => break Err(err),
+        _ => {
+          event!(Level::DEBUG, task=%Events::OperationRetriesExhausted, retry_count=retry);
+          break Err(err);
+        }
       },
     }
   }
+}
+
+#[derive(Display)]
+enum Events {
+  TryingOperation,
+  OperationSuccess,
+  OperationFailureExit,
+  OperationFailureSkip,
+  OperationFailureCall,
+  OperationFailureRetry,
+  OperationRetriesExhausted,
+  OperationRetryBackoff,
 }
