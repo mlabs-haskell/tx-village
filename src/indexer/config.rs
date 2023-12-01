@@ -9,8 +9,9 @@ use super::{
 pub struct IndexerConfig<Fut> {
   pub node_address: NodeAddress,
   pub network_magic: NetworkMagic,
-  /// Slot number and hash as hex string
-  pub since_slot: (u64, String),
+  /// Slot number and hash as hex string (optional).
+  /// If not provided, sync will begin from the tip of the chain.
+  pub since_slot: Option<(u64, String)>,
   /// Minimum depth a block has to be from the tip for it to be considered "confirmed"
   /// See: https://oura.txpipe.io/v1/advanced/rollback_buffer
   pub safe_block_depth: usize,
@@ -37,13 +38,14 @@ pub mod deprecation_usage {
   pub fn n2c_config(
     addr: AddressArg,
     magic: NetworkMagic,
-    since_slot: (u64, String),
+    since_slot: Option<(u64, String)>,
     safe_block_depth: usize,
   ) -> N2CConfig {
     N2CConfig {
       address: addr,
       magic: Some(magic.to_magic_arg()),
-      intersect: Some(IntersectArg::Point(PointArg(since_slot.0, since_slot.1))),
+      intersect: since_slot
+        .map(|since_slot| IntersectArg::Point(PointArg(since_slot.0, since_slot.1))),
       mapper: Default::default(),
       min_depth: safe_block_depth,
       retry_policy: None,
@@ -57,13 +59,14 @@ pub mod deprecation_usage {
   pub fn n2n_config(
     addr: AddressArg,
     magic: NetworkMagic,
-    since_slot: (u64, String),
+    since_slot: Option<(u64, String)>,
     safe_block_depth: usize,
   ) -> N2NConfig {
     N2NConfig {
       address: addr,
       magic: Some(magic.to_magic_arg()),
-      intersect: Some(IntersectArg::Point(PointArg(since_slot.0, since_slot.1))),
+      intersect: since_slot
+        .map(|since_slot| IntersectArg::Point(PointArg(since_slot.0, since_slot.1))),
       mapper: Default::default(),
       min_depth: safe_block_depth,
       retry_policy: None,
