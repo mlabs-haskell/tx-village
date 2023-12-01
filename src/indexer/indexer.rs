@@ -7,6 +7,7 @@ use oura::{
   utils::{ChainWellKnownInfo, Utils, WithUtils},
   Error,
 };
+use tracing::{span, Level};
 
 use super::{
   callback::Callback,
@@ -22,6 +23,9 @@ pub fn run_indexer<
 >(
   conf: IndexerConfig<Fut>,
 ) -> Result<(), Error> {
+  let span = span!(Level::INFO, "run_indexer");
+  let _enter = span.enter();
+
   let chain = match conf.network_magic {
     NetworkMagic::PREPROD => ChainWellKnownInfo::preprod(),
     NetworkMagic::PREVIEW => ChainWellKnownInfo::preview(),
@@ -29,30 +33,38 @@ pub fn run_indexer<
   };
   let utils = Arc::new(Utils::new(chain));
   let (source_handle, source_rx) = match conf.node_address {
-    NodeAddress::UnixSocket(path) => WithUtils::new(
-      {
-        n2c_config(
-          AddressArg(BearerKind::Unix, path),
-          conf.network_magic,
-          conf.since_slot,
-          conf.safe_block_depth,
+    NodeAddress::UnixSocket(path) => {
+      span!(Level::INFO, "BootstrapSourceViaSocket", socket_path = path).in_scope(|| {
+        WithUtils::new(
+          {
+            n2c_config(
+              AddressArg(BearerKind::Unix, path),
+              conf.network_magic,
+              conf.since_slot,
+              conf.safe_block_depth,
+            )
+          },
+          utils.clone(),
         )
-      },
-      utils.clone(),
-    )
-    .bootstrap(),
-    NodeAddress::TcpAddress(hostname, port) => WithUtils::new(
-      {
-        n2n_config(
-          AddressArg(BearerKind::Tcp, format!("{}:{}", hostname, port)),
-          conf.network_magic,
-          conf.since_slot,
-          conf.safe_block_depth,
+        .bootstrap()
+      })
+    }
+    NodeAddress::TcpAddress(hostname, port) => {
+      span!(Level::INFO, "BootstrapSourceViaTcp", hostname, port).in_scope(|| {
+        WithUtils::new(
+          {
+            n2n_config(
+              AddressArg(BearerKind::Tcp, format!("{}:{}", hostname, port)),
+              conf.network_magic,
+              conf.since_slot,
+              conf.safe_block_depth,
+            )
+          },
+          utils.clone(),
         )
-      },
-      utils.clone(),
-    )
-    .bootstrap(),
+        .bootstrap()
+      })
+    }
   }?;
 
   let mut threads = Vec::with_capacity(10);
@@ -64,12 +76,14 @@ pub fn run_indexer<
     .bootstrap(source_rx)?;
   threads.push(filter_handle);
 
-  let sink_handle = Callback {
-    f: conf.callback_fn,
-    retry_policy: conf.retry_policy,
-    utils,
-  }
-  .bootstrap(filter_rx)?;
+  let sink_handle = span!(Level::INFO, "BootstrapSink").in_scope(|| {
+    Callback {
+      f: conf.callback_fn,
+      retry_policy: conf.retry_policy,
+      utils,
+    }
+    .bootstrap(filter_rx)
+  })?;
   threads.push(sink_handle);
 
   for handle in threads {
