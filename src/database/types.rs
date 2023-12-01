@@ -2,6 +2,9 @@ use sqlx::{
   types::chrono::{DateTime, Utc},
   FromRow, PgConnection, PgExecutor, Postgres,
 };
+use tracing::{event, span, Instrument, Level};
+
+use strum_macros::Display;
 
 use super::errors::TransactionDbError;
 
@@ -40,35 +43,56 @@ impl<'c> TransactionSql for &'c mut PgConnection {
     transaction_hex: &str,
     transaction_block: u64,
   ) -> Result<(), TransactionDbError> {
-    sqlx::query(
-      r#"
-          INSERT INTO transaction (tx_id, transaction_hex, transaction_block)
-          VALUES ($1, $2, $3)
-        "#,
-    )
-    .bind(tx_id)
-    .bind(transaction_hex)
-    // PostgreSQL doesn't have u64 support...
-    .bind(transaction_block as i64)
-    .execute(self)
-    .await
-    .map_err(TransactionDbError::SomeSqlxError)?;
+    let span = span!(Level::INFO, "SavingTx", %tx_id, %transaction_block);
+    async move {
+      sqlx::query(
+        r#"
+            INSERT INTO transaction (tx_id, transaction_hex, transaction_block)
+            VALUES ($1, $2, $3)
+          "#,
+      )
+      .bind(tx_id)
+      .bind(transaction_hex)
+      // PostgreSQL doesn't have u64 support...
+      .bind(transaction_block as i64)
+      .execute(self)
+      .await
+      .map_err(|err| {
+        event!(Level::ERROR, label=%Event::SqlxError, ?err);
+        TransactionDbError::SomeSqlxError(err)
+      })?;
 
-    Ok(())
+      Ok(())
+    }
+    .instrument(span)
+    .await
   }
   async fn rollback_after_block(self, transaction_block: u64) -> Result<(), TransactionDbError> {
-    sqlx::query(
-      r#"
-          UPDATE transaction
-          SET deleted_on = CURRENT_TIMESTAMP
-          WHERE transaction_block > $1
-        "#,
-    )
-    .bind(transaction_block as i64)
-    .execute(self)
-    .await
-    .map_err(TransactionDbError::SomeSqlxError)?;
+    let span = span!(Level::INFO, "Rollback", %transaction_block);
+    async move {
+      sqlx::query(
+        r#"
+            UPDATE transaction
+            SET deleted_on = CURRENT_TIMESTAMP
+            WHERE transaction_block > $1
+          "#,
+      )
+      .bind(transaction_block as i64)
+      .execute(self)
+      .await
+      .map_err(|err| {
+        event!(Level::ERROR, label=%Event::SqlxError, ?err);
+        TransactionDbError::SomeSqlxError(err)
+      })?;
 
-    Ok(())
+      Ok(())
+    }
+    .instrument(span)
+    .await
   }
+}
+
+#[derive(Display)]
+enum Event {
+  SqlxError,
 }
