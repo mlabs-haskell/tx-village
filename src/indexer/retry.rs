@@ -1,7 +1,7 @@
 use std::{fmt::Debug, future::Future, ops::Mul, time::Duration};
 
 use strum_macros::Display;
-use tracing::{event, span, Level};
+use tracing::{event, span, Instrument, Level};
 
 use super::error::{ErrorPolicy, ErrorPolicyProvider};
 
@@ -50,55 +50,61 @@ pub async fn perform_with_retry<
   let mut retry = 0;
 
   loop {
-    event!(Level::DEBUG, task=%Events::TryingOperation, retry_count=retry);
-    let result = op().await;
+    let span = span!(Level::DEBUG, "TryingOperation", retry_count = retry);
+    let res = async {
+      let result = op().await;
 
-    match result {
-      Ok(_) => {
-        event!(Level::INFO, task=%Events::OperationSuccess, retry_count=retry);
-        break Ok(());
+      match result {
+        Ok(_) => {
+          event!(Level::INFO, label=%Event::OperationSuccess);
+          Some(Ok(()))
+        }
+        Err(err) => match err.get_error_policy() {
+          ErrorPolicy::Exit => {
+            event!(Level::INFO, label=%Event::OperationFailureExit);
+            Some(Err(err))
+          }
+          ErrorPolicy::Skip => {
+            event!(Level::WARN, label=%Event::OperationFailureSkip, err=?err);
+            Some(Ok(()))
+          }
+          ErrorPolicy::Call(err_f) => {
+            span!(Level::WARN, "OperationFailureCall").in_scope(|| { err_f(err); Some(Ok(())) })
+          }
+          ErrorPolicy::Retry if retry < policy.max_retries => {
+            event!(Level::WARN, label=%Event::OperationFailureRetry, err=?err);
+
+            retry += 1;
+
+            let backoff = compute_backoff_delay(policy, retry);
+
+            event!(Level::DEBUG, label=%Event::OperationRetryBackoff, backoff_secs=backoff.as_secs());
+
+            std::thread::sleep(backoff);
+
+            None
+          }
+          _ => {
+            event!(Level::DEBUG, label=%Event::OperationRetriesExhausted);
+            Some(Err(err))
+          }
+        },
       }
-      Err(err) => match err.get_error_policy() {
-        ErrorPolicy::Exit => {
-          event!(Level::INFO, task=%Events::OperationFailureExit, retry_count=retry);
-          break Err(err);
-        }
-        ErrorPolicy::Skip => {
-          event!(Level::WARN, task=%Events::OperationFailureSkip, retry_count=retry, err=?err);
-          break Ok(());
-        }
-        ErrorPolicy::Call(err_f) => {
-          event!(Level::WARN, task=%Events::OperationFailureCall, retry_count=retry);
-          err_f(err);
-          break Ok(());
-        }
-        ErrorPolicy::Retry if retry < policy.max_retries => {
-          event!(Level::WARN, task=%Events::OperationFailureRetry, retry_count=retry, err=?err);
+    }
+    .instrument(span)
+    .await;
 
-          retry += 1;
-
-          let backoff = compute_backoff_delay(policy, retry);
-
-          event!(Level::DEBUG, task=%Events::OperationRetryBackoff, backoff_secs=backoff.as_secs(), next_retry=retry);
-
-          std::thread::sleep(backoff);
-        }
-        _ => {
-          event!(Level::DEBUG, task=%Events::OperationRetriesExhausted, retry_count=retry);
-          break Err(err);
-        }
-      },
+    if let Some(res) = res {
+      break res;
     }
   }
 }
 
 #[derive(Display)]
-enum Events {
-  TryingOperation,
+enum Event {
   OperationSuccess,
   OperationFailureExit,
   OperationFailureSkip,
-  OperationFailureCall,
   OperationFailureRetry,
   OperationRetriesExhausted,
   OperationRetryBackoff,
