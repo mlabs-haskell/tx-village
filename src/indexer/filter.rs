@@ -2,7 +2,7 @@ use oura::filters::selection::{Config, Predicate};
 
 /// Interesting transaction components to look for when filtering transactions relevant to the protocol.
 pub struct Filter {
-  curr_symbols: Vec<String>,
+  pub curr_symbols: Vec<String>,
 }
 
 impl Filter {
