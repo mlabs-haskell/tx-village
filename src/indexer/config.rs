@@ -6,7 +6,7 @@ use super::{
   types::{NetworkMagic, NodeAddress},
 };
 
-pub struct IndexerConfig<Fut> {
+pub struct IndexerConfig<'a, Fut> {
   pub node_address: NodeAddress,
   pub network_magic: NetworkMagic,
   /// Slot number and hash as hex string (optional).
@@ -17,7 +17,7 @@ pub struct IndexerConfig<Fut> {
   pub safe_block_depth: usize,
   pub event_filter: Filter,
   /// Callback function to pass events to
-  pub callback_fn: fn(&Event) -> Fut,
+  pub callback_fn: &'a fn(&Event) -> Fut,
   /// Retry policy - how much to retry for each event callback failure
   /// This only takes effect on ErrorPolicy for a particular error is `Retry`.
   /// Once retries are exhausted, the handler will error (same treatment as ErrorPolicy::Exit)
