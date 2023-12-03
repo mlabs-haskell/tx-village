@@ -38,9 +38,9 @@ fn compute_backoff_delay(policy: &RetryPolicy, retry: u32) -> Duration {
 /// Retries are only performed for ErrorPolicy::Retry - other errors won't cause invocation of given operation again.
 pub async fn perform_with_retry<
   E: Debug + ErrorPolicyProvider,
-  Fut: Future<Output = Result<(), E>>,
+  R: Future<Output = Result<(), E>>,
 >(
-  op: impl Fn() -> Fut,
+  op: impl Fn() -> R,
   policy: &RetryPolicy,
 ) -> Result<(), E> {
   let span = span!(Level::INFO, "perform_with_retry");

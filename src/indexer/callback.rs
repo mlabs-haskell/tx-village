@@ -1,4 +1,4 @@
-use std::{fmt::Debug, future::Future, sync::Arc};
+use std::{fmt::Debug, future::Future, pin::Pin, sync::Arc};
 
 use oura::{
   model::Event,
@@ -16,23 +16,23 @@ use super::{
 
 /// This is a custom made sink for Oura. Based on a callback function.
 /// The idea is similar to a webhook, but instead of calling a web endpoint - we call a function directly.
-pub(crate) struct Callback<Fut> {
-  pub(crate) f: fn(&Event) -> Fut,
+pub(crate) struct Callback<E> {
+  // https://stackoverflow.com/questions/77589520/lifetime-of-struct-with-field-of-type-boxed-async-callback-must-outlive-static
+  pub(crate) f:
+    Arc<dyn Fn(Event) -> Pin<Box<dyn Future<Output = Result<(), E>> + Send + Sync>> + Send + Sync>,
   pub(crate) retry_policy: RetryPolicy,
   pub(crate) utils: Arc<Utils>,
 }
 
-impl<E: Debug + ErrorPolicyProvider + 'static, Fut: Future<Output = Result<(), E>> + 'static>
-  SinkProvider for Callback<Fut>
-{
+impl<E: Debug + ErrorPolicyProvider + 'static> SinkProvider for Callback<E> {
   fn bootstrap(&self, input: StageReceiver) -> BootstrapResult {
     let span = span!(Level::INFO, "Callback::bootstrap");
     let _enter = span.enter();
 
-    let callback_fn = self.f.clone();
     let retry_policy = self.retry_policy;
     let utils = self.utils.clone();
 
+    let f = Arc::clone(&self.f);
     let handle = span!(Level::DEBUG, "SpawningThread").in_scope(|| {
       std::thread::spawn(move || {
         let span = span!(Level::DEBUG, "EventHandlingThread");
@@ -40,7 +40,7 @@ impl<E: Debug + ErrorPolicyProvider + 'static, Fut: Future<Output = Result<(), E
 
         // Running async function sycnhronously within another thread.
         let rt = Runtime::new().unwrap();
-        rt.block_on(handle_event(input, callback_fn, &retry_policy, utils))
+        rt.block_on(handle_event(input, |ev: Event| f(ev), &retry_policy, utils))
           .or_else(|err| {
             event!(Level::ERROR, label=%Events::EventHandlerFailure, ?err);
             Err(err)
@@ -54,15 +54,17 @@ impl<E: Debug + ErrorPolicyProvider + 'static, Fut: Future<Output = Result<(), E
 }
 
 // Handle a sequence of events transmitted at once.
-async fn handle_event<E: Debug + ErrorPolicyProvider, Fut: Future<Output = Result<(), E>>>(
+async fn handle_event<
+  E: Debug + ErrorPolicyProvider + 'static,
+  R: Future<Output = Result<(), E>>,
+>(
   input: StageReceiver,
-  callback_fn: impl Fn(&Event) -> Fut,
+  callback_fn: impl Fn(Event) -> R,
   retry_policy: &RetryPolicy,
   utils: Arc<Utils>,
 ) -> Result<(), E> {
   let span = span!(Level::INFO, "handle_event");
   let _enter = span.enter();
-
   for chain_event in input.iter() {
     let span = span!(
       Level::INFO,
@@ -71,7 +73,8 @@ async fn handle_event<E: Debug + ErrorPolicyProvider, Fut: Future<Output = Resul
       block_hash = &chain_event.context.block_hash.clone().unwrap(),
       slot_no = &chain_event.context.slot.unwrap(),
     );
-    perform_with_retry(|| callback_fn(&chain_event), retry_policy)
+    // Have to clone twice here to please the borrow checker...
+    perform_with_retry(|| callback_fn(chain_event.clone()), retry_policy)
       .instrument(span)
       .await
       // Notify progress to the pipeline.
@@ -80,7 +83,6 @@ async fn handle_event<E: Debug + ErrorPolicyProvider, Fut: Future<Output = Resul
     // After all, `perform_with_retry` will only return error if all other options,
     // based on `ErrorPolicy`, were exhausted.
   }
-
   // All chain events in this sequence have been handled.
   Ok(())
 }

@@ -1,4 +1,4 @@
-use std::{fmt::Debug, future::Future, sync::Arc};
+use std::{fmt::Debug, sync::Arc};
 
 use anyhow::Result;
 use oura::{
@@ -17,11 +17,8 @@ use super::{
 };
 
 // This is based on: https://github.com/txpipe/oura/blob/27fb7e876471b713841d96e292ede40101b151d7/src/bin/oura/daemon.rs
-pub fn run_indexer<
-  E: Debug + ErrorPolicyProvider + 'static,
-  Fut: Future<Output = Result<(), E>> + 'static,
->(
-  conf: IndexerConfig<Fut>,
+pub fn run_indexer<E: Debug + ErrorPolicyProvider + 'static>(
+  conf: IndexerConfig<E>,
 ) -> Result<(), Error> {
   let span = span!(Level::INFO, "run_indexer");
   let _enter = span.enter();
@@ -78,6 +75,7 @@ pub fn run_indexer<
 
   let sink_handle = span!(Level::INFO, "BootstrapSink").in_scope(|| {
     Callback {
+      // Storing a thread-safe shareable pointer to the async function
       f: conf.callback_fn,
       retry_policy: conf.retry_policy,
       utils,
