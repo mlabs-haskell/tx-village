@@ -1,6 +1,6 @@
 mod handler;
 
-use std::{default::Default, fmt::Debug, sync::Arc};
+use std::{default::Default, fmt::Debug};
 
 use anyhow::Result;
 use clap::Parser;
@@ -54,16 +54,16 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         since_slot,
         since_slot_hash,
         curr_symbols,
-      }) => run_indexer(IndexerConfig {
-        node_address: NodeAddress::UnixSocket(socket_path),
+      }) => run_indexer(IndexerConfig::new(
+        NodeAddress::UnixSocket(socket_path),
         network_magic,
-        since_slot: since_slot.zip(since_slot_hash),
-        safe_block_depth: 4,
+        since_slot.zip(since_slot_hash),
+        4,
         // TODO(chase): This is a dummy symbol - change to something meaningful.
-        event_filter: Filter { curr_symbols },
-        callback_fn: Arc::new(move |ev: Event| Box::pin(dummy_callback(ev))),
-        retry_policy: Default::default(),
-      }),
+        Filter { curr_symbols },
+        dummy_callback,
+        Default::default(),
+      )),
     },
   }
 }

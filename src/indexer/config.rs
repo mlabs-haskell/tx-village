@@ -27,6 +27,28 @@ pub struct IndexerConfig<E> {
   pub retry_policy: RetryPolicy,
 }
 
+impl<E> IndexerConfig<E> {
+  pub fn new<R: Future<Output = Result<(), E>> + Send + Sync + 'static>(
+    node_address: NodeAddress,
+    network_magic: NetworkMagic,
+    since_slot: Option<(u64, String)>,
+    safe_block_depth: usize,
+    event_filter: Filter,
+    callback_fn: impl Fn(Event) -> R + Send + Sync + 'static,
+    retry_policy: RetryPolicy,
+  ) -> Self {
+    Self {
+      node_address,
+      network_magic,
+      since_slot,
+      safe_block_depth,
+      event_filter,
+      callback_fn: Arc::new(move |ev: Event| Box::pin(callback_fn(ev))),
+      retry_policy,
+    }
+  }
+}
+
 // Encapsulating usage of deprecated stuff (impossible to construct struct without it).
 // This avoids having to put "#![allow(deprecated)]" on the top of this file.
 pub mod deprecation_usage {
