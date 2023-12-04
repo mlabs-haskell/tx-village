@@ -15,9 +15,8 @@ pub async fn on_chain_event(conn: &mut PgConnection, ev: oura::Event) -> Result<
   let span = span!(Level::INFO, "HandlingEvent", event=?ev.context);
   async move {
     match ev.data {
-      // TODO(chase): These unwraps shouldn't fail but maybe they should still be checked.
-      // TODO(chase): Ignore "transaction not found" db errors.
       oura::EventData::Transaction(t) => {
+        // TODO(chase): These unwraps shouldn't fail but maybe they should still be checked.
         let tx_id = &ev.context.tx_hash.unwrap();
         let span = span!(Level::DEBUG, "HandlingTransactionEvent", tx_id);
         async move {
@@ -33,6 +32,7 @@ pub async fn on_chain_event(conn: &mut PgConnection, ev: oura::Event) -> Result<
         block_slot,
         block_hash: _,
       } => {
+        // TODO(chase): Ignore "transaction not found" db errors.
         let span = span!(Level::DEBUG, "HandlingTransactionEvent", block_slot);
         conn
           .rollback_after_block(block_slot)
