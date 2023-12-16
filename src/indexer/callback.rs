@@ -68,10 +68,8 @@ async fn handle_event<
   for chain_event in input.iter() {
     let span = span!(
       Level::INFO,
-      "HandlingBlock",
-      block_no = &chain_event.context.block_number.unwrap(),
-      block_hash = &chain_event.context.block_hash.clone().unwrap(),
-      slot_no = &chain_event.context.slot.unwrap(),
+      "HandlingEvent",
+      context=?chain_event.context
     );
     // Have to clone twice here to please the borrow checker...
     perform_with_retry(|| callback_fn(chain_event.clone()), retry_policy)
