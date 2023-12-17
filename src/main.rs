@@ -1,9 +1,9 @@
 mod handler;
 
-use std::{default::Default, fmt::Debug};
+use std::{default::Default, env, fmt::Debug};
 
 use anyhow::Result;
-use clap::{ArgAction, Parser};
+use clap::Parser;
 use infinity_query::indexer::{
   config::IndexerConfig,
   error::{ErrorPolicy, ErrorPolicyProvider},
@@ -12,6 +12,7 @@ use infinity_query::indexer::{
   types::{NetworkMagic, NodeAddress},
 };
 use oura::model::Event;
+use plutip::{types::PlutipConfig, Plutip};
 use tracing::Level;
 
 #[derive(Debug, Parser)]
@@ -33,11 +34,16 @@ enum IndexCommand {
   Start(IndexStartArgs),
 }
 
+#[derive(Debug, Parser)]
+struct DummyCommand {}
+
 #[derive(clap::Subcommand, Debug)]
 enum Command {
   /// Run the Index command
   #[command(subcommand)]
   Index(IndexCommand),
+  // Run indexer with Plutip local cluster
+  Dummy(DummyCommand),
 }
 /// Infinity Query command line interface
 #[derive(Parser, Debug)]
@@ -77,12 +83,36 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         network_magic,
         since_slot.zip(since_slot_hash),
         4,
-        // TODO(chase): This is a dummy symbol - change to something meaningful.
         Filter { curr_symbols },
         dummy_callback,
         Default::default(),
       )),
     },
+    Command::Dummy(_) => {
+      let plutip = Plutip::start(&PlutipConfig {
+        num_wallets: 2,
+        lovelace: 1_000_000,
+        num_utxos: 1,
+        slot_len: 0.1,
+        work_dir: env::temp_dir(),
+      })
+      .expect("Plutip cannot be spawned");
+
+      run_indexer(IndexerConfig::new(
+        NodeAddress::UnixSocket(plutip.socket_path.to_str().expect("absurd").to_string()),
+        NetworkMagic::MAINNET,
+        None,
+        4,
+        Filter {
+          curr_symbols: vec![],
+        },
+        dummy_callback,
+        Default::default(),
+      ))
+      .expect("Failed to spawn indexer");
+
+      Ok(())
+    }
   }
 }
 
