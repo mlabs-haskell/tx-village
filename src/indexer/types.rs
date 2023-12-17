@@ -1,6 +1,7 @@
 use core::str::FromStr;
-use std::error::Error;
 use std::fmt;
+use std::pin::Pin;
+use std::{error::Error, future::Future};
 
 use oura::{
   sources::MagicArg,
@@ -59,3 +60,7 @@ impl NetworkMagic {
     })
   }
 }
+
+// https://stackoverflow.com/questions/77589520/lifetime-of-struct-with-field-of-type-boxed-async-callback-must-outlive-static
+pub type AsyncResult<E> = dyn Future<Output = Result<(), E>> + Send + Sync;
+pub type AsyncFunction<Arg, Result> = dyn Fn(Arg) -> Pin<Box<Result>> + Send + Sync;

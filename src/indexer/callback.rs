@@ -1,4 +1,4 @@
-use std::{fmt::Debug, future::Future, pin::Pin, sync::Arc};
+use std::{fmt::Debug, future::Future, sync::Arc};
 
 use oura::{
   model::Event,
@@ -12,14 +12,14 @@ use tracing::{event, span, Instrument, Level};
 use super::{
   error::ErrorPolicyProvider,
   retry::{perform_with_retry, RetryPolicy},
+  types::{AsyncFunction, AsyncResult},
 };
 
 /// This is a custom made sink for Oura. Based on a callback function.
 /// The idea is similar to a webhook, but instead of calling a web endpoint - we call a function directly.
 pub(crate) struct Callback<E> {
   // https://stackoverflow.com/questions/77589520/lifetime-of-struct-with-field-of-type-boxed-async-callback-must-outlive-static
-  pub(crate) f:
-    Arc<dyn Fn(Event) -> Pin<Box<dyn Future<Output = Result<(), E>> + Send + Sync>> + Send + Sync>,
+  pub(crate) f: Arc<AsyncFunction<Event, AsyncResult<E>>>,
   pub(crate) retry_policy: RetryPolicy,
   pub(crate) utils: Arc<Utils>,
 }
@@ -41,9 +41,9 @@ impl<E: Debug + ErrorPolicyProvider + 'static> SinkProvider for Callback<E> {
         // Running async function sycnhronously within another thread.
         let rt = Runtime::new().unwrap();
         rt.block_on(handle_event(input, |ev: Event| f(ev), &retry_policy, utils))
-          .or_else(|err| {
+          .map_err(|err| {
             event!(Level::ERROR, label=%Events::EventHandlerFailure, ?err);
-            Err(err)
+            err
           })
           .expect("request loop failed");
       })

@@ -12,7 +12,7 @@ impl Filter {
         self
           .curr_symbols
           .into_iter()
-          .map(|x| Predicate::PolicyEquals(x))
+          .map(Predicate::PolicyEquals)
           .collect(),
       ),
     }

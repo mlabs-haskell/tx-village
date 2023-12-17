@@ -11,6 +11,8 @@ use infinity_query::{
 
 pub struct Error(TransactionDbError);
 
+// TODO (chase): Use this eventually.
+#[allow(dead_code)]
 pub async fn on_chain_event(conn: &mut PgConnection, ev: oura::Event) -> Result<(), Error> {
   let span = span!(Level::INFO, "HandlingEvent", event=?ev.context);
   async move {

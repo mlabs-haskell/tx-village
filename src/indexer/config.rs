@@ -1,11 +1,11 @@
-use std::{future::Future, pin::Pin, sync::Arc};
+use std::{future::Future, sync::Arc};
 
 use oura::model::Event;
 
 use super::{
   filter::Filter,
   retry::RetryPolicy,
-  types::{NetworkMagic, NodeAddress},
+  types::{AsyncFunction, AsyncResult, NetworkMagic, NodeAddress},
 };
 
 pub struct IndexerConfig<E> {
@@ -19,8 +19,7 @@ pub struct IndexerConfig<E> {
   pub safe_block_depth: usize,
   pub event_filter: Filter,
   /// Callback function to pass events to
-  pub callback_fn:
-    Arc<dyn Fn(Event) -> Pin<Box<dyn Future<Output = Result<(), E>> + Send + Sync>> + Send + Sync>,
+  pub callback_fn: Arc<AsyncFunction<Event, AsyncResult<E>>>,
   /// Retry policy - how much to retry for each event callback failure
   /// This only takes effect on ErrorPolicy for a particular error is `Retry`.
   /// Once retries are exhausted, the handler will error (same treatment as ErrorPolicy::Exit)

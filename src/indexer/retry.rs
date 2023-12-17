@@ -56,36 +56,37 @@ pub async fn perform_with_retry<
 
       match result {
         Ok(_) => {
-          event!(Level::INFO, label=%Event::OperationSuccess);
+          event!(Level::INFO, label=%Event::Success);
           Some(Ok(()))
         }
         Err(err) => match err.get_error_policy() {
           ErrorPolicy::Exit => {
-            event!(Level::INFO, label=%Event::OperationFailureExit);
+            event!(Level::INFO, label=%Event::FailureExit);
             Some(Err(err))
           }
           ErrorPolicy::Skip => {
-            event!(Level::WARN, label=%Event::OperationFailureSkip, err=?err);
+            event!(Level::WARN, label=%Event::FailureSkip, err=?err);
             Some(Ok(()))
           }
-          ErrorPolicy::Call(err_f) => {
-            span!(Level::WARN, "OperationFailureCall").in_scope(|| { err_f(err); Some(Ok(())) })
-          }
+          ErrorPolicy::Call(err_f) => span!(Level::WARN, "OperationFailureCall").in_scope(|| {
+            err_f(err);
+            Some(Ok(()))
+          }),
           ErrorPolicy::Retry if retry < policy.max_retries => {
-            event!(Level::WARN, label=%Event::OperationFailureRetry, err=?err);
+            event!(Level::WARN, label=%Event::FailureRetry, err=?err);
 
             retry += 1;
 
             let backoff = compute_backoff_delay(policy, retry);
 
-            event!(Level::DEBUG, label=%Event::OperationRetryBackoff, backoff_secs=backoff.as_secs());
+            event!(Level::DEBUG, label=%Event::RetryBackoff, backoff_secs=backoff.as_secs());
 
             std::thread::sleep(backoff);
 
             None
           }
           _ => {
-            event!(Level::DEBUG, label=%Event::OperationRetriesExhausted);
+            event!(Level::DEBUG, label=%Event::RetriesExhausted);
             Some(Err(err))
           }
         },
@@ -102,10 +103,10 @@ pub async fn perform_with_retry<
 
 #[derive(Display)]
 enum Event {
-  OperationSuccess,
-  OperationFailureExit,
-  OperationFailureSkip,
-  OperationFailureRetry,
-  OperationRetriesExhausted,
-  OperationRetryBackoff,
+  Success,
+  FailureExit,
+  FailureSkip,
+  FailureRetry,
+  RetriesExhausted,
+  RetryBackoff,
 }
