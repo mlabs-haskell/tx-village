@@ -25,7 +25,10 @@ pub async fn on_chain_event(conn: &mut PgConnection, ev: oura::Event) -> Result<
           conn
             .save_tx(tx_id, &t.hash, ev.context.block_number.unwrap())
             .await
-            .map_err(Error)
+            .map_err(|err| {
+              event!(Level::ERROR, label=%Event::TransactionError, ?err);
+              Error(err)
+            })
         }
         .instrument(span)
         .await
@@ -46,7 +49,7 @@ pub async fn on_chain_event(conn: &mut PgConnection, ev: oura::Event) -> Result<
           })
       }
       _ => {
-        event!(Level::DEBUG, label=%Event::SkippingEvent);
+        event!(Level::DEBUG, label=%Event::Skipping);
         Ok(())
       }
     }
@@ -64,6 +67,7 @@ impl ErrorPolicyProvider for Error {
 
 #[derive(Display)]
 enum Event {
+  TransactionError,
   RollbackError,
-  SkippingEvent,
+  Skipping,
 }
