@@ -4,7 +4,7 @@
       rustFlake =
         inputs.lbf.lib."${system}".rustFlake {
           src = ./.;
-          crane = inputs.crane;
+          inherit (inputs) crane;
           crateName = "infinity-query";
           devShellHook = config.settings.shell.hook;
         };
