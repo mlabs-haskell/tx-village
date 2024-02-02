@@ -1111,7 +1111,6 @@ name = "infinity-transactions"
 version = "0.1.0"
 dependencies = [
  "anyhow",
- "async-trait",
  "bigdecimal",
  "cardano-serialization-lib",
  "cbor_event",
@@ -1119,7 +1118,6 @@ dependencies = [
  "clap 4.4.8",
  "cryptoxide",
  "data-encoding",
- "frunk",
  "log",
  "num-bigint",
  "num-derive",
