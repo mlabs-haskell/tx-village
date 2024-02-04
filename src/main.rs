@@ -83,7 +83,11 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         network_magic,
         since_slot.zip(since_slot_hash),
         4,
-        Filter { curr_symbols },
+        if curr_symbols.is_empty() {
+          None
+        } else {
+          Some(Filter { curr_symbols })
+        },
         dummy_callback,
         Default::default(),
       )),
@@ -103,9 +107,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         NetworkMagic::MAINNET,
         None,
         4,
-        Filter {
-          curr_symbols: vec![],
-        },
+        None,
         dummy_callback,
         Default::default(),
       ))

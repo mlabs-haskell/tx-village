@@ -17,7 +17,7 @@ pub struct IndexerConfig<E> {
   /// Minimum depth a block has to be from the tip for it to be considered "confirmed"
   /// See: https://oura.txpipe.io/v1/advanced/rollback_buffer
   pub safe_block_depth: usize,
-  pub event_filter: Filter,
+  pub event_filter: Option<Filter>,
   /// Callback function to pass events to
   pub callback_fn: Arc<AsyncFunction<Event, AsyncResult<E>>>,
   /// Retry policy - how much to retry for each event callback failure
@@ -32,7 +32,7 @@ impl<E> IndexerConfig<E> {
     network_magic: NetworkMagic,
     since_slot: Option<(u64, String)>,
     safe_block_depth: usize,
-    event_filter: Filter,
+    event_filter: Option<Filter>,
     callback_fn: impl Fn(Event) -> R + Send + Sync + 'static,
     retry_policy: RetryPolicy,
   ) -> Self {

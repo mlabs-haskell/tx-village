@@ -64,14 +64,14 @@ pub fn run_indexer<E: Debug + ErrorPolicyProvider + 'static>(
     }
   }?;
 
-  let mut threads = Vec::with_capacity(10);
-  threads.push(source_handle);
-
-  let (filter_handle, filter_rx) = conf
-    .event_filter
-    .to_selection_config()
-    .bootstrap(source_rx)?;
-  threads.push(filter_handle);
+  // Optionally create a filter handle (if filter was provided)
+  let (filter_handle, next_rx) = match conf.event_filter {
+    Some(ev_f) => {
+      let (filter_handle, filter_rx) = ev_f.to_selection_config().bootstrap(source_rx)?;
+      (Some(filter_handle), filter_rx)
+    }
+    None => (None, source_rx),
+  };
 
   let sink_handle = span!(Level::INFO, "BootstrapSink").in_scope(|| {
     Callback {
@@ -80,13 +80,12 @@ pub fn run_indexer<E: Debug + ErrorPolicyProvider + 'static>(
       retry_policy: conf.retry_policy,
       utils,
     }
-    .bootstrap(filter_rx)
+    .bootstrap(next_rx)
   })?;
-  threads.push(sink_handle);
 
-  for handle in threads {
-    handle.join().expect("error in pipeline thread");
-  }
+  sink_handle.join().map_err(|_| "error in sink thread")?;
+  filter_handle.map_or(Ok(()), |h| h.join().map_err(|_| "error in sink thread"))?;
+  source_handle.join().map_err(|_| "error in source thread")?;
 
   Ok(())
 }
