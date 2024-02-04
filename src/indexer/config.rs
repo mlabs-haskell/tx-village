@@ -54,7 +54,7 @@ pub mod deprecation_usage {
   #![allow(deprecated)]
 
   use oura::sources::n2c::Config as N2CConfig;
-  use oura::sources::n2c::Config as N2NConfig;
+  use oura::sources::n2n::Config as N2NConfig;
   use oura::sources::{AddressArg, IntersectArg, PointArg};
 
   use super::super::types::NetworkMagic;
