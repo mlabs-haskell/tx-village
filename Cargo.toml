@@ -32,8 +32,8 @@ tracing-subscriber = "0.3"
 strum = "0.24"
 strum_macros = "0.24"
 frunk = "0.4.2"
-plutip = { path = ".extras/plutip" }
-infinity-transactions = { path = ".extras/infinity-transactions" }
+plutip = { path = ".extras/plutip-0.1.0" }
+infinity-transactions = { path = ".extras/infinity-transactions-0.1.0" }
 
 [build-dependencies]
 tokio = { version = "1.24.2", features = [ "full" ] }
