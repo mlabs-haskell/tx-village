@@ -1,12 +1,18 @@
 { inputs, ... }: {
-  perSystem = { system, config, ... }:
+  perSystem = { system, config, inputs', ... }:
     let
       rustFlake =
-        inputs.lbf.lib."${system}".rustFlake {
+        inputs.flake-lang.lib.${system}.rustFlake {
           src = ./.;
           inherit (inputs) crane;
           crateName = "infinity-query";
+          extraSources = [
+            config.packages.plutip-rust-src
+            config.packages.infinity-transactions-rust-src
+          ];
           devShellHook = config.settings.shell.hook;
+          devShellTools = with inputs'; [ plutip.packages."plutip-core:exe:local-cluster" ];
+          testTools = with inputs'; [ plutip.packages."plutip-core:exe:local-cluster" ];
         };
     in
     {

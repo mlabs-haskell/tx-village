@@ -22,6 +22,18 @@ log = "0.4.17"
 cbor_event = "2.4.0"
 uplc = "0.0.29"
 clap = { version = "4.3.10", features = ["derive"] }
+oura = "1.8.1"
+pallas = "0.18.2"
+sqlx = { version = "0.7", features = [ "postgres", "chrono", "macros", "uuid", "json", "runtime-tokio", "tls-rustls" ] }
+async-trait = "0.1.74"
+tokio = { version = "1.24.2", features = [ "full" ] }
+tracing = "0.1"
+tracing-subscriber = "0.3"
+strum = "0.24"
+strum_macros = "0.24"
+frunk = "0.4.2"
+plutip = { path = ".extras/plutip-0.1.0" }
+infinity-transactions = { path = ".extras/infinity-transactions-0.1.0" }
 
 [build-dependencies]
 tokio = { version = "1.24.2", features = [ "full" ] }
