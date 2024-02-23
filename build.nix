@@ -4,7 +4,6 @@
       rustFlake =
         inputs.flake-lang.lib.${system}.rustFlake {
           src = ./.;
-          inherit (inputs) crane;
           crateName = "infinity-query";
           extraSources = [
             config.packages.plutip-rust-src
