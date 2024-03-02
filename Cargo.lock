@@ -197,6 +197,15 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "8c3c1a368f70d6cf7302d78f8f7093da241fb8e8807c05cc9e51a125895a6d5b"
 
 [[package]]
+name = "basic-toml"
+version = "0.1.7"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "2f2139706359229bfa8f19142ac1155b4b80beafb7a60471ac5dd109d4a19778"
+dependencies = [
+ "serde",
+]
+
+[[package]]
 name = "bech32"
 version = "0.7.3"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -624,6 +633,12 @@ dependencies = [
  "crypto-common",
  "subtle",
 ]
+
+[[package]]
+name = "dissimilar"
+version = "1.0.7"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "86e3bdc80eee6e16b2b6b0f87fbc98c04bee3455e35174c0de1a125d0688c632"
 
 [[package]]
 name = "dotenvy"
@@ -1086,6 +1101,7 @@ dependencies = [
  "data-encoding",
  "frunk",
  "infinity-transactions",
+ "lbf-infinity-plutus-api",
  "log",
  "num-bigint",
  "num-derive",
@@ -1093,6 +1109,7 @@ dependencies = [
  "oura",
  "pallas",
  "plutip",
+ "plutus-ledger-api",
  "proptest",
  "serde",
  "serde_json",
@@ -1111,6 +1128,7 @@ name = "infinity-transactions"
 version = "0.1.0"
 dependencies = [
  "anyhow",
+ "async-trait",
  "bigdecimal",
  "cardano-serialization-lib",
  "cbor_event",
@@ -1118,10 +1136,16 @@ dependencies = [
  "clap 4.4.8",
  "cryptoxide",
  "data-encoding",
+ "flat-rs",
+ "frunk",
+ "linked-hash-map",
  "log",
+ "minicbor 0.18.0",
  "num-bigint",
  "num-derive",
+ "num-integer",
  "num-traits",
+ "pallas-codec 0.16.0",
  "plutus-ledger-api",
  "proptest",
  "serde",
@@ -1182,6 +1206,57 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "e2abad23fbc42b3700f2f279844dc832adb2b2eb069b2df918f455c4e18cc646"
 dependencies = [
  "spin 0.5.2",
+]
+
+[[package]]
+name = "lbf-infinity-plutus-api"
+version = "0.1.0"
+dependencies = [
+ "lbf-plutus",
+ "lbf-prelude",
+ "lbr-prelude",
+ "num-bigint",
+ "plutus-ledger-api",
+ "serde_json",
+]
+
+[[package]]
+name = "lbf-plutus"
+version = "0.1.0"
+dependencies = [
+ "lbf-prelude",
+ "plutus-ledger-api",
+]
+
+[[package]]
+name = "lbf-prelude"
+version = "0.1.0"
+dependencies = [
+ "lbr-prelude",
+ "num-bigint",
+]
+
+[[package]]
+name = "lbr-prelude"
+version = "0.1.0"
+dependencies = [
+ "data-encoding",
+ "lbr-prelude-derive",
+ "num-bigint",
+ "proptest",
+ "serde",
+ "serde_json",
+ "thiserror",
+]
+
+[[package]]
+name = "lbr-prelude-derive"
+version = "0.1.0"
+dependencies = [
+ "proc-macro2",
+ "quote",
+ "syn 2.0.39",
+ "trybuild",
 ]
 
 [[package]]
@@ -1397,6 +1472,7 @@ dependencies = [
  "autocfg",
  "num-integer",
  "num-traits",
+ "serde",
 ]
 
 [[package]]
@@ -1918,10 +1994,15 @@ dependencies = [
 [[package]]
 name = "plutus-ledger-api"
 version = "0.1.0"
-source = "git+https://github.com/mlabs-haskell/plutus-ledger-api-rust.git#dca3242fc24d9a742b9a1547486f8754aaf1a9b9"
 dependencies = [
+ "data-encoding",
+ "lbr-prelude",
+ "linked-hash-map",
  "num-bigint",
+ "num-traits",
  "proptest",
+ "serde",
+ "serde_json",
  "thiserror",
 ]
 
@@ -3092,6 +3173,22 @@ dependencies = [
  "tracing",
  "tracing-core",
  "tracing-log",
+]
+
+[[package]]
+name = "trybuild"
+version = "1.0.86"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "8419ecd263363827c5730386f418715766f584e2f874d32c23c5b00bd9727e7e"
+dependencies = [
+ "basic-toml",
+ "dissimilar",
+ "glob",
+ "once_cell",
+ "serde",
+ "serde_derive",
+ "serde_json",
+ "termcolor",
 ]
 
 [[package]]
