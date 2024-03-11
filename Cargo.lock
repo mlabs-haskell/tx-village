@@ -1148,8 +1148,6 @@ dependencies = [
  "pallas-codec 0.16.0",
  "plutus-ledger-api",
  "proptest",
- "serde",
- "serde_json",
  "thiserror",
  "tokio",
  "uplc",
@@ -1472,7 +1470,6 @@ dependencies = [
  "autocfg",
  "num-integer",
  "num-traits",
- "serde",
 ]
 
 [[package]]
@@ -2001,7 +1998,6 @@ dependencies = [
  "num-bigint",
  "num-traits",
  "proptest",
- "serde",
  "serde_json",
  "thiserror",
 ]

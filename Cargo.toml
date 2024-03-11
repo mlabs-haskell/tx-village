@@ -35,7 +35,7 @@ frunk = "0.4.2"
 plutip = { path = ".extras/plutip-0.1.0" }
 infinity-transactions = { path = ".extras/infinity-transactions-0.1.0" }
 lbf-infinity-plutus-api = { path = ".extras/lbf-infinity-plutus-api-0.1.0" }
-plutus-ledger-api = { features = ["lbf", "serde"], path = ".extras/plutus-ledger-api-0.1.0" }
+plutus-ledger-api = { features = ["lbf"], path = ".extras/plutus-ledger-api-0.1.0" }
 
 [build-dependencies]
 tokio = { version = "1.24.2", features = [ "full" ] }
