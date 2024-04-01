@@ -1,0 +1,112 @@
+cabal-version: 3.0
+name:          tx-bakery-test-scripts
+version:       0.1.0.0
+synopsis:
+  Plutus validators for the Demo protocol written in Plutarch.
+
+author:        Gergely Szabo
+maintainer:    gergo@mlabs.city
+
+flag dev
+  description: Enable non-strict compilation for development
+  manual:      True
+
+common common-language
+  ghc-options:
+    -Wall -Wcompat -fprint-explicit-foralls -fprint-explicit-kinds
+    -fwarn-missing-import-lists -Weverything -Wno-unsafe
+    -Wno-missing-safe-haskell-mode -Wno-implicit-prelude
+    -Wno-missing-kind-signatures -Wno-all-missed-specializations
+
+  if !flag(dev)
+    ghc-options: -Werror
+
+  default-extensions:
+    BangPatterns
+    BinaryLiterals
+    ConstrainedClassMethods
+    ConstraintKinds
+    DataKinds
+    DeriveAnyClass
+    DeriveDataTypeable
+    DeriveFoldable
+    DeriveFunctor
+    DeriveGeneric
+    DeriveLift
+    DeriveTraversable
+    DerivingStrategies
+    DerivingVia
+    DoAndIfThenElse
+    DuplicateRecordFields
+    EmptyCase
+    EmptyDataDecls
+    EmptyDataDeriving
+    ExistentialQuantification
+    ExplicitForAll
+    ExplicitNamespaces
+    FlexibleContexts
+    FlexibleInstances
+    ForeignFunctionInterface
+    GADTSyntax
+    GeneralizedNewtypeDeriving
+    HexFloatLiterals
+    ImportQualifiedPost
+    InstanceSigs
+    KindSignatures
+    LambdaCase
+    MonomorphismRestriction
+    MultiParamTypeClasses
+    NamedFieldPuns
+    NamedWildCards
+    NoStarIsType
+    NumericUnderscores
+    OverloadedLabels
+    OverloadedStrings
+    PartialTypeSignatures
+    PatternGuards
+    PolyKinds
+    PostfixOperators
+    RankNTypes
+    RecordWildCards
+    RelaxedPolyRec
+    ScopedTypeVariables
+    StandaloneDeriving
+    StandaloneKindSignatures
+    TemplateHaskell
+    TraditionalRecordSyntax
+    TupleSections
+    TypeApplications
+    TypeFamilies
+    TypeOperators
+    TypeSynonymInstances
+    ViewPatterns
+
+  default-language:   Haskell2010
+
+library
+  import:          common-language
+  build-depends:
+    , base                                     >=4.16
+    , lbf-tx-bakery-tests-plutus-api-plutarch
+    , lbr-plutarch
+    , plutarch
+
+  hs-source-dirs:  src
+  exposed-modules:
+    Demo.Mint
+    Demo.RefInput
+    Demo.Validation
+
+executable tx-bakery-test-scripts-cli
+  import:         common-language
+  main-is:        Main.hs
+  hs-source-dirs: app
+  other-modules:  Demo.Cli.Compile
+  build-depends:
+    , base
+    , bytestring
+    , lbf-tx-bakery-tests-config-api
+    , lbr-prelude
+    , optparse-applicative
+    , plutarch
+    , tx-bakery-test-scripts

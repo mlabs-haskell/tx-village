@@ -1,0 +1,16 @@
+-- Demo.Config contains all the protocol configurations (scripts and such)
+module Demo.Config
+
+import Prelude
+
+prod Script = Bytes
+derive Eq Script
+derive Json Script
+
+record Config = {
+  eqValidator : Script,
+  mintingPolicy : Script,
+  refInputMintingPolicy : Script
+}
+derive Eq Config
+derive Json Config

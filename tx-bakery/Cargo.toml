@@ -1,0 +1,44 @@
+[package]
+name = "tx-bakery"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+lbf-prelude = { path = ".extras/lbf-prelude-0.1.0" }
+cardano-serialization-lib = "11.5.0"
+plutus-ledger-api = { path = ".extras/plutus-ledger-api-0.1.0", features = [
+  "lbf",
+  "chrono",
+] }
+num-bigint = { version = "0.4.4", features = ["serde"] }
+num-integer = "0.1.45"
+linked-hash-map = "0.5.6"
+serde_json = { version = "1.0.111", features = ["raw_value"] }
+serde = "1.0.195"
+derive_builder = "0.12.0"
+jsonrpsee = { version = "0.22.2", features = ["ws-client", "macros"] }
+tokio-test = "0.4.3"
+tower = { version = "0.4.13", features = ["util"] }
+reqwest = { version = "0.11.23", features = ["json"] }
+uuid = { version = "1.6.1", features = ["v4"] }
+cbor_event = "2.4.0"
+tokio = { version = "1.35.1", features = [
+  "time",
+  "process",
+  "rt",
+  "macros",
+  "fs",
+] }
+data-encoding = "2.5.0"
+anyhow = { version = "1.0.79", features = ["backtrace"] }
+thiserror = "1.0.57"
+chrono = "0.4.35"
+futures = "0.3.30"
+nix = { version = "0.28.0", features = [ "signal" ] }
+
+[dev-dependencies]
+proptest = "1.4.0"
+serial_test = "3.0.0"
+lbf-tx-bakery-tests-config-api = { path = ".extras/lbf-tx-bakery-tests-config-api-0.1.0" }
+lbf-tx-bakery-tests-plutus-api = { path = ".extras/lbf-tx-bakery-tests-plutus-api-0.1.0" }
+lbr-prelude = { path = ".extras/lbr-prelude-0.1.0", features = ["derive"] }

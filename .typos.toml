@@ -1,0 +1,8 @@
+[files]
+# NOTE(chfanghr): This doesn't actually do anything right now. If you need to
+# add more consider modifying the `pre-commit.settings.settings.typos.exclude`
+# option.
+extend-exclude = ["fourmolu.yaml"]
+
+[default.extend-identifiers]
+TypeLits = "TypeLits"
