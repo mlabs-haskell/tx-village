@@ -20,6 +20,8 @@ use tx_bakery::utils::script::ScriptOrRef;
 use tx_bakery::wallet::Wallet;
 use tx_bakery::{ChangeStrategy, CollateralStrategy, TxBakery, TxWithCtx};
 
+mod csl;
+
 /// Transaction that stores a EqDatum value at the Eq Validator.
 mod lock_eq_datum {
     use tx_bakery::ChangeStrategy;

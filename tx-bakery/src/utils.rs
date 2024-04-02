@@ -6,8 +6,8 @@ pub mod ogmios;
 pub mod plutip;
 pub mod script;
 
-pub mod from_csl;
-pub mod to_csl;
+pub mod csl_to_pla;
+pub mod pla_to_csl;
 
 pub fn union_b_tree_maps_with<const N: usize, K: Clone + Ord, V: Clone, F: Fn(&V, &V) -> V>(
     f: F,

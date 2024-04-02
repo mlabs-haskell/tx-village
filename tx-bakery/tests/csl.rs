@@ -12,24 +12,36 @@ mod csl_pla_roundtrip_tests {
         v2::{address::StakingCredential, value::Value},
     };
     use proptest::{prop_assert_eq, proptest, strategy::Strategy, test_runner::TestCaseError};
-    use tx_bakery::utils::from_csl::FromCSL;
-    use tx_bakery::utils::to_csl::{ToCSL, ToCSLWithDef};
+    use tx_bakery::utils::csl_to_pla::{FromCSL, TryFromCSL};
+    use tx_bakery::utils::pla_to_csl::{TryToCSL, TryToCSLWithDef};
 
-    fn round_trip_prop<B, A: ToCSLWithDef<B> + FromCSL<B> + PartialEq + std::fmt::Debug>(
+    fn try_to_from_prop<B, A: TryToCSLWithDef<B> + FromCSL<B> + PartialEq + std::fmt::Debug>(
         v: A,
     ) -> Result<(), TestCaseError> {
         Ok(prop_assert_eq!(
-            A::from_csl(&<A as ToCSLWithDef<B>>::to_csl(&v)?)?,
+            A::from_csl(&<A as TryToCSLWithDef<B>>::try_to_csl(&v)?),
             v
         ))
     }
 
-    fn round_trip_prop_with<B, A: ToCSL<B> + FromCSL<B> + PartialEq + std::fmt::Debug>(
+    fn try_to_try_from_prop<
+        B,
+        A: TryToCSLWithDef<B> + TryFromCSL<B> + PartialEq + std::fmt::Debug,
+    >(
+        v: A,
+    ) -> Result<(), TestCaseError> {
+        Ok(prop_assert_eq!(
+            A::try_from_csl(&<A as TryToCSLWithDef<B>>::try_to_csl(&v)?)?,
+            v
+        ))
+    }
+
+    fn try_to_try_from_with<B, A: TryToCSL<B> + TryFromCSL<B> + PartialEq + std::fmt::Debug>(
         v: A,
         info: A::ExtraInfo,
     ) -> Result<(), TestCaseError> {
         Ok(prop_assert_eq!(
-            A::from_csl(&<A as ToCSL<B>>::to_csl_with(&v, info)?)?,
+            A::try_from_csl(&<A as TryToCSL<B>>::try_to_csl_with(&v, info)?)?,
             v
         ))
     }
@@ -37,20 +49,21 @@ mod csl_pla_roundtrip_tests {
     proptest! {
       #[test]
       fn test_token_name(val in arb_token_name()) {
-          round_trip_prop(val)?
+          try_to_from_prop(val)?
       }
 
       #[test]
       fn test_minting_policy_hash(val in arb_minting_policy_hash()) {
-          round_trip_prop(val)?
+          try_to_from_prop(val)?
       }
 
       // This is special because the CSL machinery always puts in at least a zero Ada in the value
       // But the arbitrary generated value by PLA does not.
       #[test]
       fn test_value(val in arb_value()) {
+        let csl_val: csl::utils::Value  = val.try_to_csl()?;
         prop_assert_eq!(
-          Value::from_csl(&val.to_csl()?)?,
+          Value::from_csl(&csl_val),
           // Add a zero ada value.
           Value::ada_value(&BigInt::from(0)) + val
         )
@@ -58,67 +71,67 @@ mod csl_pla_roundtrip_tests {
 
       #[test]
       fn test_transaction_hash(val in arb_transaction_hash()) {
-          round_trip_prop(val)?
+          try_to_from_prop(val)?
       }
 
       #[test]
       fn test_transaction_input(val in arb_transaction_input()) {
-          round_trip_prop(val)?
+          try_to_from_prop(val)?
       }
 
       #[test]
       fn test_ed25519_pub_key_hash(val in arb_ed25519_pub_key_hash()) {
-          round_trip_prop(val)?
+          try_to_from_prop(val)?
       }
 
       #[test]
       fn test_script_hash(val in arb_script_hash()) {
-          round_trip_prop(val)?
+          try_to_from_prop(val)?
       }
 
       #[test]
       fn test_staking_credential(val in arb_credential().prop_map(StakingCredential::Hash)) {
-          round_trip_prop::<csl::address::StakeCredential, StakingCredential>(val)?
+          try_to_from_prop::<csl::address::StakeCredential, StakingCredential>(val)?
       }
 
       #[test]
       fn test_credential(val in arb_credential()) {
-          round_trip_prop(val)?
+          try_to_from_prop(val)?
       }
 
       #[test]
       fn test_slot(val in arb_slot()) {
-          round_trip_prop(val)?
+          try_to_from_prop(val)?
       }
 
       #[test]
       fn test_transaction_index(val in arb_transaction_index()) {
-          round_trip_prop(val)?
+          try_to_from_prop(val)?
       }
 
       #[test]
       fn test_certificate_index(val in arb_certificate_index()) {
-          round_trip_prop(val)?
+          try_to_from_prop(val)?
       }
 
       #[test]
       fn test_chain_pointer(val in arb_chain_pointer()) {
-          round_trip_prop(val)?
+          try_to_from_prop(val)?
       }
 
       #[test]
       fn test_plutus_data(val in arb_plutus_data()) {
-          round_trip_prop(val)?
+          try_to_try_from_prop(val)?
       }
 
       #[test]
       fn test_datum_hash(val in arb_datum_hash()) {
-          round_trip_prop(val)?
+          try_to_from_prop(val)?
       }
 
       #[test]
       fn test_address(val in arb_address()) {
-          round_trip_prop_with(val, 1)?
+          try_to_try_from_with(val, 1)?
       }
     }
 }

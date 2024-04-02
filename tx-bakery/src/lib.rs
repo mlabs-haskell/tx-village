@@ -31,6 +31,7 @@ use plutus_ledger_api::v2::transaction::{
 use plutus_ledger_api::v2::value::{CurrencySymbol, Value};
 use std::collections::BTreeMap;
 use submitter::Submitter;
+use utils::pla_to_csl::{TryToCSL, TryToCSLWithDef};
 use utils::script::ScriptOrRef;
 
 pub mod chain_query;
@@ -210,9 +211,9 @@ impl TxBakery {
                 match redeemer {
                     None => {
                         tx_inputs_builder.add_input(
-                            &csl_adapter::to_address(&output.address, self.network_id)?,
-                            &csl_adapter::to_transaction_input(&reference)?,
-                            &csl_adapter::to_value(&output.value)?,
+                            &output.address.try_to_csl_with(self.network_id)?,
+                            &reference.try_to_csl()?,
+                            &output.value.try_to_csl()?,
                         );
                         Ok(())
                     }
@@ -246,8 +247,8 @@ impl TxBakery {
                             }
                             ScriptOrRef::RefScript(tx_in, _, lang) => {
                                 PlutusScriptSource::new_ref_input_with_lang_ver(
-                                    &csl_adapter::to_script_hash(&validator_hash.0)?,
-                                    &csl_adapter::to_transaction_input(&tx_in)?,
+                                    &validator_hash.0.try_to_csl()?,
+                                    &tx_in.try_to_csl()?,
                                     &csl_adapter::to_language(lang),
                                 )
                             }
@@ -259,19 +260,17 @@ impl TxBakery {
                                     .get(&dh)
                                     .ok_or(Error::MissingDatum(dh.clone()))?;
 
-                                Some(DatumSource::new(&csl_adapter::to_plutus_data(input_datum)?))
+                                Some(DatumSource::new(&input_datum.try_to_csl()?))
                             }
 
                             OutputDatum::InlineDatum(Datum(input_datum)) => {
                                 Some(match &script_or_ref {
                                     ScriptOrRef::PlutusScript(_, _) => {
-                                        DatumSource::new(&csl_adapter::to_plutus_data(input_datum)?)
+                                        DatumSource::new(&input_datum.try_to_csl()?)
                                     }
 
                                     ScriptOrRef::RefScript(tx_in, _, _) => {
-                                        DatumSource::new_ref_input(
-                                            &csl_adapter::to_transaction_input(&tx_in)?,
-                                        )
+                                        DatumSource::new_ref_input(&tx_in.try_to_csl()?)
                                     }
                                 })
                             }
@@ -293,8 +292,8 @@ impl TxBakery {
 
                         tx_inputs_builder.add_plutus_script_input(
                             &tx_input_witness,
-                            &csl_adapter::to_transaction_input(&reference)?,
-                            &csl_adapter::to_value(&output.value)?,
+                            &reference.try_to_csl()?,
+                            &output.value.try_to_csl()?,
                         );
 
                         Ok(())
@@ -383,8 +382,8 @@ impl TxBakery {
                             }
                             ScriptOrRef::RefScript(tx_in, _, lang) => {
                                 PlutusScriptSource::new_ref_input_with_lang_ver(
-                                    &csl_adapter::to_script_hash(&minting_policy_hash.0)?,
-                                    &csl_adapter::to_transaction_input(&tx_in)?,
+                                    &minting_policy_hash.0.try_to_csl()?,
+                                    &tx_in.try_to_csl()?,
                                     &csl_adapter::to_language(lang),
                                 )
                             }
@@ -394,7 +393,7 @@ impl TxBakery {
                             MintWitness::new_plutus_script(&script_source, &csl_redeemer);
                         mint_builder.add_asset(
                             &mint_witness,
-                            &csl_adapter::to_asset_name(&token_name)?,
+                            &token_name.try_to_csl()?,
                             &csl_adapter::to_int(amount.try_into().map_err(
                                 |err: num_bigint::TryFromBigIntError<()>| {
                                     Error::CSLConversionError(
@@ -444,9 +443,9 @@ impl TxBakery {
         let mut tx_inputs_builder = TxInputsBuilder::new();
         let TxInInfo { reference, output } = tx_input;
         tx_inputs_builder.add_input(
-            &csl_adapter::to_address(&output.address, self.network_id)?,
-            &csl_adapter::to_transaction_input(&reference)?,
-            &csl_adapter::to_value(&output.value)?,
+            &output.address.try_to_csl_with(self.network_id)?,
+            &reference.try_to_csl()?,
+            &output.value.try_to_csl()?,
         );
 
         Ok(tx_inputs_builder)
@@ -497,7 +496,7 @@ impl TxBakery {
                      reference,
                      output: _,
                  }| {
-                    tx_builder.add_reference_input(&csl_adapter::to_transaction_input(&reference)?);
+                    tx_builder.add_reference_input(&reference.try_to_csl()?);
                     Ok(())
                 },
             )
@@ -531,7 +530,7 @@ impl TxBakery {
                 tx_builder
                     .set_total_collateral_and_return(
                         &csl::utils::to_bignum(self.collateral_amount),
-                        &csl_adapter::to_address(collateral_return_address, self.network_id)?,
+                        &collateral_return_address.try_to_csl_with(self.network_id)?,
                     )
                     .map_err(|source| Error::TransactionBuildError(anyhow!(source)))?;
             }
@@ -541,7 +540,7 @@ impl TxBakery {
                 tx_builder
                     .set_total_collateral_and_return(
                         &csl::utils::to_bignum(self.collateral_amount),
-                        &csl_adapter::to_address(collateral_return_address, self.network_id)?,
+                        &collateral_return_address.try_to_csl_with(self.network_id)?,
                     )
                     .map_err(|source| Error::TransactionBuildError(anyhow!(source)))?;
             }
@@ -579,7 +578,7 @@ impl TxBakery {
             .signatories
             .iter()
             .map(|PaymentPubKeyHash(pkh)| {
-                tx_builder.add_required_signer(&csl_adapter::to_ed25519pkh(&pkh)?);
+                tx_builder.add_required_signer(&pkh.try_to_csl()?);
                 Ok(())
             })
             .collect::<Result<()>>()?;
@@ -609,7 +608,7 @@ impl TxBakery {
             .datums
             .0
             .iter()
-            .map(|(_dh, Datum(d))| Ok(csl_adapter::to_plutus_data(&d.to_plutus_data())?))
+            .map(|(_dh, Datum(d))| Ok(d.to_plutus_data().try_to_csl()?))
             .collect::<Result<_>>()?;
 
         let redeemers = tx_info
@@ -778,9 +777,7 @@ impl TxBakery {
         tx_builder = self.calc_script_data_hash(tx_builder, wit_datums, wit_redeemers);
 
         let (change_addr, change_datum) = match tx.change_strategy {
-            ChangeStrategy::Address(addr) => {
-                (csl_adapter::to_address(addr, self.network_id)?, None)
-            }
+            ChangeStrategy::Address(addr) => (addr.try_to_csl_with(self.network_id)?, None),
             ChangeStrategy::LastOutput => {
                 let last_output = tx
                     .tx_info
@@ -789,7 +786,7 @@ impl TxBakery {
                     .ok_or(Error::MissingChangeOutput)?;
 
                 (
-                    csl_adapter::to_address(&last_output.address, self.network_id)?,
+                    last_output.address.try_to_csl_with(self.network_id)?,
                     csl_adapter::to_output_datum(&last_output.datum)?,
                 )
             }

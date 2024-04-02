@@ -6,8 +6,12 @@ use plutus_ledger_api::v2::{
 use thiserror::Error;
 
 use crate::{
-    chain_query::ChainQueryError, submitter::SubmitterError,
-    utils::csl_adapter::CSLConversionError, wallet::WalletError,
+    chain_query::ChainQueryError,
+    submitter::SubmitterError,
+    utils::{
+        csl_adapter::CSLConversionError, csl_to_pla::TryFromCSLError, pla_to_csl::TryFromPLAError,
+    },
+    wallet::WalletError,
 };
 
 pub type Result<T> = std::result::Result<T, Error>;
@@ -43,6 +47,12 @@ pub enum Error {
 
     #[error(transparent)]
     CSLConversionError(#[from] CSLConversionError),
+
+    #[error(transparent)]
+    TryFromPLAError(#[from] TryFromPLAError),
+
+    #[error(transparent)]
+    TryFromCSLError(#[from] TryFromCSLError),
 
     #[error(transparent)]
     ConversionError(anyhow::Error),
