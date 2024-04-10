@@ -69560,11 +69560,11 @@
         "pre-commit-hooks": "pre-commit-hooks_22"
       },
       "locked": {
-        "lastModified": 1710945223,
-        "narHash": "sha256-3PPIl5CtCNDMtIcb02w8G5lNMLSrfxFCz+eURSxM6mU=",
+        "lastModified": 1712051028,
+        "narHash": "sha256-EFBJjedaFN6HkLEFd8aLCATL9HieV3Pm7TXAYX3azOE=",
         "owner": "mlabs-haskell",
         "repo": "plutus-ledger-api-rust",
-        "rev": "361d51b0d2b3fd61e6b1e95318db20e110bb72b0",
+        "rev": "7539a5012be7c59dea335e22c83a70434b2d5d99",
         "type": "github"
       },
       "original": {
