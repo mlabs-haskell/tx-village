@@ -1,11 +1,11 @@
 use self::api::*;
 use self::error::{OgmiosError, Result};
-use super::csl_adapter;
 use crate::chain_query::{
     ChainQuery, ChainQueryError, ChainTip, EraSummary, FullTransactionOutput, Network,
     ProtocolParameters,
 };
 use crate::submitter::{Submitter, SubmitterError};
+use crate::utils::pla_to_csl::TryToCSL;
 use anyhow::anyhow;
 use cardano_serialization_lib as csl;
 use chrono::{DateTime, Utc};
@@ -85,13 +85,16 @@ impl ChainQuery for Ogmios {
         address: &Address,
     ) -> std::result::Result<BTreeMap<TransactionInput, FullTransactionOutput>, ChainQueryError>
     {
-        let addr = &csl_adapter::to_address(&address, self.config.network.to_network_id())
-            .map_err(|csl_err| OgmiosError::CSLConversionError(csl_err))?
-            .to_bech32(Some("addr".to_owned()))
-            .map_err(|source| OgmiosError::ConversionError {
+        let addr: csl::address::Address = address
+            .try_to_csl_with(self.config.network.to_network_id())
+            .map_err(|csl_err| OgmiosError::TryFromPLAError(csl_err))?;
+
+        let addr = addr.to_bech32(Some("addr".to_owned())).map_err(|source| {
+            OgmiosError::ConversionError {
                 label: "Address to Bech32".to_string(),
                 source: anyhow!(source),
-            })?;
+            }
+        })?;
         let params = QueryLedgerStateUtxoByAddressParams {
             addresses: vec![addr.to_string()],
         };
@@ -193,8 +196,7 @@ impl Submitter for Ogmios {
             .map(|budgets| {
                 Ok((
                     (
-                        csl_adapter::to_redeemer_tag(&budgets.validator.purpose)
-                            .map_err(OgmiosError::CSLConversionError)?,
+                        to_redeemer_tag(&budgets.validator.purpose)?,
                         csl::utils::to_bignum(budgets.validator.index),
                     ),
                     csl::plutus::ExUnits::new(

@@ -36,9 +36,9 @@ mod csl_pla_roundtrip_tests {
         ))
     }
 
-    fn try_to_try_from_with<B, A: TryToCSL<B> + TryFromCSL<B> + PartialEq + std::fmt::Debug>(
+    fn try_to_try_from_with<'a, B, A: TryToCSL<B> + TryFromCSL<B> + PartialEq + std::fmt::Debug>(
         v: A,
-        info: A::ExtraInfo,
+        info: A::ExtraInfo<'a>,
     ) -> Result<(), TestCaseError> {
         Ok(prop_assert_eq!(
             A::try_from_csl(&<A as TryToCSL<B>>::try_to_csl_with(&v, info)?)?,

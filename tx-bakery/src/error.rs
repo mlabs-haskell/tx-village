@@ -8,9 +8,7 @@ use thiserror::Error;
 use crate::{
     chain_query::ChainQueryError,
     submitter::SubmitterError,
-    utils::{
-        csl_adapter::CSLConversionError, csl_to_pla::TryFromCSLError, pla_to_csl::TryFromPLAError,
-    },
+    utils::{csl_to_pla::TryFromCSLError, pla_to_csl::TryFromPLAError},
     wallet::WalletError,
 };
 
@@ -44,9 +42,6 @@ pub enum Error {
 
     #[error("Protocol parameter {0} is missing")]
     MissingProtocolParameter(String),
-
-    #[error(transparent)]
-    CSLConversionError(#[from] CSLConversionError),
 
     #[error(transparent)]
     TryFromPLAError(#[from] TryFromPLAError),

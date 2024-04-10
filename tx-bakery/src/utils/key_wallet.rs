@@ -1,4 +1,4 @@
-use crate::utils::csl_adapter;
+use super::csl_to_pla::ToPLA;
 use crate::wallet::{Wallet, WalletError};
 use anyhow::anyhow;
 use cardano_serialization_lib::crypto::PrivateKey;
@@ -54,14 +54,14 @@ impl KeyWallet {
         staking_skey: Option<&str>,
     ) -> Result<KeyWallet, KeyWalletError> {
         let pay_priv_key = Self::read_priv_key(payment_skey).await?;
-        let pay_pkh = csl_adapter::from_ed25519pkh(&pay_priv_key.to_public().hash());
+        let pay_pkh: Ed25519PubKeyHash = pay_priv_key.to_public().hash().to_pla();
 
         let stk_priv_key = OptionFuture::from(staking_skey.map(Self::read_priv_key))
             .await
             .transpose()?;
         let stk_pkh = stk_priv_key
             .as_ref()
-            .map(|priv_key| csl_adapter::from_ed25519pkh(&priv_key.to_public().hash()));
+            .map(|priv_key| priv_key.to_public().hash().to_pla());
 
         let address = Address {
             credential: Credential::PubKey(pay_pkh.clone()),

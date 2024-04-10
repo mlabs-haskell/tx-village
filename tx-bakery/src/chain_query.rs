@@ -1,4 +1,4 @@
-use crate::utils::csl_adapter;
+use crate::utils::csl_to_pla::ToPLA;
 use crate::utils::script::Script;
 use cardano_serialization_lib as csl;
 use chrono::{DateTime, Duration, Utc};
@@ -149,8 +149,8 @@ impl From<FullTransactionOutput> for TransactionOutput {
             value: full_tx_out.value,
             datum: full_tx_out.datum,
             reference_script: full_tx_out.reference_script.map(|script| match script {
-                Script::PlutusScript(script, _) => csl_adapter::from_script_hash(&script.hash()),
-                Script::NativeScript(script) => csl_adapter::from_script_hash(&script.hash()),
+                Script::PlutusScript(script, _) => script.hash().to_pla(),
+                Script::NativeScript(script) => script.hash().to_pla(),
             }),
         }
     }

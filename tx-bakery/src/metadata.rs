@@ -1,4 +1,4 @@
-use crate::utils::csl_adapter;
+use crate::{error::Error, utils::pla_to_csl::TryToCSLWithDef};
 use anyhow::anyhow;
 use cardano_serialization_lib as csl;
 use std::collections::BTreeMap;
@@ -7,7 +7,7 @@ use std::collections::BTreeMap;
 pub struct TransactionMetadata(pub BTreeMap<u64, Metadata>);
 
 impl TryFrom<&TransactionMetadata> for csl::metadata::GeneralTransactionMetadata {
-    type Error = csl_adapter::CSLConversionError;
+    type Error = Error;
 
     fn try_from(tx_metadata: &TransactionMetadata) -> Result<Self, Self::Error> {
         let mut csl_tx_metadata = csl::metadata::GeneralTransactionMetadata::new();
@@ -41,7 +41,7 @@ pub enum Metadata {
 }
 
 impl TryFrom<&Metadata> for csl::metadata::TransactionMetadatum {
-    type Error = csl_adapter::CSLConversionError;
+    type Error = Error;
 
     fn try_from(metadata: &Metadata) -> Result<Self, Self::Error> {
         match metadata {
@@ -78,22 +78,24 @@ impl TryFrom<&Metadata> for csl::metadata::TransactionMetadatum {
             }
 
             Metadata::Int(int) => Ok(csl::metadata::TransactionMetadatum::new_int(
-                &csl_adapter::to_int(*int),
+                &int.try_to_csl()?,
             )),
 
             Metadata::Bytes(bytes) => {
                 csl::metadata::TransactionMetadatum::new_bytes(bytes.to_owned()).map_err(|source| {
-                    csl_adapter::CSLConversionError::ToCSLError {
-                        label: "Metadata::Bytes".to_string(),
-                        source: anyhow!(source),
-                    }
+                    Error::ConversionError(anyhow!(
+                        "Metadata::Bytes could not be converted: {}",
+                        source
+                    ))
                 })
             }
 
             Metadata::Text(str) => csl::metadata::TransactionMetadatum::new_text(str.to_owned())
-                .map_err(|source| csl_adapter::CSLConversionError::ToCSLError {
-                    label: "Metadata::Text".to_string(),
-                    source: anyhow!(source),
+                .map_err(|source| {
+                    Error::ConversionError(anyhow!(
+                        "Metadata::Text could not be converted: {}",
+                        source
+                    ))
                 }),
         }
     }

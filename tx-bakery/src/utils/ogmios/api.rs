@@ -1,6 +1,7 @@
-use super::csl_adapter;
 use super::error::OgmiosError;
 use crate::chain_query::{self, FullTransactionOutput};
+use crate::utils::csl_to_pla::TryToPLA;
+use crate::utils::pla_to_csl::TryToCSLWithDef;
 use anyhow::anyhow;
 use cardano_serialization_lib as csl;
 use chrono::Duration;
@@ -352,7 +353,7 @@ impl TryFrom<&Utxo> for FullTransactionOutput {
                 }
             })?;
             pla::v2::datum::OutputDatum::InlineDatum(pla::v2::datum::Datum(
-                csl_adapter::from_plutus_data(&plutus_data)?,
+                plutus_data.try_to_pla()?,
             ))
         } else {
             pla::v2::datum::OutputDatum::None
@@ -401,14 +402,12 @@ impl TryFrom<&Utxo> for FullTransactionOutput {
             .transpose()?;
 
         Ok(FullTransactionOutput {
-            address: csl_adapter::from_address(
-                &csl::address::Address::from_bech32(&utxo.address).map_err(|source| {
-                    OgmiosError::ConversionError {
-                        label: "Address".to_string(),
-                        source: anyhow!(source),
-                    }
-                })?,
-            )?,
+            address: csl::address::Address::from_bech32(&utxo.address)
+                .map_err(|source| OgmiosError::ConversionError {
+                    label: "Address".to_string(),
+                    source: anyhow!(source),
+                })?
+                .try_to_pla()?,
             value,
             datum,
             reference_script,
@@ -702,7 +701,7 @@ fn to_costmdls(cost_models: CostModels) -> csl::plutus::Costmdls {
     cost_models.iter().for_each(|(lang, costs)| {
         let mut cost_model = csl::plutus::CostModel::new();
         costs.iter().enumerate().for_each(|(index, model)| {
-            let _ = cost_model.set(index, &csl_adapter::to_int(*model));
+            let _ = cost_model.set(index, &model.try_to_csl().unwrap());
         });
         let language = match &lang[..] {
             "plutus:v1" => csl::plutus::Language::new_plutus_v1(),
@@ -712,4 +711,17 @@ fn to_costmdls(cost_models: CostModels) -> csl::plutus::Costmdls {
         costmdls.insert(&language, &cost_model);
     });
     costmdls
+}
+
+pub fn to_redeemer_tag(str: &str) -> Result<csl::plutus::RedeemerTag> {
+    match str {
+        "spend" => Ok(csl::plutus::RedeemerTag::new_spend()),
+        "certificate" => Ok(csl::plutus::RedeemerTag::new_cert()),
+        "mint" => Ok(csl::plutus::RedeemerTag::new_mint()),
+        "withdrawal" => Ok(csl::plutus::RedeemerTag::new_reward()),
+        _ => Err(OgmiosError::ConversionError {
+            label: "RedeemerTag".to_string(),
+            source: anyhow!("Invalid RedeemerTag"),
+        }),
+    }
 }

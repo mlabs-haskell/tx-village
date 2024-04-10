@@ -1,7 +1,6 @@
 use crate::error::{Error, Result};
 use crate::metadata::TransactionMetadata;
 use crate::time::time_range_into_slots;
-use crate::utils::csl_adapter;
 use crate::wallet::Wallet;
 use anyhow::anyhow;
 use cardano_serialization_lib as csl;
@@ -31,7 +30,7 @@ use plutus_ledger_api::v2::transaction::{
 use plutus_ledger_api::v2::value::{CurrencySymbol, Value};
 use std::collections::BTreeMap;
 use submitter::Submitter;
-use utils::pla_to_csl::{TryToCSL, TryToCSLWithDef};
+use utils::pla_to_csl::{TransactionOutputExtraInfo, TryToCSL, TryToCSLWithDef};
 use utils::script::ScriptOrRef;
 
 pub mod chain_query;
@@ -228,11 +227,10 @@ impl TxBakery {
                             .get(&validator_hash)
                             .ok_or(Error::MissingValidatorScript(validator_hash.clone()))?;
 
-                        let csl_redeemer = csl_adapter::to_redeemer(
-                            &redeemer,
+                        let csl_redeemer = redeemer.try_to_csl_with((
                             &csl::plutus::RedeemerTag::new_spend(),
                             idx as u64,
-                        )?;
+                        ))?;
 
                         let csl_redeemer = match ex_units_map {
                             Some(ex_units_map) => {
@@ -249,7 +247,7 @@ impl TxBakery {
                                 PlutusScriptSource::new_ref_input_with_lang_ver(
                                     &validator_hash.0.try_to_csl()?,
                                     &tx_in.try_to_csl()?,
-                                    &csl_adapter::to_language(lang),
+                                    &lang.into(),
                                 )
                             }
                         };
@@ -322,13 +320,12 @@ impl TxBakery {
         Ok(normal_outputs
             .iter()
             .map(|output| {
-                csl_adapter::to_transaction_output(
-                    output,
+                output.try_to_csl_with(TransactionOutputExtraInfo {
                     minting_policies,
                     validators,
-                    self.network_id,
-                    &self.data_cost,
-                )
+                    network_id: self.network_id,
+                    data_cost: &self.data_cost,
+                })
             })
             .collect::<std::result::Result<_, _>>()?)
     }
@@ -363,11 +360,8 @@ impl TxBakery {
                             .get(&minting_policy_hash)
                             .ok_or(Error::MissingMintRedeemer(minting_policy_hash.clone()))?;
 
-                        let csl_redeemer = csl_adapter::to_redeemer(
-                            &redeemer,
-                            &csl::plutus::RedeemerTag::new_mint(),
-                            idx as u64,
-                        )?;
+                        let csl_redeemer = redeemer
+                            .try_to_csl_with((&csl::plutus::RedeemerTag::new_mint(), idx as u64))?;
 
                         let csl_redeemer = match ex_units_map {
                             Some(ex_units_map) => {
@@ -384,7 +378,7 @@ impl TxBakery {
                                 PlutusScriptSource::new_ref_input_with_lang_ver(
                                     &minting_policy_hash.0.try_to_csl()?,
                                     &tx_in.try_to_csl()?,
-                                    &csl_adapter::to_language(lang),
+                                    &lang.into(),
                                 )
                             }
                         };
@@ -394,16 +388,7 @@ impl TxBakery {
                         mint_builder.add_asset(
                             &mint_witness,
                             &token_name.try_to_csl()?,
-                            &csl_adapter::to_int(amount.try_into().map_err(
-                                |err: num_bigint::TryFromBigIntError<()>| {
-                                    Error::CSLConversionError(
-                                        csl_adapter::CSLConversionError::ToCSLError {
-                                            label: "mint amount".to_string(),
-                                            source: anyhow!(err),
-                                        },
-                                    )
-                                },
-                            )?),
+                            &amount.try_to_csl()?,
                         );
                         Ok(())
                     })
@@ -622,11 +607,10 @@ impl TxBakery {
                     .enumerate()
                     .find(|(_idx, tx_input)| &tx_input.reference == reference)
                     .map(|(idx, _)| {
-                        Ok(csl_adapter::to_redeemer(
-                            red,
+                        Ok(red.try_to_csl_with((
                             &csl::plutus::RedeemerTag::new_spend(),
                             idx as u64,
-                        )?)
+                        ))?)
                     }),
                 ScriptPurpose::Minting(reference) => tx_info
                     .mint
@@ -639,11 +623,8 @@ impl TxBakery {
                     .enumerate()
                     .find(|(_idx, (currency_symbol, _assets))| currency_symbol == &reference)
                     .map(|(idx, _)| {
-                        Ok(csl_adapter::to_redeemer(
-                            red,
-                            &csl::plutus::RedeemerTag::new_mint(),
-                            idx as u64,
-                        )?)
+                        Ok(red
+                            .try_to_csl_with((&csl::plutus::RedeemerTag::new_mint(), idx as u64))?)
                     }),
                 _ => Some(Err(Error::Unsupported(
                     "Only spending and minting redeemers are supported".to_string(),
@@ -787,7 +768,7 @@ impl TxBakery {
 
                 (
                     last_output.address.try_to_csl_with(self.network_id)?,
-                    csl_adapter::to_output_datum(&last_output.datum)?,
+                    last_output.datum.try_to_csl()?,
                 )
             }
         };

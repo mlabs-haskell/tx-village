@@ -35,6 +35,7 @@ thiserror = "1.0.57"
 chrono = "0.4.35"
 futures = "0.3.30"
 nix = { version = "0.28.0", features = [ "signal" ] }
+num-traits = "0.2.18"
 
 [dev-dependencies]
 proptest = "1.4.0"

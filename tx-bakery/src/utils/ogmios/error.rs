@@ -1,5 +1,7 @@
 use crate::{
-    chain_query::ChainQueryError, submitter::SubmitterError, utils::csl_adapter::CSLConversionError,
+    chain_query::ChainQueryError,
+    submitter::SubmitterError,
+    utils::{csl_to_pla::TryFromCSLError, pla_to_csl::TryFromPLAError},
 };
 use anyhow::anyhow;
 use serde::{Deserialize, Serialize};
@@ -11,7 +13,10 @@ pub type Result<T> = std::result::Result<T, OgmiosError>;
 #[derive(Error, Debug)]
 pub enum OgmiosError {
     #[error(transparent)]
-    CSLConversionError(#[from] CSLConversionError),
+    TryFromPLAError(#[from] TryFromPLAError),
+
+    #[error(transparent)]
+    TryFromCSLError(#[from] TryFromCSLError),
 
     #[error("Couldn't convert a {label} from Ogmios response: {source}")]
     ConversionError {
