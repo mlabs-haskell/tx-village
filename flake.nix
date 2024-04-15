@@ -45,6 +45,7 @@
         # Libraries
         ./tx-bakery/build.nix
         ./extras/tx-bakery-testsuite/api/build.nix
+        ./tx-indexer/build.nix
 
         # Extras
         ./extras/tx-bakery-testsuite/validation/build.nix
