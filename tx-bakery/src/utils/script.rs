@@ -1,5 +1,5 @@
+use super::csl_to_pla::ToPLA;
 use crate::error::{Error, Result};
-use crate::utils::csl_adapter;
 use anyhow::anyhow;
 use cardano_serialization_lib as csl;
 use plutus_ledger_api::v2::{
@@ -17,6 +17,15 @@ pub enum Script {
 pub enum PlutusVersion {
     V1,
     V2,
+}
+
+impl From<&PlutusVersion> for csl::plutus::Language {
+    fn from(lang: &PlutusVersion) -> Self {
+        match lang {
+            crate::utils::script::PlutusVersion::V1 => csl::plutus::Language::new_plutus_v1(),
+            crate::utils::script::PlutusVersion::V2 => csl::plutus::Language::new_plutus_v2(),
+        }
+    }
 }
 
 #[derive(Clone, Debug)]
@@ -64,8 +73,8 @@ impl ScriptOrRef {
 
     pub fn get_script_hash(self) -> ScriptHash {
         match self {
-            ScriptOrRef::RefScript(_, script, _) => csl_adapter::from_script_hash(&script.hash()),
-            ScriptOrRef::PlutusScript(script, _) => csl_adapter::from_script_hash(&script.hash()),
+            ScriptOrRef::RefScript(_, script, _) => script.hash().to_pla(),
+            ScriptOrRef::PlutusScript(script, _) => script.hash().to_pla(),
         }
     }
 
@@ -79,7 +88,7 @@ impl ScriptOrRef {
     pub fn as_validator(self) -> (ValidatorHash, ScriptOrRef) {
         let script = self.clone().get_script();
 
-        let validator_hash = ValidatorHash(csl_adapter::from_script_hash(&script.hash()));
+        let validator_hash = ValidatorHash(script.hash().to_pla());
 
         (validator_hash, self)
     }
@@ -87,7 +96,7 @@ impl ScriptOrRef {
     pub fn as_minting_policy(self) -> (MintingPolicyHash, ScriptOrRef) {
         let script = self.clone().get_script();
 
-        let minting_policy_hash = MintingPolicyHash(csl_adapter::from_script_hash(&script.hash()));
+        let minting_policy_hash = MintingPolicyHash(script.hash().to_pla());
 
         (minting_policy_hash, self)
     }
