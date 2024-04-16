@@ -30,7 +30,7 @@
 
     # Plutus Ledger API types and utilities for Rust
     plutus-ledger-api-rust = {
-      url = "github:mlabs-haskell/plutus-ledger-api-rust?ref=szg251/utils";
+      url = "github:mlabs-haskell/plutus-ledger-api-rust";
       inputs.nixpkgs.follows = "nixpkgs";
     };
   };
