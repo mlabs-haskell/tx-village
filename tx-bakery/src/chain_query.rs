@@ -75,7 +75,7 @@ pub struct EraTime {
 #[derive(Debug, Clone)]
 pub struct EraParameters {
     pub epoch_length: u64,
-    pub slot_length: f64,
+    pub slot_length: u64,
     pub safe_zone: Option<u64>,
 }
 

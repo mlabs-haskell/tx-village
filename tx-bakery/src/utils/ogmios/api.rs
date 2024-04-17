@@ -194,7 +194,7 @@ pub(crate) struct Seconds {
 
 #[derive(Clone, Debug, Serialize, Deserialize)]
 pub(crate) struct MilliSeconds {
-    pub milliseconds: f64,
+    pub milliseconds: u64,
 }
 
 #[derive(Clone, Debug, Serialize, Deserialize)]
