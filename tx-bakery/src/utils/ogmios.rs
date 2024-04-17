@@ -255,6 +255,7 @@ impl Submitter for Ogmios {
 }
 
 impl Ogmios {
+    /// Start the Ogmios process and attempt to connect to cardano-node
     pub async fn start(config: &OgmiosConfig) -> Result<Self> {
         let args = [
             "--strict-rpc",

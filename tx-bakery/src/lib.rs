@@ -185,10 +185,12 @@ impl TxBakery {
         })
     }
 
+    /// Create a new CSL transaction builder
     fn create_tx_builder(&self) -> TransactionBuilder {
         TransactionBuilder::new(&self.config)
     }
 
+    /// Convert PLA TransactionInfo inputs, redeemers and datums to a CSL transaction input builder
     fn mk_inputs(
         &self,
         inputs: &Vec<TxInInfo>,
@@ -330,6 +332,7 @@ impl TxBakery {
             .collect::<std::result::Result<_, _>>()?)
     }
 
+    /// Convert PLA mints to CSL and pair them with their corresponding redeemers
     fn mk_mints(
         tx_mint: &Value,
         mint_redeemers: &BTreeMap<MintingPolicyHash, Redeemer>,
@@ -436,6 +439,9 @@ impl TxBakery {
         Ok(tx_inputs_builder)
     }
 
+    /// Convert a PLA TransactionInfo into a CSL transaction builder.
+    /// The result is not yet balanced and witnesses are not added. This is useful for
+    /// some further manual processing of the transaction before finalising.
     pub fn mk_tx_builder(&self, tx: &TxWithCtx<'_>) -> Result<csl::tx_builder::TransactionBuilder> {
         let mut tx_builder = self.create_tx_builder();
 

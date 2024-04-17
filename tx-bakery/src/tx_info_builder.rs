@@ -12,6 +12,7 @@ use plutus_ledger_api::v2::transaction::{
 use plutus_ledger_api::v2::value::{AssetClass, Value};
 use std::collections::{BTreeMap, BTreeSet};
 
+/// Simple TransactionInfo builder
 pub struct TxScaffold {
     inputs: BTreeMap<TransactionInput, TxScaffoldInput>,
     reference_inputs: BTreeMap<TransactionInput, TransactionOutput>,
@@ -23,10 +24,11 @@ pub struct TxScaffold {
     signatories: BTreeSet<PaymentPubKeyHash>,
 }
 
+/// Input to a transaction
 pub enum TxScaffoldInput {
-    PubKeyInput {
-        output: TransactionOutput,
-    },
+    /// Input from a public key wallet
+    PubKeyInput { output: TransactionOutput },
+    /// Input from a validator address with the attached datum and redeemer
     ScriptInput {
         output: TransactionOutput,
         datum: Option<DatumFromWitness>,
@@ -34,6 +36,7 @@ pub enum TxScaffoldInput {
     },
 }
 
+/// Datum and its hash
 pub type DatumFromWitness = (DatumHash, Datum);
 
 impl TxScaffoldInput {
@@ -46,6 +49,7 @@ impl TxScaffoldInput {
 }
 
 impl TxScaffold {
+    /// Start an empty scaffold
     pub fn new() -> Self {
         TxScaffold {
             inputs: BTreeMap::new(),
@@ -58,11 +62,14 @@ impl TxScaffold {
             signatories: BTreeSet::new(),
         }
     }
+
+    /// Add a transaction input
     pub fn add_input(mut self, reference: TransactionInput, input: TxScaffoldInput) -> Self {
         self.inputs.insert(reference, input);
         self
     }
 
+    /// Add an inpup from a public key wallet
     pub fn add_pub_key_input(
         mut self,
         reference: TransactionInput,
@@ -73,6 +80,7 @@ impl TxScaffold {
         self
     }
 
+    /// Add a input from a validator address
     pub fn add_script_input(
         mut self,
         reference: TransactionInput,
@@ -91,11 +99,13 @@ impl TxScaffold {
         self
     }
 
+    /// Add multiple transaction inputs
     pub fn add_inputs(mut self, mut inputs: BTreeMap<TransactionInput, TxScaffoldInput>) -> Self {
         self.inputs.append(&mut inputs);
         self
     }
 
+    /// Add a reference input
     pub fn add_reference_input(
         mut self,
         reference: TransactionInput,
@@ -105,6 +115,7 @@ impl TxScaffold {
         self
     }
 
+    /// Add multiple reference inputs
     pub fn add_reference_inputs(
         mut self,
         mut inputs: BTreeMap<TransactionInput, TransactionOutput>,
@@ -113,56 +124,67 @@ impl TxScaffold {
         self
     }
 
+    /// Add a transaction output
     pub fn add_output(mut self, output: TransactionOutput) -> Self {
         self.outputs.push(output);
         self
     }
 
+    /// Add multiple transaction outputs
     pub fn add_outputs(mut self, mut outputs: Vec<TransactionOutput>) -> Self {
         self.outputs.append(&mut outputs);
         self
     }
 
+    /// Add new minted tokens with their corresponding redeemer
     pub fn add_mint(mut self, asset_class: AssetClass, amount: i64, redeemer: Redeemer) -> Self {
         self.mint.push((asset_class, amount, redeemer));
         self
     }
 
+    /// Add a DCert
     pub fn add_dcert(mut self, dcert: DCert) -> Self {
         self.dcert.push(dcert);
         self
     }
 
+    /// Add multiple DCerts
     pub fn add_dcerts(mut self, mut dcerts: Vec<DCert>) -> Self {
         self.dcert.append(&mut dcerts);
         self
     }
 
+    /// Add a withdrawal
     pub fn add_withdrawals(mut self, mut withdrawals: BTreeMap<StakingCredential, u64>) -> Self {
         self.withdrawals.append(&mut withdrawals);
         self
     }
 
+    /// Add multiple withdrawals
     pub fn add_withdrawal(mut self, staking_credential: StakingCredential, amount: u64) -> Self {
         self.withdrawals.insert(staking_credential, amount);
         self
     }
 
+    /// Set the validity range of the transaction
     pub fn set_valid_range(mut self, valid_range: POSIXTimeRange) -> Self {
         self.valid_range = valid_range;
         self
     }
 
+    /// Add a required signer of the transaction
     pub fn add_signatory(mut self, signatory: PaymentPubKeyHash) -> Self {
         self.signatories.insert(signatory);
         self
     }
 
+    /// Add multiple required signers of the transaction
     pub fn add_signatories(mut self, mut signatories: BTreeSet<PaymentPubKeyHash>) -> Self {
         self.signatories.append(&mut signatories);
         self
     }
 
+    /// Build a TransactionInfo
     pub fn build(self) -> TransactionInfo {
         TransactionInfo {
             inputs: self
