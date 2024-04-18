@@ -795,13 +795,16 @@ mod tests {
         burn_with_secret, claim_eq_datum, lock_eq_datum, mint_with_ref_input, mint_with_secret,
         store_ref_script, use_ref_script, with_last_output_change, with_metadata, zero_ada_mint,
     };
+    use assertables::*;
     use chrono::Local;
     use lbf_tx_bakery_tests_config_api::demo::config::Config;
     use lbf_tx_bakery_tests_plutus_api::demo::plutus::{EqDatum, EqRedeemer, Product, Record, Sum};
     use lbr_prelude::json::Json;
+    use num_bigint::BigInt;
     use plutus_ledger_api::v2::address::{Address, Credential};
     use plutus_ledger_api::v2::crypto::LedgerBytes;
     use plutus_ledger_api::v2::datum::OutputDatum;
+    use plutus_ledger_api::v2::transaction::POSIXTime;
     use plutus_ledger_api::v2::value::{AssetClass, CurrencySymbol, TokenName};
     use serial_test::serial;
     use std::fs;
@@ -826,18 +829,27 @@ mod tests {
     #[serial]
     async fn time_test() -> Result<()> {
         let (_plutip, ogmios) = setup_plutip_test().await;
-        let posix_time_now = Local::now().into();
+        let posix_time_now: POSIXTime = Local::now().into();
 
         let system_start = ogmios.query_system_start().await?;
         let era_summaries = ogmios.query_era_summaries().await?;
-        let slot =
-            tx_bakery::time::posix_time_into_slot(&era_summaries, &system_start, posix_time_now)?;
+        let slot = tx_bakery::time::posix_time_into_slot(
+            &era_summaries,
+            &system_start,
+            posix_time_now.clone(),
+        )?;
 
         TxBakery::init(&ogmios).await?;
 
         let tip = ogmios.query_tip().await?;
-        let diff = slot.abs_diff(tip.slot());
-        assert!(diff < 10);
+        let tip_diff = slot.abs_diff(tip.slot());
+        assert_in_delta!(tip.slot(), slot, 10);
+        assert!(tip_diff < 10);
+
+        let roundtrip_time =
+            tx_bakery::time::slot_into_posix_time(&era_summaries, &system_start, slot)?;
+        assert_in_delta!(posix_time_now.0, roundtrip_time.0, BigInt::from(1000));
+
         Ok(())
     }
 
