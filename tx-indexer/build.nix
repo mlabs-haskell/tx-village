@@ -17,7 +17,6 @@
             config.packages.tx-bakery-rust-src
           ];
           devShellHook = config.settings.shell.hook;
-          devShellTools = with inputs'; [ plutip.packages."plutip-core:exe:local-cluster" ];
           testTools = with inputs'; [ plutip.packages."plutip-core:exe:local-cluster" ];
         };
     in
