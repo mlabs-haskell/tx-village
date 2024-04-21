@@ -6,7 +6,6 @@ use anyhow::Result;
 use clap::Parser;
 use oura::model::Event;
 use tracing::Level;
-use tx_bakery::utils::plutip::{Plutip, PlutipConfigBuilder};
 use tx_indexer::indexer::{
     config::IndexerConfig,
     error::{ErrorPolicy, ErrorPolicyProvider},
@@ -34,16 +33,11 @@ enum IndexCommand {
     Start(IndexStartArgs),
 }
 
-#[derive(Debug, Parser)]
-struct DummyCommand {}
-
 #[derive(clap::Subcommand, Debug)]
 enum Command {
     /// Run the Index command
     #[command(subcommand)]
-    Index(IndexCommand),
-    // Run indexer with Plutip local cluster
-    Dummy(DummyCommand),
+    Index(IndexCommand)
 }
 /// Infinity Query command line interface
 #[derive(Parser, Debug)]
@@ -92,29 +86,6 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
                 dummy_callback,
                 Default::default(),
             )),
-        },
-        Command::Dummy(_) => {
-            let plutip_conf = PlutipConfigBuilder::default()
-                .wallets(2)
-                ._lovelace(1_000_000)
-                .slot_length(0.1)
-                .build()?;
-            let plutip = Plutip::start(&plutip_conf)
-                .await
-                .expect("Plutip cannot be spawned");
-
-            run_indexer(IndexerConfig::new(
-                NodeAddress::UnixSocket(plutip.get_node_socket()),
-                NetworkMagic::MAINNET,
-                None,
-                4,
-                None,
-                dummy_callback,
-                Default::default(),
-            ))
-            .expect("Failed to spawn indexer");
-
-            Ok(())
         }
     }
 }
