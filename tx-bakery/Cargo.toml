@@ -37,6 +37,7 @@ futures = "0.3.30"
 nix = { version = "0.28.0", features = [ "signal" ] }
 num-traits = "0.2.18"
 assertables = "7.0.1"
+hex = "0.4.3"
 
 [dev-dependencies]
 proptest = "1.4.0"
