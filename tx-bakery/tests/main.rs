@@ -857,12 +857,9 @@ mod tests {
     #[serial]
     async fn test_is_eq_validator() -> Result<()> {
         let config = read_config("data/tx-bakery-test-scripts-config.json");
-        let eq_validator = ScriptOrRef::from_bytes(
-            config.eq_validator.0,
-            tx_bakery::utils::script::PlutusVersion::V2,
-        )
-        .unwrap()
-        .as_validator();
+        let eq_validator = ScriptOrRef::from_bytes(config.eq_validator.0)
+            .unwrap()
+            .as_validator();
         let (example_eq_datum_a, _) = setup_test_data();
 
         let (plutip, ogmios) = setup_plutip_test().await;
@@ -897,12 +894,9 @@ mod tests {
     #[serial]
     async fn test_mint() -> Result<()> {
         let config = read_config("data/tx-bakery-test-scripts-config.json");
-        let minting_policy = ScriptOrRef::from_bytes(
-            config.minting_policy.0,
-            tx_bakery::utils::script::PlutusVersion::V2,
-        )
-        .unwrap()
-        .as_minting_policy();
+        let minting_policy = ScriptOrRef::from_bytes(config.minting_policy.0)
+            .unwrap()
+            .as_minting_policy();
 
         let (plutip, ogmios) = setup_plutip_test().await;
         let wallet = plutip.get_own_wallet().await.unwrap();
@@ -924,18 +918,12 @@ mod tests {
     #[serial]
     async fn test_ref_input() -> Result<()> {
         let config = read_config("data/tx-bakery-test-scripts-config.json");
-        let eq_validator = ScriptOrRef::from_bytes(
-            config.eq_validator.0,
-            tx_bakery::utils::script::PlutusVersion::V2,
-        )
-        .unwrap()
-        .as_validator();
-        let ref_input_minting_policy = ScriptOrRef::from_bytes(
-            config.ref_input_minting_policy.0,
-            tx_bakery::utils::script::PlutusVersion::V2,
-        )
-        .unwrap()
-        .as_minting_policy();
+        let eq_validator = ScriptOrRef::from_bytes(config.eq_validator.0)
+            .unwrap()
+            .as_validator();
+        let ref_input_minting_policy = ScriptOrRef::from_bytes(config.ref_input_minting_policy.0)
+            .unwrap()
+            .as_minting_policy();
         let (example_eq_datum_a, _) = setup_test_data();
 
         let (plutip, ogmios) = setup_plutip_test().await;
@@ -970,12 +958,9 @@ mod tests {
     #[serial]
     async fn test_zero_ada_mint() -> Result<()> {
         let config = read_config("data/tx-bakery-test-scripts-config.json");
-        let minting_policy = ScriptOrRef::from_bytes(
-            config.minting_policy.0,
-            tx_bakery::utils::script::PlutusVersion::V2,
-        )
-        .unwrap()
-        .as_minting_policy();
+        let minting_policy = ScriptOrRef::from_bytes(config.minting_policy.0)
+            .unwrap()
+            .as_minting_policy();
 
         let (plutip, ogmios) = setup_plutip_test().await;
         let wallet = plutip.get_own_wallet().await.unwrap();
@@ -991,12 +976,9 @@ mod tests {
     #[serial]
     async fn test_ref_script() -> Result<()> {
         let config = read_config("data/tx-bakery-test-scripts-config.json");
-        let minting_policy = ScriptOrRef::from_bytes(
-            config.minting_policy.0,
-            tx_bakery::utils::script::PlutusVersion::V2,
-        )
-        .unwrap()
-        .as_minting_policy();
+        let minting_policy = ScriptOrRef::from_bytes(config.minting_policy.0)
+            .unwrap()
+            .as_minting_policy();
 
         let (plutip, ogmios) = setup_plutip_test().await;
         let wallet = plutip.get_own_wallet().await.unwrap();
@@ -1083,12 +1065,9 @@ mod tests {
 
     fn setup_test_data() -> (EqDatum, EqDatum) {
         let config = read_config("data/tx-bakery-test-scripts-config.json");
-        let plutarch_script = ScriptOrRef::from_bytes(
-            config.eq_validator.0,
-            tx_bakery::utils::script::PlutusVersion::V2,
-        )
-        .unwrap()
-        .as_validator();
+        let plutarch_script = ScriptOrRef::from_bytes(config.eq_validator.0)
+            .unwrap()
+            .as_validator();
 
         let example_token_name = TokenName(LedgerBytes(b"example token name".to_vec()));
         let example_currency_symbol = CurrencySymbol::Ada;
