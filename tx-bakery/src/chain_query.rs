@@ -149,7 +149,7 @@ impl From<FullTransactionOutput> for TransactionOutput {
             value: full_tx_out.value,
             datum: full_tx_out.datum,
             reference_script: full_tx_out.reference_script.map(|script| match script {
-                Script::PlutusScript(script, _) => script.hash().to_pla(),
+                Script::PlutusScript(script) => script.hash().to_pla(),
                 Script::NativeScript(script) => script.hash().to_pla(),
             }),
         }

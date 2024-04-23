@@ -375,27 +375,27 @@ impl TryFrom<&Utxo> for FullTransactionOutput {
                         Ok(crate::utils::script::Script::NativeScript(script))
                     }
                     Script::Plutus { cbor, language } => {
-                        let script =
-                            csl::plutus::PlutusScript::from_hex(&cbor).map_err(|source| {
-                                OgmiosError::ConversionError {
-                                    label: "PlutusScript".to_string(),
-                                    source: anyhow!(source),
-                                }
-                            })?;
-
                         let plutus_version = match &language[..] {
-                            "plutus:v1" => crate::utils::script::PlutusVersion::V1,
-                            "plutus:v2" => crate::utils::script::PlutusVersion::V2,
+                            "plutus:v1" => csl::plutus::Language::new_plutus_v1(),
+                            "plutus:v2" => csl::plutus::Language::new_plutus_v2(),
                             _ => Err(OgmiosError::ConversionError {
                                 label: "Plutus language".to_string(),
                                 source: anyhow!("Couldn't parse Plutus language version."),
                             })?,
                         };
 
-                        Ok(crate::utils::script::Script::PlutusScript(
-                            script,
-                            plutus_version,
-                        ))
+                        let script = csl::plutus::PlutusScript::from_hex_with_version(
+                            &cbor,
+                            &plutus_version,
+                        )
+                        .map_err(|source| {
+                            OgmiosError::ConversionError {
+                                label: "PlutusScript".to_string(),
+                                source: anyhow!(source),
+                            }
+                        })?;
+
+                        Ok(crate::utils::script::Script::PlutusScript(script))
                     }
                 }
             })

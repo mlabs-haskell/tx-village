@@ -269,10 +269,10 @@ impl TryFromPLA<TransactionOutput> for csl::TransactionOutput {
                     })
                     .ok_or(TryFromPLAError::MissingScript(script_hash))?;
                 Ok(match script_or_ref {
-                    crate::utils::script::ScriptOrRef::RefScript(_, script, _) => {
+                    crate::utils::script::ScriptOrRef::RefScript(_, script) => {
                         csl::ScriptRef::new_plutus_script(&script)
                     }
-                    crate::utils::script::ScriptOrRef::PlutusScript(script, _) => {
+                    crate::utils::script::ScriptOrRef::PlutusScript(script) => {
                         csl::ScriptRef::new_plutus_script(&script)
                     }
                 })
