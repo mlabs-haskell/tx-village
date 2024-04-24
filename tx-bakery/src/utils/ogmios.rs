@@ -19,6 +19,7 @@ use plutus_ledger_api::v2::address::Address;
 use plutus_ledger_api::v2::transaction::{TransactionHash, TransactionInput};
 use serde::{Deserialize, Serialize};
 use std::collections::BTreeMap;
+use std::path::PathBuf;
 use std::process::Stdio;
 use std::time;
 use tokio::process::{Child, Command};
@@ -256,24 +257,20 @@ impl Submitter for Ogmios {
 
 impl Ogmios {
     pub async fn start(config: &OgmiosConfig) -> Result<Self> {
-        let args = [
-            "--strict-rpc",
-            "--node-socket",
-            &config.node_socket,
-            "--node-config",
-            &config.node_config,
-            "--host",
-            &config.host.to_string(),
-            "--port",
-            &config.port.to_string(),
-            "--timeout",
-            &config.timeout.to_string(),
-            "--max-in-flight",
-            &config.max_in_flight.to_string(),
-        ];
-
         let handler = Command::new("ogmios")
-            .args(args)
+            .arg("--strict-rpc")
+            .arg("--node-socket")
+            .arg(&config.node_socket)
+            .arg("--node-config")
+            .arg(&config.node_config)
+            .arg("--host")
+            .arg(&config.host)
+            .arg("--port")
+            .arg(config.port.to_string())
+            .arg("--timeout")
+            .arg(config.timeout.to_string())
+            .arg("--max-in-flight")
+            .arg(config.max_in_flight.to_string())
             .stdout(if config.verbose {
                 Stdio::inherit()
             } else {
@@ -381,10 +378,10 @@ impl Ogmios {
 
 #[derive(Debug, Builder, Clone, Deserialize)]
 pub struct OgmiosConfig {
-    #[builder(default = r#""".to_string()"#)]
-    pub node_socket: String,
-    #[builder(default = r#"".node.config".to_string()"#)]
-    pub node_config: String,
+    #[builder(default = r#""".try_into().unwrap()"#)]
+    pub node_socket: PathBuf,
+    #[builder(default = r#"".node.config".try_into().unwrap()"#)]
+    pub node_config: PathBuf,
     #[builder(default = r#""127.0.0.1".to_string()"#)]
     pub host: String,
     #[builder(default = "1337")]
