@@ -1,6 +1,7 @@
 use std::{future::Future, sync::Arc};
 
 use oura::model::Event;
+use sqlx::{pool::PoolConnection, Postgres};
 
 use super::{
     filter::Filter,
@@ -19,11 +20,13 @@ pub struct IndexerConfig<T: IsNetworkMagic, E> {
     pub safe_block_depth: usize,
     pub event_filter: Option<Filter>,
     /// Callback function to pass events to
-    pub callback_fn: Arc<AsyncFunction<Event, AsyncResult<E>>>,
+    pub callback_fn: Arc<AsyncFunction<(Event, PoolConnection<Postgres>), AsyncResult<E>>>,
     /// Retry policy - how much to retry for each event callback failure
     /// This only takes effect on ErrorPolicy for a particular error is `Retry`.
     /// Once retries are exhausted, the handler will error (same treatment as ErrorPolicy::Exit)
     pub retry_policy: RetryPolicy,
+    /// Postgres database URL
+    pub database_url: String,
 }
 
 impl<T: IsNetworkMagic, E> IndexerConfig<T, E> {
@@ -33,8 +36,9 @@ impl<T: IsNetworkMagic, E> IndexerConfig<T, E> {
         since_slot: Option<(u64, String)>,
         safe_block_depth: usize,
         event_filter: Option<Filter>,
-        callback_fn: impl Fn(Event) -> R + Send + Sync + 'static,
+        callback_fn: impl Fn(Event, PoolConnection<Postgres>) -> R + Send + Sync + 'static,
         retry_policy: RetryPolicy,
+        database_url: String,
     ) -> Self {
         Self {
             node_address,
@@ -42,8 +46,11 @@ impl<T: IsNetworkMagic, E> IndexerConfig<T, E> {
             since_slot,
             safe_block_depth,
             event_filter,
-            callback_fn: Arc::new(move |ev: Event| Box::pin(callback_fn(ev))),
+            callback_fn: Arc::new(move |(ev, conn): (Event, PoolConnection<Postgres>)| {
+                Box::pin(callback_fn(ev, conn))
+            }),
             retry_policy,
+            database_url,
         }
     }
 }

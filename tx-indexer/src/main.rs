@@ -5,6 +5,7 @@ use std::{default::Default, fmt::Debug};
 use anyhow::Result;
 use clap::Parser;
 use oura::model::Event;
+use sqlx::{pool::PoolConnection, Postgres};
 use tracing::Level;
 use tx_indexer::indexer::{
     config::IndexerConfig,
@@ -16,7 +17,11 @@ use tx_indexer::indexer::{
 
 #[derive(Debug, Parser)]
 struct IndexStartArgs {
+    /// Cardano node socket path
+    #[arg(long)]
     socket_path: String,
+
+    /// Network name (preprod | preview | mainnet)
     #[arg(
         short('n'),
         long,
@@ -31,15 +36,27 @@ struct IndexStartArgs {
         requires = "chain_info_path",
         conflicts_with = "network_magic"
     )]
+
+    /// Network identified by magic number and chain info file
     network_magic_raw: Option<u64>,
     #[arg(long("chain_info_path"))]
     chain_info_path: Option<String>,
+
+    /// Sync from this this slot
     #[arg(short, long)]
     since_slot: Option<u64>,
+
+    /// Sync from this block hash
     #[arg(short('a'), long)]
     since_slot_hash: Option<String>,
+
+    /// Filter for transactions minting this currency symbol (multiple allowed)
     #[arg(short('c'), long)]
-    curr_symbols: Vec<String>,
+    curr_symbol: Vec<String>,
+
+    /// PostgreSQL database URL
+    #[arg(long)]
+    database_url: String,
 }
 
 #[derive(clap::Subcommand, Debug)]
@@ -90,6 +107,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
                 since_slot,
                 since_slot_hash,
                 curr_symbols,
+                database_url
             }) => {
                 let indexer = match (network_magic, network_magic_raw) {
                     (_, Some(x)) => run_indexer(IndexerConfig::new(
@@ -151,6 +169,6 @@ impl ErrorPolicyProvider for Error {
 }
 
 // TODO(chase): Enhance dummy callback
-async fn dummy_callback(_ev: Event) -> Result<(), Error> {
+async fn dummy_callback(_ev: Event, _: PoolConnection<Postgres>) -> Result<(), Error> {
     Ok(())
 }

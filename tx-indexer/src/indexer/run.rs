@@ -7,6 +7,7 @@ use oura::{
     utils::{Utils, WithUtils},
     Error,
 };
+use sqlx::PgPool;
 use tracing::{span, Level};
 
 use super::{
@@ -65,12 +66,15 @@ pub fn run_indexer<T: IsNetworkMagic, E: Debug + ErrorPolicyProvider + 'static>(
         None => (None, source_rx),
     };
 
+    let pg_pool = PgPool::connect(&conf.database_url).await?;
+
     let sink_handle = span!(Level::INFO, "BootstrapSink").in_scope(|| {
         Callback {
             // Storing a thread-safe shareable pointer to the async function
-            f: conf.callback_fn,
+            handler: conf.callback_fn,
             retry_policy: conf.retry_policy,
             utils,
+            pg_pool,
         }
         .bootstrap(next_rx)
     })?;
