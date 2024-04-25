@@ -5,6 +5,7 @@ use std::{default::Default, fmt::Debug};
 use anyhow::Result;
 use clap::Parser;
 use oura::model::Event;
+use sqlx::{pool::PoolConnection, Postgres};
 use tracing::Level;
 use tx_indexer::indexer::{
     config::IndexerConfig,
@@ -16,15 +17,29 @@ use tx_indexer::indexer::{
 
 #[derive(Debug, Parser)]
 struct IndexStartArgs {
+    /// Cardano node socket path
+    #[arg(long)]
     socket_path: String,
+
+    /// Network name (preprod | preview | mainnet)
     #[arg(value_parser = clap::value_parser!(NetworkMagic))]
     network_magic: NetworkMagic,
+
+    /// Sync from this this slot
     #[arg(short, long)]
     since_slot: Option<u64>,
+
+    /// Sync from this block hash
     #[arg(short('a'), long)]
     since_slot_hash: Option<String>,
+
+    /// Filter for transactions minting this currency symbol (multiple allowed)
     #[arg(short('c'), long)]
-    curr_symbols: Vec<String>,
+    curr_symbol: Vec<String>,
+
+    /// PostgreSQL database URL
+    #[arg(long)]
+    database_url: String,
 }
 
 #[derive(clap::Subcommand, Debug)]
@@ -37,7 +52,7 @@ enum IndexCommand {
 enum Command {
     /// Run the Index command
     #[command(subcommand)]
-    Index(IndexCommand)
+    Index(IndexCommand),
 }
 /// Infinity Query command line interface
 #[derive(Parser, Debug)]
@@ -72,21 +87,28 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
                 network_magic,
                 since_slot,
                 since_slot_hash,
-                curr_symbols,
-            }) => run_indexer(IndexerConfig::new(
-                NodeAddress::UnixSocket(socket_path),
-                network_magic,
-                since_slot.zip(since_slot_hash),
-                4,
-                if curr_symbols.is_empty() {
-                    None
-                } else {
-                    Some(Filter { curr_symbols })
-                },
-                dummy_callback,
-                Default::default(),
-            )),
-        }
+                curr_symbol,
+                database_url,
+            }) => {
+                run_indexer(IndexerConfig::new(
+                    NodeAddress::UnixSocket(socket_path),
+                    network_magic,
+                    since_slot.zip(since_slot_hash),
+                    4,
+                    if curr_symbol.is_empty() {
+                        None
+                    } else {
+                        Some(Filter {
+                            curr_symbols: curr_symbol,
+                        })
+                    },
+                    dummy_callback,
+                    Default::default(),
+                    database_url,
+                ))
+                .await
+            }
+        },
     }
 }
 
@@ -100,6 +122,6 @@ impl ErrorPolicyProvider for Error {
 }
 
 // TODO(chase): Enhance dummy callback
-async fn dummy_callback(_ev: Event) -> Result<(), Error> {
+async fn dummy_callback(_ev: Event, _: PoolConnection<Postgres>) -> Result<(), Error> {
     Ok(())
 }

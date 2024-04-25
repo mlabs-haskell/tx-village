@@ -7,6 +7,7 @@ use oura::{
     utils::{ChainWellKnownInfo, Utils, WithUtils},
     Error,
 };
+use sqlx::PgPool;
 use tracing::{span, Level};
 
 use super::{
@@ -17,7 +18,7 @@ use super::{
 };
 
 // This is based on: https://github.com/txpipe/oura/blob/27fb7e876471b713841d96e292ede40101b151d7/src/bin/oura/daemon.rs
-pub fn run_indexer<E: Debug + ErrorPolicyProvider + 'static>(
+pub async fn run_indexer<E: Debug + ErrorPolicyProvider + 'static>(
     conf: IndexerConfig<E>,
 ) -> Result<(), Error> {
     let span = span!(Level::INFO, "run_indexer");
@@ -73,12 +74,15 @@ pub fn run_indexer<E: Debug + ErrorPolicyProvider + 'static>(
         None => (None, source_rx),
     };
 
+    let pg_pool = PgPool::connect(&conf.database_url).await?;
+
     let sink_handle = span!(Level::INFO, "BootstrapSink").in_scope(|| {
         Callback {
             // Storing a thread-safe shareable pointer to the async function
-            f: conf.callback_fn,
+            handler: conf.callback_fn,
             retry_policy: conf.retry_policy,
             utils,
+            pg_pool,
         }
         .bootstrap(next_rx)
     })?;

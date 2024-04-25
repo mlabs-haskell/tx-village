@@ -1,5 +1,6 @@
 use std::{fmt::Debug, future::Future, ops::Mul, time::Duration};
 
+use sqlx::{pool::PoolConnection, PgPool, Postgres};
 use strum_macros::Display;
 use tracing::{event, span, Instrument, Level};
 
@@ -37,11 +38,14 @@ fn compute_backoff_delay(policy: &RetryPolicy, retry: u32) -> Duration {
 /// Retrying is based on ErrorPolicy associated with particular error.
 /// Retries are only performed for ErrorPolicy::Retry - other errors won't cause invocation of given operation again.
 pub async fn perform_with_retry<
+    'a,
+    'b,
     E: Debug + ErrorPolicyProvider,
     R: Future<Output = Result<(), E>>,
 >(
-    op: impl Fn() -> R,
+    op: impl Fn(PoolConnection<Postgres>) -> R,
     policy: &RetryPolicy,
+    pg_pool: &mut PgPool,
 ) -> Result<(), E> {
     let span = span!(Level::INFO, "perform_with_retry");
     let _enter = span.enter();
@@ -50,50 +54,51 @@ pub async fn perform_with_retry<
     let mut retry = 0;
 
     loop {
+        let conn = pg_pool.acquire().await.unwrap();
         let span = span!(Level::DEBUG, "TryingOperation", retry_count = retry);
         let res = async {
-      let result = op().await;
+          let result = op(conn).await;
 
-      match result {
-        Ok(_) => {
-          event!(Level::INFO, label=%Event::Success);
-          Some(Ok(()))
+          match result {
+            Ok(_) => {
+              event!(Level::INFO, label=%Event::Success);
+              Some(Ok(()))
+            }
+            Err(err) => match err.get_error_policy() {
+              ErrorPolicy::Exit => {
+                event!(Level::INFO, label=%Event::FailureExit);
+                Some(Err(err))
+              }
+              ErrorPolicy::Skip => {
+                event!(Level::WARN, label=%Event::FailureSkip, err=?err);
+                Some(Ok(()))
+              }
+              ErrorPolicy::Call(err_f) => span!(Level::WARN, "OperationFailureCall").in_scope(|| {
+                err_f(err);
+                Some(Ok(()))
+              }),
+              ErrorPolicy::Retry if retry < policy.max_retries => {
+                event!(Level::WARN, label=%Event::FailureRetry, err=?err);
+
+                retry += 1;
+
+                let backoff = compute_backoff_delay(policy, retry);
+
+                event!(Level::DEBUG, label=%Event::RetryBackoff, backoff_secs=backoff.as_secs());
+
+                std::thread::sleep(backoff);
+
+                None
+              }
+              _ => {
+                event!(Level::DEBUG, label=%Event::RetriesExhausted);
+                Some(Err(err))
+              }
+            },
+          }
         }
-        Err(err) => match err.get_error_policy() {
-          ErrorPolicy::Exit => {
-            event!(Level::INFO, label=%Event::FailureExit);
-            Some(Err(err))
-          }
-          ErrorPolicy::Skip => {
-            event!(Level::WARN, label=%Event::FailureSkip, err=?err);
-            Some(Ok(()))
-          }
-          ErrorPolicy::Call(err_f) => span!(Level::WARN, "OperationFailureCall").in_scope(|| {
-            err_f(err);
-            Some(Ok(()))
-          }),
-          ErrorPolicy::Retry if retry < policy.max_retries => {
-            event!(Level::WARN, label=%Event::FailureRetry, err=?err);
-
-            retry += 1;
-
-            let backoff = compute_backoff_delay(policy, retry);
-
-            event!(Level::DEBUG, label=%Event::RetryBackoff, backoff_secs=backoff.as_secs());
-
-            std::thread::sleep(backoff);
-
-            None
-          }
-          _ => {
-            event!(Level::DEBUG, label=%Event::RetriesExhausted);
-            Some(Err(err))
-          }
-        },
-      }
-    }
-    .instrument(span)
-    .await;
+        .instrument(span)
+        .await;
 
         if let Some(res) = res {
             break res;
