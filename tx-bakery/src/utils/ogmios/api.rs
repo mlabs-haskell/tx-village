@@ -71,7 +71,7 @@ impl ToRpcParams for QueryLedgerStateUtxoByAddressParams {
 
 #[derive(Clone, Debug, Serialize, Deserialize)]
 pub(crate) struct OutputReference {
-    id: TransactionId,
+    transaction: TransactionId,
     index: u32,
 }
 
@@ -81,12 +81,12 @@ impl TryFrom<pla::v2::transaction::TransactionInput> for OutputReference {
     fn try_from(
         i: pla::v2::transaction::TransactionInput,
     ) -> std::result::Result<Self, Self::Error> {
-        let id = TransactionId::from(i.transaction_id);
+        let transaction = TransactionId::from(i.transaction_id);
         let index = u32::try_from(i.index).map_err(|err| OgmiosError::ConversionError {
             label: "BigInt to u32".into(),
             source: anyhow!(err),
         })?;
-        Ok(Self { id, index })
+        Ok(Self { transaction, index })
     }
 }
 
