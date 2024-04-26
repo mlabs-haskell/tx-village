@@ -816,6 +816,7 @@ mod tests {
     use tx_bakery::utils::script::ScriptOrRef;
     use tx_bakery::wallet::Wallet;
     use tx_bakery::TxBakery;
+    use std::path::Path;
 
     #[tokio::test]
     #[serial]
@@ -1109,13 +1110,13 @@ mod tests {
         (example_eq_datum_a, example_eq_datum_b)
     }
 
-    fn read_config(path: &str) -> Config {
-        let conf_str = fs::read_to_string(path).expect(&format!(
+    fn read_config(path: impl AsRef<Path>) -> Config {
+        let conf_str = fs::read_to_string(&path).expect(&format!(
             "Couldn't read plutarch config JSON file at {}.",
-            path
+            path.as_ref().display()
         ));
 
         Json::from_json_string(&conf_str)
-            .expect(&format!("Couldn't deserialize JSON data of file {}", path))
+            .expect(&format!("Couldn't deserialize JSON data of file {}", path.as_ref().display()))
     }
 }
