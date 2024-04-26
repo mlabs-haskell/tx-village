@@ -1,4 +1,5 @@
 use anyhow::Result;
+use aux::ParseCurrencySymbol;
 use clap::Parser;
 use oura::model::Event;
 use sqlx::PgConnection;
@@ -14,6 +15,7 @@ use tx_indexer::indexer::{
     types::{NetworkMagic, NodeAddress},
 };
 
+mod aux;
 mod handler;
 
 #[derive(Debug, Parser)]
@@ -36,7 +38,7 @@ struct IndexStartArgs {
 
     /// Filter for transactions minting this currency symbol (multiple allowed)
     #[arg(short('c'), long)]
-    curr_symbol: Vec<String>,
+    curr_symbol: Vec<ParseCurrencySymbol>,
 
     /// PostgreSQL database URL
     #[arg(long)]
@@ -101,7 +103,10 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
                         None
                     } else {
                         Some(Filter {
-                            curr_symbols: curr_symbol,
+                            curr_symbols: curr_symbol
+                                .into_iter()
+                                .map(|ParseCurrencySymbol(cs)| cs)
+                                .collect(),
                         })
                     },
                     Default::default(),

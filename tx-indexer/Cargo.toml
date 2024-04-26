@@ -41,7 +41,7 @@ strum = "0.24"
 strum_macros = "0.24"
 frunk = "0.4.2"
 tx-bakery = { path = ".extras/tx-bakery-0.1.0" }
+plutus-ledger-api = { path = ".extras/plutus-ledger-api-0.1.0" }
 
 [build-dependencies]
 tokio = { version = "1.24.2", features = ["full"] }
-
