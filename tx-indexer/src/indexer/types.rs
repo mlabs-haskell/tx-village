@@ -1,14 +1,11 @@
 use core::str::FromStr;
-use std::fmt;
-use std::pin::Pin;
-use std::{error::Error, future::Future};
-
 use oura::{
     sources::MagicArg,
     utils::{PREPROD_MAGIC, PREVIEW_MAGIC},
 };
 use pallas::network::miniprotocols::MAINNET_MAGIC;
-
+use std::error::Error;
+use std::fmt;
 use strum_macros::Display;
 
 /// Simple description on how to connect to a local or remote node.
@@ -60,7 +57,3 @@ impl NetworkMagic {
         })
     }
 }
-
-// https://stackoverflow.com/questions/77589520/lifetime-of-struct-with-field-of-type-boxed-async-callback-must-outlive-static
-pub type AsyncResult<E> = dyn Future<Output = Result<(), E>> + Send + Sync;
-pub type AsyncFunction<Arg, Result> = dyn Fn(Arg) -> Pin<Box<Result>> + Send + Sync;

@@ -1,5 +1,8 @@
-use std::{fmt::Debug, sync::Arc};
-
+use super::{
+    callback::{Callback, Handler},
+    config::{n2c_config, n2n_config, IndexerConfig},
+    types::{NetworkMagic, NodeAddress},
+};
 use anyhow::Result;
 use oura::{
     pipelining::{FilterProvider, SinkProvider, SourceProvider},
@@ -8,19 +11,11 @@ use oura::{
     Error,
 };
 use sqlx::PgPool;
+use std::sync::Arc;
 use tracing::{span, Level};
 
-use super::{
-    callback::Callback,
-    config::{n2c_config, n2n_config, IndexerConfig},
-    error::ErrorPolicyProvider,
-    types::{NetworkMagic, NodeAddress},
-};
-
 // This is based on: https://github.com/txpipe/oura/blob/27fb7e876471b713841d96e292ede40101b151d7/src/bin/oura/daemon.rs
-pub async fn run_indexer<E: Debug + ErrorPolicyProvider + 'static>(
-    conf: IndexerConfig<E>,
-) -> Result<(), Error> {
+pub async fn run_indexer<H: Handler>(conf: IndexerConfig<H>) -> Result<(), Error> {
     let span = span!(Level::INFO, "run_indexer");
     let _enter = span.enter();
 
@@ -76,16 +71,8 @@ pub async fn run_indexer<E: Debug + ErrorPolicyProvider + 'static>(
 
     let pg_pool = PgPool::connect(&conf.database_url).await?;
 
-    let sink_handle = span!(Level::INFO, "BootstrapSink").in_scope(|| {
-        Callback {
-            // Storing a thread-safe shareable pointer to the async function
-            handler: conf.callback_fn,
-            retry_policy: conf.retry_policy,
-            utils,
-            pg_pool,
-        }
-        .bootstrap(next_rx)
-    })?;
+    let sink_handle = span!(Level::INFO, "BootstrapSink")
+        .in_scope(|| Callback::<H>::new(conf.retry_policy, utils, pg_pool).bootstrap(next_rx))?;
 
     sink_handle.join().map_err(|_| "error in sink thread")?;
     filter_handle.map_or(Ok(()), |h| h.join().map_err(|_| "error in sink thread"))?;

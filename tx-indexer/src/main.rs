@@ -1,19 +1,20 @@
-mod handler;
-
-use std::{default::Default, fmt::Debug};
-
 use anyhow::Result;
 use clap::Parser;
 use oura::model::Event;
-use sqlx::{pool::PoolConnection, Postgres};
+use sqlx::PgConnection;
+use std::{default::Default, fmt::Debug};
+use thiserror::Error;
 use tracing::Level;
 use tx_indexer::indexer::{
+    callback::Handler,
     config::IndexerConfig,
     error::{ErrorPolicy, ErrorPolicyProvider},
     filter::Filter,
     run_indexer,
     types::{NetworkMagic, NodeAddress},
 };
+
+mod handler;
 
 #[derive(Debug, Parser)]
 struct IndexStartArgs {
@@ -90,7 +91,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
                 curr_symbol,
                 database_url,
             }) => {
-                run_indexer(IndexerConfig::new(
+                run_indexer(<IndexerConfig<DummyHandler>>::new(
                     NodeAddress::UnixSocket(socket_path),
                     network_magic,
                     since_slot.zip(since_slot_hash),
@@ -102,7 +103,6 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
                             curr_symbols: curr_symbol,
                         })
                     },
-                    dummy_callback,
                     Default::default(),
                     database_url,
                 ))
@@ -121,7 +121,25 @@ impl ErrorPolicyProvider for Error {
     }
 }
 
+#[derive(Error, Debug)]
+pub(crate) enum DummyHandlerError {}
+
+impl ErrorPolicyProvider for DummyHandlerError {
+    fn get_error_policy(&self) -> ErrorPolicy<Self> {
+        ErrorPolicy::Skip
+    }
+}
+
 // TODO(chase): Enhance dummy callback
-async fn dummy_callback(_ev: Event, _: PoolConnection<Postgres>) -> Result<(), Error> {
-    Ok(())
+struct DummyHandler;
+
+impl Handler for DummyHandler {
+    type Error = DummyHandlerError;
+
+    async fn handle<'a>(
+        _event: Event,
+        _pg_connection: &'a mut PgConnection,
+    ) -> Result<(), Self::Error> {
+        Ok(())
+    }
 }
