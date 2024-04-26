@@ -2,9 +2,8 @@ use core::str::FromStr;
 use std::fmt;
 use std::fs::File;
 use std::io::BufReader;
-use std::pin::Pin;
 use std::thread::JoinHandle;
-use std::{error::Error, future::Future};
+use std::error::Error;
 
 use oura::utils::ChainWellKnownInfo;
 use oura::{
@@ -12,7 +11,6 @@ use oura::{
     utils::{PREPROD_MAGIC, PREVIEW_MAGIC},
 };
 use pallas::network::miniprotocols::MAINNET_MAGIC;
-
 use strum_macros::Display;
 
 /// Simple description on how to connect to a local or remote node.
@@ -104,7 +102,3 @@ pub struct Indexer {
     pub filter_handle: Option<JoinHandle<()>>,
     pub sink_handle: JoinHandle<()>,
 }
-
-// https://stackoverflow.com/questions/77589520/lifetime-of-struct-with-field-of-type-boxed-async-callback-must-outlive-static
-pub type AsyncResult<E> = dyn Future<Output = Result<(), E>> + Send + Sync;
-pub type AsyncFunction<Arg, Result> = dyn Fn(Arg) -> Pin<Box<Result>> + Send + Sync;

@@ -1,15 +1,12 @@
-use std::{future::Future, sync::Arc};
-
-use oura::model::Event;
-use sqlx::{pool::PoolConnection, Postgres};
-
 use super::{
+    callback::Handler,
     filter::Filter,
     retry::RetryPolicy,
-    types::{AsyncFunction, AsyncResult, IsNetworkMagic, NodeAddress},
+    types::{IsNetworkMagic, NodeAddress},
 };
+use std::marker::PhantomData;
 
-pub struct IndexerConfig<T: IsNetworkMagic, E> {
+pub struct IndexerConfig<T: IsNetworkMagic, H: Handler> {
     pub node_address: NodeAddress,
     pub network_magic: T,
     /// Slot number and hash as hex string (optional).
@@ -19,24 +16,22 @@ pub struct IndexerConfig<T: IsNetworkMagic, E> {
     /// See: https://oura.txpipe.io/v1/advanced/rollback_buffer
     pub safe_block_depth: usize,
     pub event_filter: Option<Filter>,
-    /// Callback function to pass events to
-    pub callback_fn: Arc<AsyncFunction<(Event, PoolConnection<Postgres>), AsyncResult<E>>>,
     /// Retry policy - how much to retry for each event callback failure
     /// This only takes effect on ErrorPolicy for a particular error is `Retry`.
     /// Once retries are exhausted, the handler will error (same treatment as ErrorPolicy::Exit)
     pub retry_policy: RetryPolicy,
     /// Postgres database URL
     pub database_url: String,
+    pub handler: PhantomData<H>,
 }
 
-impl<T: IsNetworkMagic, E> IndexerConfig<T, E> {
-    pub fn new<R: Future<Output = Result<(), E>> + Send + Sync + 'static>(
+impl<T: IsNetworkMagic, H: Handler> IndexerConfig<T, H> {
+    pub fn new(
         node_address: NodeAddress,
         network_magic: T,
         since_slot: Option<(u64, String)>,
         safe_block_depth: usize,
         event_filter: Option<Filter>,
-        callback_fn: impl Fn(Event, PoolConnection<Postgres>) -> R + Send + Sync + 'static,
         retry_policy: RetryPolicy,
         database_url: String,
     ) -> Self {
@@ -46,11 +41,9 @@ impl<T: IsNetworkMagic, E> IndexerConfig<T, E> {
             since_slot,
             safe_block_depth,
             event_filter,
-            callback_fn: Arc::new(move |(ev, conn): (Event, PoolConnection<Postgres>)| {
-                Box::pin(callback_fn(ev, conn))
-            }),
             retry_policy,
             database_url,
+            handler: PhantomData::default(),
         }
     }
 }

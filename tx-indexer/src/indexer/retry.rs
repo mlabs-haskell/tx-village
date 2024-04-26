@@ -1,10 +1,12 @@
-use std::{fmt::Debug, future::Future, ops::Mul, time::Duration};
-
-use sqlx::{pool::PoolConnection, PgPool, Postgres};
+use super::{
+    callback::Handler,
+    error::{ErrorPolicy, ErrorPolicyProvider},
+};
+use oura::model as oura;
+use sqlx::{Acquire, PgPool};
+use std::{fmt::Debug, ops::Mul, time::Duration};
 use strum_macros::Display;
 use tracing::{event, span, Instrument, Level};
-
-use super::error::{ErrorPolicy, ErrorPolicyProvider};
 
 /// Influence retrying behavior.
 /// i.e How many times and how often a failed operation should be retried.
@@ -37,16 +39,11 @@ fn compute_backoff_delay(policy: &RetryPolicy, retry: u32) -> Duration {
 /// Wrap an operation with retry logic.
 /// Retrying is based on ErrorPolicy associated with particular error.
 /// Retries are only performed for ErrorPolicy::Retry - other errors won't cause invocation of given operation again.
-pub async fn perform_with_retry<
-    'a,
-    'b,
-    E: Debug + ErrorPolicyProvider,
-    R: Future<Output = Result<(), E>>,
->(
-    op: impl Fn(PoolConnection<Postgres>) -> R,
+pub async fn perform_with_retry<H: Handler>(
+    event: oura::Event,
     policy: &RetryPolicy,
     pg_pool: &mut PgPool,
-) -> Result<(), E> {
+) -> Result<(), H::Error> {
     let span = span!(Level::INFO, "perform_with_retry");
     let _enter = span.enter();
 
@@ -54,10 +51,12 @@ pub async fn perform_with_retry<
     let mut retry = 0;
 
     loop {
-        let conn = pg_pool.acquire().await.unwrap();
+        // TODO(szg251): Handle errors properly
+        let mut conn = pg_pool.acquire().await.unwrap();
+        let actual_conn = conn.acquire().await.unwrap();
         let span = span!(Level::DEBUG, "TryingOperation", retry_count = retry);
         let res = async {
-          let result = op(conn).await;
+          let result = H::handle(event.clone(), actual_conn).await;
 
           match result {
             Ok(_) => {
