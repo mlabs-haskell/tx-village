@@ -1,4 +1,5 @@
 use anyhow::Result;
+use aux::ParseCurrencySymbol;
 use clap::Parser;
 use oura::model::Event;
 use sqlx::PgConnection;
@@ -14,6 +15,7 @@ use tx_indexer::indexer::{
     types::{NetworkMagic, NetworkMagicRaw, NodeAddress},
 };
 
+mod aux;
 mod handler;
 
 #[derive(Debug, Parser)]
@@ -53,7 +55,7 @@ struct IndexStartArgs {
 
     /// Filter for transactions minting this currency symbol (multiple allowed)
     #[arg(short('c'), long)]
-    curr_symbol: Vec<String>,
+    curr_symbol: Vec<ParseCurrencySymbol>,
 
     /// PostgreSQL database URL
     #[arg(long)]
@@ -84,7 +86,8 @@ struct Args {
     debug: bool,
 }
 
-fn main() -> Result<(), Box<dyn std::error::Error>> {
+#[tokio::main]
+async fn main() -> Result<(), Box<dyn std::error::Error>> {
     let args = Args::parse();
 
     // Set up tracing logger (logs to stdout).
@@ -108,7 +111,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
                 since_slot,
                 since_slot_hash,
                 curr_symbol: curr_symbols,
-                database_url
+                database_url,
             }) => {
                 let indexer = match (network_magic, network_magic_raw) {
                     (_, Some(x)) => run_indexer(IndexerConfig::new(
@@ -123,10 +126,16 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
                         if curr_symbols.is_empty() {
                             None
                         } else {
-                            Some(Filter { curr_symbols })
+                            Some(Filter {
+                                curr_symbols: curr_symbols
+                                    .into_iter()
+                                    .map(|ParseCurrencySymbol(cs)| cs)
+                                    .collect(),
+                            })
                         },
                         Default::default(),
-                    )),
+                        database_url,
+                    )).await,
                     (Some(x), _) => run_indexer(IndexerConfig::new(
                         DummyHandler,
                         NodeAddress::UnixSocket(socket_path),
@@ -136,10 +145,16 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
                         if curr_symbols.is_empty() {
                             None
                         } else {
-                            Some(Filter { curr_symbols })
+                            Some(Filter {
+                                curr_symbols: curr_symbols
+                                    .into_iter()
+                                    .map(|ParseCurrencySymbol(cs)| cs)
+                                    .collect(),
+                            })
                         },
-                            Default::default(),
-                    )),
+                        Default::default(),
+                        database_url,
+                    )).await,
                     _ => panic!("absurd: Clap did not parse any network magic arg"),
                 }?;
                 indexer

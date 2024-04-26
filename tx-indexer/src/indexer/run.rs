@@ -15,7 +15,9 @@ use std::sync::Arc;
 use tracing::{span, Level};
 
 // This is based on: https://github.com/txpipe/oura/blob/27fb7e876471b713841d96e292ede40101b151d7/src/bin/oura/daemon.rs
-pub async fn run_indexer<T: IsNetworkMagic, H: Handler>(conf: IndexerConfig<T, H>) -> Result<Indexer, Error> {
+pub async fn run_indexer<T: IsNetworkMagic, H: Handler>(
+    conf: IndexerConfig<T, H>,
+) -> Result<Indexer, Error> {
     let span = span!(Level::INFO, "run_indexer");
     let _enter = span.enter();
 

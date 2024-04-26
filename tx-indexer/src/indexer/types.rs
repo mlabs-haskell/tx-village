@@ -1,9 +1,9 @@
 use core::str::FromStr;
+use std::error::Error;
 use std::fmt;
 use std::fs::File;
 use std::io::BufReader;
 use std::thread::JoinHandle;
-use std::error::Error;
 
 use oura::utils::ChainWellKnownInfo;
 use oura::{

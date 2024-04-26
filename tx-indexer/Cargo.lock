@@ -3757,6 +3757,7 @@ dependencies = [
  "num-traits",
  "oura",
  "pallas",
+ "plutus-ledger-api",
  "proptest",
  "serde",
  "serde_json",
