@@ -4,9 +4,10 @@ use super::{
     retry::RetryPolicy,
     types::{NetworkMagic, NodeAddress},
 };
-use std::marker::PhantomData;
 
 pub struct IndexerConfig<H: Handler> {
+    /// Handler configuration implementing the Handler trait
+    pub handler: H,
     pub node_address: NodeAddress,
     pub network_magic: NetworkMagic,
     /// Slot number and hash as hex string (optional).
@@ -22,11 +23,11 @@ pub struct IndexerConfig<H: Handler> {
     pub retry_policy: RetryPolicy,
     /// Postgres database URL
     pub database_url: String,
-    pub handler: PhantomData<H>,
 }
 
 impl<H: Handler> IndexerConfig<H> {
     pub fn new(
+        handler: H,
         node_address: NodeAddress,
         network_magic: NetworkMagic,
         since_slot: Option<(u64, String)>,
@@ -36,6 +37,7 @@ impl<H: Handler> IndexerConfig<H> {
         database_url: String,
     ) -> Self {
         Self {
+            handler,
             node_address,
             network_magic,
             since_slot,
@@ -43,7 +45,6 @@ impl<H: Handler> IndexerConfig<H> {
             event_filter,
             retry_policy,
             database_url,
-            handler: PhantomData::default(),
         }
     }
 }

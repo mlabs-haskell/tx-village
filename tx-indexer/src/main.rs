@@ -91,7 +91,8 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
                 curr_symbol,
                 database_url,
             }) => {
-                run_indexer(<IndexerConfig<DummyHandler>>::new(
+                run_indexer(IndexerConfig::new(
+                    DummyHandler,
                     NodeAddress::UnixSocket(socket_path),
                     network_magic,
                     since_slot.zip(since_slot_hash),
@@ -131,12 +132,14 @@ impl ErrorPolicyProvider for DummyHandlerError {
 }
 
 // TODO(chase): Enhance dummy callback
+#[derive(Clone)]
 struct DummyHandler;
 
 impl Handler for DummyHandler {
     type Error = DummyHandlerError;
 
     async fn handle<'a>(
+        &self,
         _event: Event,
         _pg_connection: &'a mut PgConnection,
     ) -> Result<(), Self::Error> {

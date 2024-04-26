@@ -71,8 +71,9 @@ pub async fn run_indexer<H: Handler>(conf: IndexerConfig<H>) -> Result<(), Error
 
     let pg_pool = PgPool::connect(&conf.database_url).await?;
 
-    let sink_handle = span!(Level::INFO, "BootstrapSink")
-        .in_scope(|| Callback::<H>::new(conf.retry_policy, utils, pg_pool).bootstrap(next_rx))?;
+    let sink_handle = span!(Level::INFO, "BootstrapSink").in_scope(|| {
+        Callback::new(conf.handler, conf.retry_policy, utils, pg_pool).bootstrap(next_rx)
+    })?;
 
     sink_handle.join().map_err(|_| "error in sink thread")?;
     filter_handle.map_or(Ok(()), |h| h.join().map_err(|_| "error in sink thread"))?;
