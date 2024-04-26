@@ -2,24 +2,27 @@ use super::{
     error::ErrorPolicyProvider,
     retry::{perform_with_retry, RetryPolicy},
 };
-use async_trait::async_trait;
 use oura::{
     model::Event,
     pipelining::{BootstrapResult, SinkProvider, StageReceiver},
     utils::Utils,
 };
 use sqlx::{PgConnection, PgPool};
-use std::{future::Future, marker::PhantomData, sync::Arc};
+use std::{future::Future, sync::Arc};
 use strum_macros::Display;
 use tokio::runtime::Runtime;
 use tracing::{event, span, Instrument, Level};
 
-pub trait Handler {
+pub trait Handler
+where
+    Self: Clone + Send + 'static,
+{
     type Error: std::error::Error + ErrorPolicyProvider;
 
     fn handle<'a>(
+        &self,
         event: Event,
-        pg_connection: &'a mut PgConnection,
+        pg_conn: &'a mut PgConnection,
     ) -> impl Future<Output = Result<(), Self::Error>>;
 }
 
@@ -27,19 +30,19 @@ pub trait Handler {
 /// The idea is similar to a webhook, but instead of calling a web endpoint - we call a function directly.
 pub(crate) struct Callback<H: Handler> {
     // https://stackoverflow.com/questions/77589520/lifetime-of-struct-with-field-of-type-boxed-async-callback-must-outlive-static
+    pub(crate) handler: H,
     pub(crate) retry_policy: RetryPolicy,
     pub(crate) utils: Arc<Utils>,
     pub(crate) pg_pool: PgPool,
-    pub(crate) handler: PhantomData<H>,
 }
 
 impl<H: Handler> Callback<H> {
-    pub fn new(retry_policy: RetryPolicy, utils: Arc<Utils>, pg_pool: PgPool) -> Self {
+    pub fn new(handler: H, retry_policy: RetryPolicy, utils: Arc<Utils>, pg_pool: PgPool) -> Self {
         Self {
+            handler,
             retry_policy,
             utils,
             pg_pool,
-            handler: PhantomData::default(),
         }
     }
 }
@@ -52,6 +55,7 @@ impl<H: Handler> SinkProvider for Callback<H> {
         let retry_policy = self.retry_policy;
         let utils = self.utils.clone();
         let pool = self.pg_pool.clone();
+        let handler = self.handler.clone();
 
         let handle = span!(Level::DEBUG, "SpawningThread").in_scope(|| {
             std::thread::spawn(move || {
@@ -60,7 +64,7 @@ impl<H: Handler> SinkProvider for Callback<H> {
 
                 // Running async function sycnhronously within another thread.
                 let rt = Runtime::new().unwrap();
-                rt.block_on(handle_event::<H>(input, &retry_policy, utils, pool))
+                rt.block_on(handle_event(handler, input, &retry_policy, utils, pool))
                     .map_err(|err| {
                         event!(Level::ERROR, label=%Events::EventHandlerFailure, ?err);
                         err
@@ -75,6 +79,7 @@ impl<H: Handler> SinkProvider for Callback<H> {
 
 // Handle a sequence of events transmitted at once.
 async fn handle_event<'a, H: Handler>(
+    handler: H,
     input: StageReceiver,
     retry_policy: &RetryPolicy,
     utils: Arc<Utils>,
@@ -90,7 +95,7 @@ async fn handle_event<'a, H: Handler>(
           context=?chain_event.context
         );
         // Have to clone twice here to please the borrow checker...
-        perform_with_retry::<H>(chain_event.clone(), retry_policy, pg_pool)
+        perform_with_retry(&handler, chain_event.clone(), retry_policy, pg_pool)
             .instrument(span)
             .await
             // Notify progress to the pipeline.

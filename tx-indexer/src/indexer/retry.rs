@@ -40,6 +40,7 @@ fn compute_backoff_delay(policy: &RetryPolicy, retry: u32) -> Duration {
 /// Retrying is based on ErrorPolicy associated with particular error.
 /// Retries are only performed for ErrorPolicy::Retry - other errors won't cause invocation of given operation again.
 pub async fn perform_with_retry<H: Handler>(
+    handler: &H,
     event: oura::Event,
     policy: &RetryPolicy,
     pg_pool: &mut PgPool,
@@ -56,7 +57,7 @@ pub async fn perform_with_retry<H: Handler>(
         let actual_conn = conn.acquire().await.unwrap();
         let span = span!(Level::DEBUG, "TryingOperation", retry_count = retry);
         let res = async {
-          let result = H::handle(event.clone(), actual_conn).await;
+          let result = handler.handle(event.clone(), actual_conn).await;
 
           match result {
             Ok(_) => {

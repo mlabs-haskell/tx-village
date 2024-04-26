@@ -107,11 +107,12 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
                 chain_info_path,
                 since_slot,
                 since_slot_hash,
-                curr_symbols,
+                curr_symbol: curr_symbols,
                 database_url
             }) => {
                 let indexer = match (network_magic, network_magic_raw) {
-                    (_, Some(x)) => run_indexer(<IndexerConfig<DummyHandler>>::new(
+                    (_, Some(x)) => run_indexer(IndexerConfig::new(
+                        DummyHandler,
                         NodeAddress::UnixSocket(socket_path),
                         NetworkMagicRaw {
                             magic: x,
@@ -126,7 +127,8 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
                         },
                         Default::default(),
                     )),
-                    (Some(x), _) => run_indexer(<IndexerConfig<DummyHandler>>::new(
+                    (Some(x), _) => run_indexer(IndexerConfig::new(
+                        DummyHandler,
                         NodeAddress::UnixSocket(socket_path),
                         x,
                         since_slot.zip(since_slot_hash),
@@ -177,12 +179,14 @@ impl ErrorPolicyProvider for DummyHandlerError {
 }
 
 // TODO(chase): Enhance dummy callback
+#[derive(Clone)]
 struct DummyHandler;
 
 impl Handler for DummyHandler {
     type Error = DummyHandlerError;
 
     async fn handle<'a>(
+        &self,
         _event: Event,
         _pg_connection: &'a mut PgConnection,
     ) -> Result<(), Self::Error> {

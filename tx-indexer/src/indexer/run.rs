@@ -1,7 +1,7 @@
 use super::{
     callback::{Callback, Handler},
     config::{n2c_config, n2n_config, IndexerConfig},
-    types::{NetworkMagic, NodeAddress},
+    types::{Indexer, IsNetworkMagic, NodeAddress},
 };
 use anyhow::Result;
 use oura::{
@@ -14,15 +14,8 @@ use sqlx::PgPool;
 use std::sync::Arc;
 use tracing::{span, Level};
 
-use super::{
-    callback::Callback,
-    config::{n2c_config, n2n_config, IndexerConfig},
-    error::ErrorPolicyProvider,
-    types::{Indexer, IsNetworkMagic, NodeAddress},
-};
-
 // This is based on: https://github.com/txpipe/oura/blob/27fb7e876471b713841d96e292ede40101b151d7/src/bin/oura/daemon.rs
-pub fn run_indexer<T: IsNetworkMagic, H: Handler>(conf: IndexerConfig<T, H>) -> Result<Indexer, Error> {
+pub async fn run_indexer<T: IsNetworkMagic, H: Handler>(conf: IndexerConfig<T, H>) -> Result<Indexer, Error> {
     let span = span!(Level::INFO, "run_indexer");
     let _enter = span.enter();
 
@@ -71,14 +64,7 @@ pub fn run_indexer<T: IsNetworkMagic, H: Handler>(conf: IndexerConfig<T, H>) -> 
     let pg_pool = PgPool::connect(&conf.database_url).await?;
 
     let sink_handle = span!(Level::INFO, "BootstrapSink").in_scope(|| {
-        Callback {
-            // Storing a thread-safe shareable pointer to the async function
-            handler: conf.callback_fn,
-            retry_policy: conf.retry_policy,
-            utils,
-            pg_pool,
-        }
-        .bootstrap(next_rx)
+        Callback::new(conf.handler, conf.retry_policy, utils, pg_pool).bootstrap(next_rx)
     })?;
 
     Ok(Indexer {
