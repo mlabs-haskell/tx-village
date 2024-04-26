@@ -804,10 +804,11 @@ mod tests {
     use plutus_ledger_api::v2::address::{Address, Credential};
     use plutus_ledger_api::v2::crypto::LedgerBytes;
     use plutus_ledger_api::v2::datum::OutputDatum;
-    use plutus_ledger_api::v2::transaction::POSIXTime;
+    use plutus_ledger_api::v2::transaction::{POSIXTime, TransactionInput};
     use plutus_ledger_api::v2::value::{AssetClass, CurrencySymbol, TokenName};
     use serial_test::serial;
     use std::fs;
+    use std::path::Path;
     use tx_bakery::chain_query::ChainQuery;
     use tx_bakery::error::Result;
     use tx_bakery::submitter::Submitter;
@@ -816,7 +817,6 @@ mod tests {
     use tx_bakery::utils::script::ScriptOrRef;
     use tx_bakery::wallet::Wallet;
     use tx_bakery::TxBakery;
-    use std::path::Path;
 
     #[tokio::test]
     #[serial]
@@ -876,6 +876,30 @@ mod tests {
         .await?;
 
         ogmios.await_tx_confirm(&tx_hash_lock_a).await?;
+
+        // TODO(chfanghr): We need something more thorough than this
+        assert_eq!(
+            ogmios
+                .query_utxos_by_ref(vec![
+                    &TransactionInput {
+                        transaction_id: tx_hash_lock_a.clone(),
+                        index: 0u8.into(),
+                    },
+                    &TransactionInput {
+                        transaction_id: tx_hash_lock_a.clone(),
+                        index: 1u8.into(),
+                    },
+                    &TransactionInput {
+                        transaction_id: tx_hash_lock_a.clone(),
+                        index: 3u8.into(),
+                    }
+                ])
+                .await?
+                .into_iter()
+                .map(|(r, _)| r.index)
+                .collect::<Vec<_>>(),
+            vec![0.into(), 1.into()],
+        );
 
         let tx_hash_claim_a = claim_eq_datum::build_and_submit(
             &wallet,
@@ -1116,7 +1140,9 @@ mod tests {
             path.as_ref().display()
         ));
 
-        Json::from_json_string(&conf_str)
-            .expect(&format!("Couldn't deserialize JSON data of file {}", path.as_ref().display()))
+        Json::from_json_string(&conf_str).expect(&format!(
+            "Couldn't deserialize JSON data of file {}",
+            path.as_ref().display()
+        ))
     }
 }
