@@ -4,7 +4,7 @@ use anyhow::Result;
 use oura::{
     pipelining::{FilterProvider, SinkProvider, SourceProvider},
     sources::{AddressArg, BearerKind},
-    utils::{ChainWellKnownInfo, Utils, WithUtils},
+    utils::{Utils, WithUtils},
     Error,
 };
 use tracing::{span, Level};
@@ -13,21 +13,17 @@ use super::{
     callback::Callback,
     config::{n2c_config, n2n_config, IndexerConfig},
     error::ErrorPolicyProvider,
-    types::{NetworkMagic, NodeAddress},
+    types::{IsNetworkMagic, NodeAddress},
 };
 
 // This is based on: https://github.com/txpipe/oura/blob/27fb7e876471b713841d96e292ede40101b151d7/src/bin/oura/daemon.rs
-pub fn run_indexer<E: Debug + ErrorPolicyProvider + 'static>(
-    conf: IndexerConfig<E>,
+pub fn run_indexer<T: IsNetworkMagic, E: Debug + ErrorPolicyProvider + 'static>(
+    conf: IndexerConfig<T, E>,
 ) -> Result<(), Error> {
     let span = span!(Level::INFO, "run_indexer");
     let _enter = span.enter();
 
-    let chain = match conf.network_magic {
-        NetworkMagic::PREPROD => ChainWellKnownInfo::preprod(),
-        NetworkMagic::PREVIEW => ChainWellKnownInfo::preview(),
-        NetworkMagic::MAINNET => ChainWellKnownInfo::mainnet(),
-    };
+    let chain = conf.network_magic.to_chain_info();
     let utils = Arc::new(Utils::new(chain));
     let (source_handle, source_rx) = match conf.node_address {
         NodeAddress::UnixSocket(path) => {
@@ -36,7 +32,7 @@ pub fn run_indexer<E: Debug + ErrorPolicyProvider + 'static>(
                     {
                         n2c_config(
                             AddressArg(BearerKind::Unix, path),
-                            conf.network_magic,
+                            conf.network_magic.to_magic_arg(),
                             conf.since_slot,
                             conf.safe_block_depth,
                         )
@@ -52,7 +48,7 @@ pub fn run_indexer<E: Debug + ErrorPolicyProvider + 'static>(
                     {
                         n2n_config(
                             AddressArg(BearerKind::Tcp, format!("{}:{}", hostname, port)),
-                            conf.network_magic,
+                            conf.network_magic.to_magic_arg(),
                             conf.since_slot,
                             conf.safe_block_depth,
                         )

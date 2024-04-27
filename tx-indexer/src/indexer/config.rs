@@ -5,12 +5,12 @@ use oura::model::Event;
 use super::{
     filter::Filter,
     retry::RetryPolicy,
-    types::{AsyncFunction, AsyncResult, NetworkMagic, NodeAddress},
+    types::{AsyncFunction, AsyncResult, IsNetworkMagic, NodeAddress},
 };
 
-pub struct IndexerConfig<E> {
+pub struct IndexerConfig<T: IsNetworkMagic, E> {
     pub node_address: NodeAddress,
-    pub network_magic: NetworkMagic,
+    pub network_magic: T,
     /// Slot number and hash as hex string (optional).
     /// If not provided, sync will begin from the tip of the chain.
     pub since_slot: Option<(u64, String)>,
@@ -26,10 +26,10 @@ pub struct IndexerConfig<E> {
     pub retry_policy: RetryPolicy,
 }
 
-impl<E> IndexerConfig<E> {
+impl<T: IsNetworkMagic, E> IndexerConfig<T, E> {
     pub fn new<R: Future<Output = Result<(), E>> + Send + Sync + 'static>(
         node_address: NodeAddress,
-        network_magic: NetworkMagic,
+        network_magic: T,
         since_slot: Option<(u64, String)>,
         safe_block_depth: usize,
         event_filter: Option<Filter>,
@@ -55,19 +55,17 @@ pub mod deprecation_usage {
 
     use oura::sources::n2c::Config as N2CConfig;
     use oura::sources::n2n::Config as N2NConfig;
-    use oura::sources::{AddressArg, IntersectArg, PointArg};
-
-    use super::super::types::NetworkMagic;
+    use oura::sources::{AddressArg, IntersectArg, MagicArg, PointArg};
 
     pub fn n2c_config(
         addr: AddressArg,
-        magic: NetworkMagic,
+        magic: MagicArg,
         since_slot: Option<(u64, String)>,
         safe_block_depth: usize,
     ) -> N2CConfig {
         N2CConfig {
             address: addr,
-            magic: Some(magic.to_magic_arg()),
+            magic: Some(magic),
             intersect: since_slot
                 .map(|since_slot| IntersectArg::Point(PointArg(since_slot.0, since_slot.1))),
             mapper: Default::default(),
@@ -82,13 +80,13 @@ pub mod deprecation_usage {
 
     pub fn n2n_config(
         addr: AddressArg,
-        magic: NetworkMagic,
+        magic: MagicArg,
         since_slot: Option<(u64, String)>,
         safe_block_depth: usize,
     ) -> N2NConfig {
         N2NConfig {
             address: addr,
-            magic: Some(magic.to_magic_arg()),
+            magic: Some(magic),
             intersect: since_slot
                 .map(|since_slot| IntersectArg::Point(PointArg(since_slot.0, since_slot.1))),
             mapper: Default::default(),
