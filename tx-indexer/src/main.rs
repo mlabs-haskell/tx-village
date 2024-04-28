@@ -66,8 +66,7 @@ struct Args {
     debug: bool,
 }
 
-#[tokio::main]
-async fn main() -> Result<(), Box<dyn std::error::Error>> {
+fn main() -> Result<(), Box<dyn std::error::Error>> {
     let args = Args::parse();
 
     // Set up tracing logger (logs to stdout).
@@ -128,7 +127,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
 }
 
 #[derive(Debug)]
-pub struct Error();
+struct Error();
 
 impl ErrorPolicyProvider for Error {
     fn get_error_policy(&self) -> ErrorPolicy<Self> {

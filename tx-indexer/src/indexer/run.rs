@@ -29,14 +29,12 @@ pub fn run_indexer<T: IsNetworkMagic, E: Debug + ErrorPolicyProvider + 'static>(
         NodeAddress::UnixSocket(path) => {
             span!(Level::INFO, "BootstrapSourceViaSocket", socket_path = path).in_scope(|| {
                 WithUtils::new(
-                    {
-                        n2c_config(
-                            AddressArg(BearerKind::Unix, path),
-                            conf.network_magic.to_magic_arg(),
-                            conf.since_slot,
-                            conf.safe_block_depth,
-                        )
-                    },
+                    n2c_config(
+                        AddressArg(BearerKind::Unix, path),
+                        conf.network_magic.to_magic_arg(),
+                        conf.since_slot,
+                        conf.safe_block_depth,
+                    ),
                     utils.clone(),
                 )
                 .bootstrap()
@@ -45,14 +43,12 @@ pub fn run_indexer<T: IsNetworkMagic, E: Debug + ErrorPolicyProvider + 'static>(
         NodeAddress::TcpAddress(hostname, port) => {
             span!(Level::INFO, "BootstrapSourceViaTcp", hostname, port).in_scope(|| {
                 WithUtils::new(
-                    {
-                        n2n_config(
-                            AddressArg(BearerKind::Tcp, format!("{}:{}", hostname, port)),
-                            conf.network_magic.to_magic_arg(),
-                            conf.since_slot,
-                            conf.safe_block_depth,
-                        )
-                    },
+                    n2n_config(
+                        AddressArg(BearerKind::Tcp, format!("{}:{}", hostname, port)),
+                        conf.network_magic.to_magic_arg(),
+                        conf.since_slot,
+                        conf.safe_block_depth,
+                    ),
                     utils.clone(),
                 )
                 .bootstrap()
