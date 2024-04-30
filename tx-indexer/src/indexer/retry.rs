@@ -45,7 +45,7 @@ pub async fn perform_with_retry<H: Handler>(
     policy: &RetryPolicy,
     pg_pool: &mut PgPool,
 ) -> Result<(), H::Error> {
-    let span = span!(Level::INFO, "perform_with_retry");
+    let span = span!(Level::DEBUG, "perform_with_retry");
     let _enter = span.enter();
 
     // The retry logic is based on: https://github.com/txpipe/oura/blob/27fb7e876471b713841d96e292ede40101b151d7/src/utils/retry.rs
@@ -61,12 +61,12 @@ pub async fn perform_with_retry<H: Handler>(
 
           match result {
             Ok(_) => {
-              event!(Level::INFO, label=%Event::Success);
+              event!(Level::DEBUG, label=%Event::Success);
               Some(Ok(()))
             }
             Err(err) => match err.get_error_policy() {
               ErrorPolicy::Exit => {
-                event!(Level::INFO, label=%Event::FailureExit);
+                event!(Level::ERROR, label=%Event::FailureExit);
                 Some(Err(err))
               }
               ErrorPolicy::Skip => {
