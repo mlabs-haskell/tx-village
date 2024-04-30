@@ -48,7 +48,7 @@ impl<H: Handler> Callback<H> {
 
 impl<H: Handler> SinkProvider for Callback<H> {
     fn bootstrap(&self, input: StageReceiver) -> BootstrapResult {
-        let span = span!(Level::INFO, "Callback::bootstrap");
+        let span = span!(Level::DEBUG, "Callback::bootstrap");
         let _enter = span.enter();
 
         let retry_policy = self.retry_policy;
@@ -84,12 +84,12 @@ async fn handle_event<'a, H: Handler>(
     utils: Arc<Utils>,
     mut pg_pool: PgPool,
 ) -> Result<(), H::Error> {
-    let span = span!(Level::INFO, "handle_event");
+    let span = span!(Level::DEBUG, "handle_event");
     let _enter = span.enter();
     let pg_pool = &mut pg_pool;
     for chain_event in input.into_iter() {
         let span = span!(
-          Level::INFO,
+          Level::DEBUG,
           "HandlingEvent",
           context=?chain_event.context
         );
