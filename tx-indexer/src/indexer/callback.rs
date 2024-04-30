@@ -29,7 +29,6 @@ where
 /// This is a custom made sink for Oura. Based on a callback function.
 /// The idea is similar to a webhook, but instead of calling a web endpoint - we call a function directly.
 pub(crate) struct Callback<H: Handler> {
-    // https://stackoverflow.com/questions/77589520/lifetime-of-struct-with-field-of-type-boxed-async-callback-must-outlive-static
     pub(crate) handler: H,
     pub(crate) retry_policy: RetryPolicy,
     pub(crate) utils: Arc<Utils>,
