@@ -57,7 +57,7 @@ pub async fn perform_with_retry<H: Handler>(
         let actual_conn = conn.acquire().await.unwrap();
         let span = span!(Level::DEBUG, "TryingOperation", retry_count = retry);
         let res = async {
-          let result = handler.handle(event.clone(), actual_conn).await;
+          let result = handler.handle(event.clone(), actual_conn).instrument(span!(Level::DEBUG, "UserDefinedHandler")).await;
 
           match result {
             Ok(_) => {
