@@ -3,6 +3,7 @@ use std::fmt;
 use std::fs::File;
 use std::io::BufReader;
 use std::pin::Pin;
+use std::thread::JoinHandle;
 use std::{error::Error, future::Future};
 
 use oura::utils::ChainWellKnownInfo;
@@ -95,6 +96,13 @@ impl IsNetworkMagic for NetworkMagicRaw {
         let reader = BufReader::new(file);
         serde_json::from_reader(reader).expect("Invalid JSON format for ChainWellKnownInfo")
     }
+}
+
+// Structure holding the thread handles associated to the indexer. These threads are never-ending.
+pub struct Indexer {
+    pub source_handle: JoinHandle<()>,
+    pub filter_handle: Option<JoinHandle<()>>,
+    pub sink_handle: JoinHandle<()>,
 }
 
 // https://stackoverflow.com/questions/77589520/lifetime-of-struct-with-field-of-type-boxed-async-callback-must-outlive-static

@@ -90,38 +90,53 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
                 since_slot,
                 since_slot_hash,
                 curr_symbols,
-            }) => match (network_magic, network_magic_raw) {
-                (_, Some(x)) => run_indexer(IndexerConfig::new(
-                    NodeAddress::UnixSocket(socket_path),
-                    NetworkMagicRaw {
-                        magic: x,
-                        chain_info_path: chain_info_path.unwrap(),
-                    },
-                    since_slot.zip(since_slot_hash),
-                    4,
-                    if curr_symbols.is_empty() {
-                        None
-                    } else {
-                        Some(Filter { curr_symbols })
-                    },
-                    dummy_callback,
-                    Default::default(),
-                )),
-                (Some(x), _) => run_indexer(IndexerConfig::new(
-                    NodeAddress::UnixSocket(socket_path),
-                    x,
-                    since_slot.zip(since_slot_hash),
-                    4,
-                    if curr_symbols.is_empty() {
-                        None
-                    } else {
-                        Some(Filter { curr_symbols })
-                    },
-                    dummy_callback,
-                    Default::default(),
-                )),
-                _ => panic!("absurd: Clap did not parse any network magic arg"),
-            },
+            }) => {
+                let indexer = match (network_magic, network_magic_raw) {
+                    (_, Some(x)) => run_indexer(IndexerConfig::new(
+                        NodeAddress::UnixSocket(socket_path),
+                        NetworkMagicRaw {
+                            magic: x,
+                            chain_info_path: chain_info_path.unwrap(),
+                        },
+                        since_slot.zip(since_slot_hash),
+                        4,
+                        if curr_symbols.is_empty() {
+                            None
+                        } else {
+                            Some(Filter { curr_symbols })
+                        },
+                        dummy_callback,
+                        Default::default(),
+                    )),
+                    (Some(x), _) => run_indexer(IndexerConfig::new(
+                        NodeAddress::UnixSocket(socket_path),
+                        x,
+                        since_slot.zip(since_slot_hash),
+                        4,
+                        if curr_symbols.is_empty() {
+                            None
+                        } else {
+                            Some(Filter { curr_symbols })
+                        },
+                        dummy_callback,
+                        Default::default(),
+                    )),
+                    _ => panic!("absurd: Clap did not parse any network magic arg"),
+                }?;
+                indexer
+                    .sink_handle
+                    .join()
+                    .map_err(|_| "error in sink thread")?;
+                indexer
+                    .filter_handle
+                    .map_or(Ok(()), |h| h.join().map_err(|_| "error in sink thread"))?;
+                indexer
+                    .source_handle
+                    .join()
+                    .map_err(|_| "error in source thread")?;
+
+                Ok(())
+            }
         },
     }
 }

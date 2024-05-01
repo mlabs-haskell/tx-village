@@ -13,13 +13,13 @@ use super::{
     callback::Callback,
     config::{n2c_config, n2n_config, IndexerConfig},
     error::ErrorPolicyProvider,
-    types::{IsNetworkMagic, NodeAddress},
+    types::{Indexer, IsNetworkMagic, NodeAddress},
 };
 
 // This is based on: https://github.com/txpipe/oura/blob/27fb7e876471b713841d96e292ede40101b151d7/src/bin/oura/daemon.rs
 pub fn run_indexer<T: IsNetworkMagic, E: Debug + ErrorPolicyProvider + 'static>(
     conf: IndexerConfig<T, E>,
-) -> Result<(), Error> {
+) -> Result<Indexer, Error> {
     let span = span!(Level::INFO, "run_indexer");
     let _enter = span.enter();
 
@@ -75,9 +75,9 @@ pub fn run_indexer<T: IsNetworkMagic, E: Debug + ErrorPolicyProvider + 'static>(
         .bootstrap(next_rx)
     })?;
 
-    sink_handle.join().map_err(|_| "error in sink thread")?;
-    filter_handle.map_or(Ok(()), |h| h.join().map_err(|_| "error in sink thread"))?;
-    source_handle.join().map_err(|_| "error in source thread")?;
-
-    Ok(())
+    Ok(Indexer {
+        source_handle,
+        filter_handle,
+        sink_handle,
+    })
 }
