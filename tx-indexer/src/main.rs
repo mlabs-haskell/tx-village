@@ -114,47 +114,53 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
                 database_url,
             }) => {
                 let indexer = match (network_magic, network_magic_raw) {
-                    (_, Some(x)) => run_indexer(IndexerConfig::new(
-                        DummyHandler,
-                        NodeAddress::UnixSocket(socket_path),
-                        NetworkMagicRaw {
-                            magic: x,
-                            chain_info_path: chain_info_path.unwrap(),
-                        },
-                        since_slot.zip(since_slot_hash),
-                        4,
-                        if curr_symbols.is_empty() {
-                            None
-                        } else {
-                            Some(Filter {
-                                curr_symbols: curr_symbols
-                                    .into_iter()
-                                    .map(|ParseCurrencySymbol(cs)| cs)
-                                    .collect(),
-                            })
-                        },
-                        Default::default(),
-                        database_url,
-                    )).await,
-                    (Some(x), _) => run_indexer(IndexerConfig::new(
-                        DummyHandler,
-                        NodeAddress::UnixSocket(socket_path),
-                        x,
-                        since_slot.zip(since_slot_hash),
-                        4,
-                        if curr_symbols.is_empty() {
-                            None
-                        } else {
-                            Some(Filter {
-                                curr_symbols: curr_symbols
-                                    .into_iter()
-                                    .map(|ParseCurrencySymbol(cs)| cs)
-                                    .collect(),
-                            })
-                        },
-                        Default::default(),
-                        database_url,
-                    )).await,
+                    (_, Some(x)) => {
+                        run_indexer(IndexerConfig::new(
+                            DummyHandler,
+                            NodeAddress::UnixSocket(socket_path),
+                            NetworkMagicRaw {
+                                magic: x,
+                                chain_info_path: chain_info_path.unwrap(),
+                            },
+                            since_slot.zip(since_slot_hash),
+                            4,
+                            if curr_symbols.is_empty() {
+                                None
+                            } else {
+                                Some(Filter {
+                                    curr_symbols: curr_symbols
+                                        .into_iter()
+                                        .map(|ParseCurrencySymbol(cs)| cs)
+                                        .collect(),
+                                })
+                            },
+                            Default::default(),
+                            database_url,
+                        ))
+                        .await
+                    }
+                    (Some(x), _) => {
+                        run_indexer(IndexerConfig::new(
+                            DummyHandler,
+                            NodeAddress::UnixSocket(socket_path),
+                            x,
+                            since_slot.zip(since_slot_hash),
+                            4,
+                            if curr_symbols.is_empty() {
+                                None
+                            } else {
+                                Some(Filter {
+                                    curr_symbols: curr_symbols
+                                        .into_iter()
+                                        .map(|ParseCurrencySymbol(cs)| cs)
+                                        .collect(),
+                                })
+                            },
+                            Default::default(),
+                            database_url,
+                        ))
+                        .await
+                    }
                     _ => panic!("absurd: Clap did not parse any network magic arg"),
                 }?;
                 indexer
