@@ -40,6 +40,8 @@ struct IndexStartArgs {
         requires = "node_config_path",
         conflicts_with = "network_magic"
     )]
+
+    /// Network identified by magic number and chain info file
     network_magic: Option<u64>,
 
     /// Cardano node configuration path
