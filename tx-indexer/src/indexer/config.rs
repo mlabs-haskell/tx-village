@@ -53,6 +53,7 @@ impl<T: IsNetworkMagic, E> IndexerConfig<T, E> {
 pub mod deprecation_usage {
     #![allow(deprecated)]
 
+    use oura::mapper::Config as MapperConfig;
     use oura::sources::n2c::Config as N2CConfig;
     use oura::sources::n2n::Config as N2NConfig;
     use oura::sources::{AddressArg, IntersectArg, MagicArg, PointArg};
@@ -68,7 +69,10 @@ pub mod deprecation_usage {
             magic: Some(magic),
             intersect: since_slot
                 .map(|since_slot| IntersectArg::Point(PointArg(since_slot.0, since_slot.1))),
-            mapper: Default::default(),
+            mapper: MapperConfig {
+                include_transaction_details: true,
+                ..Default::default()
+            },
             min_depth: safe_block_depth,
             retry_policy: None,
             finalize: None,
@@ -89,7 +93,10 @@ pub mod deprecation_usage {
             magic: Some(magic),
             intersect: since_slot
                 .map(|since_slot| IntersectArg::Point(PointArg(since_slot.0, since_slot.1))),
-            mapper: Default::default(),
+            mapper: MapperConfig {
+                include_transaction_details: true,
+                ..Default::default()
+            },
             min_depth: safe_block_depth,
             retry_policy: None,
             finalize: None,
