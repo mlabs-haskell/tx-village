@@ -42,6 +42,12 @@ dependencies = [
 ]
 
 [[package]]
+name = "assertables"
+version = "7.0.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "0c24e9d990669fbd16806bff449e4ac644fd9b1fca014760087732fe4102f131"
+
+[[package]]
 name = "async-lock"
 version = "3.3.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -2151,12 +2157,14 @@ name = "tx-bakery"
 version = "0.1.0"
 dependencies = [
  "anyhow",
+ "assertables",
  "cardano-serialization-lib",
  "cbor_event",
  "chrono",
  "data-encoding",
  "derive_builder",
  "futures",
+ "hex",
  "jsonrpsee",
  "lbf-prelude",
  "lbf-tx-bakery-tests-config-api",

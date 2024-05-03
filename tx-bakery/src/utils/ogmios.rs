@@ -19,6 +19,7 @@ use plutus_ledger_api::v2::address::Address;
 use plutus_ledger_api::v2::transaction::{TransactionHash, TransactionInput};
 use serde::{Deserialize, Serialize};
 use std::collections::BTreeMap;
+use std::path::PathBuf;
 use std::process::Stdio;
 use std::time;
 use tokio::process::{Child, Command};
@@ -28,8 +29,9 @@ mod error;
 
 /// Ogmios client for interacting with the blockchain
 pub struct Ogmios {
-    handler: Child,
-    config: OgmiosConfig,
+    /// Handler is only populated if we manage the runtime of Ogmios
+    handler: Option<Child>,
+    config: OgmiosClientConfig,
     client: WsClient,
 }
 
@@ -256,24 +258,20 @@ impl Submitter for Ogmios {
 
 impl Ogmios {
     pub async fn start(config: &OgmiosConfig) -> Result<Self> {
-        let args = [
-            "--strict-rpc",
-            "--node-socket",
-            &config.node_socket,
-            "--node-config",
-            &config.node_config,
-            "--host",
-            &config.host.to_string(),
-            "--port",
-            &config.port.to_string(),
-            "--timeout",
-            &config.timeout.to_string(),
-            "--max-in-flight",
-            &config.max_in_flight.to_string(),
-        ];
-
         let handler = Command::new("ogmios")
-            .args(args)
+            .arg("--strict-rpc")
+            .arg("--node-socket")
+            .arg(&config.node_socket)
+            .arg("--node-config")
+            .arg(&config.node_config)
+            .arg("--host")
+            .arg(&config.host)
+            .arg("--port")
+            .arg(config.port.to_string())
+            .arg("--timeout")
+            .arg(config.timeout.to_string())
+            .arg("--max-in-flight")
+            .arg(config.max_in_flight.to_string())
             .stdout(if config.verbose {
                 Stdio::inherit()
             } else {
@@ -292,14 +290,50 @@ impl Ogmios {
 
         let giveup_time = chrono::Local::now() + time::Duration::from_secs(config.startup_timeout);
         loop {
-            let health = Self::health(&config).await;
+            let health = Self::health(&config.host, config.port).await;
             if health
                 .as_ref()
                 .map_or(false, |h| h.network_synchronization == 1.0)
             {
                 let client = WsClientBuilder::default().build(&url).await?;
                 let service = Self {
-                    handler,
+                    handler: Some(handler),
+                    config: config.clone().into(),
+                    client,
+                };
+
+                return Ok(service);
+            } else {
+                if chrono::Local::now() > giveup_time {
+                    return match health {
+                        Err(err) => Err(OgmiosError::StartupError(anyhow!(
+                            "health request failed: {:?}",
+                            err
+                        ))),
+                        Ok(health) => Err(OgmiosError::StartupError(anyhow!(
+                            "couldn't sync: {:?}",
+                            health
+                        ))),
+                    };
+                }
+                tokio::time::sleep(time::Duration::from_secs(1)).await;
+            }
+        }
+    }
+
+    pub async fn connect(config: &OgmiosClientConfig) -> Result<Self> {
+        let url = format!("ws://{}:{}", config.host, config.port.to_string());
+
+        let giveup_time = chrono::Local::now() + time::Duration::from_secs(config.startup_timeout);
+        loop {
+            let health = Self::health(&config.host, config.port).await;
+            if health
+                .as_ref()
+                .map_or(false, |h| h.network_synchronization == 1.0)
+            {
+                let client = WsClientBuilder::default().build(&url).await?;
+                let service = Self {
+                    handler: None,
                     config: config.clone(),
                     client,
                 };
@@ -345,8 +379,8 @@ impl Ogmios {
         self.request("releaseMempool", rpc_params![]).await
     }
 
-    async fn health(config: &OgmiosConfig) -> Result<OgmiosHealth> {
-        let url = format!("http://{}:{}/health", config.host, config.port.to_string());
+    async fn health(host: &str, port: u32) -> Result<OgmiosHealth> {
+        let url = format!("http://{}:{}/health", host, port.to_string());
         Ok(reqwest::Client::new()
             .get(url)
             .send()
@@ -355,13 +389,17 @@ impl Ogmios {
             .await?)
     }
 
-    pub fn config(&self) -> OgmiosConfig {
+    pub fn config(&self) -> OgmiosClientConfig {
         self.config.clone()
     }
 
     /// Kill ogmios process
     pub async fn kill(&mut self) -> Result<()> {
-        Ok(self.handler.kill().await?)
+        if let Some(ref mut handler) = self.handler {
+            Ok(handler.kill().await?)
+        } else {
+            Ok(())
+        }
     }
 
     /// Make a request to ogmios JSON RPC
@@ -381,10 +419,10 @@ impl Ogmios {
 
 #[derive(Debug, Builder, Clone, Deserialize)]
 pub struct OgmiosConfig {
-    #[builder(default = r#""".to_string()"#)]
-    pub node_socket: String,
-    #[builder(default = r#"".node.config".to_string()"#)]
-    pub node_config: String,
+    #[builder(default = r#""".try_into().unwrap()"#)]
+    pub node_socket: PathBuf,
+    #[builder(default = r#"".node.config".try_into().unwrap()"#)]
+    pub node_config: PathBuf,
     #[builder(default = r#""127.0.0.1".to_string()"#)]
     pub host: String,
     #[builder(default = "1337")]
@@ -399,4 +437,30 @@ pub struct OgmiosConfig {
     pub max_in_flight: u32,
     #[builder(default = "90")]
     pub startup_timeout: u64,
+}
+
+#[derive(Debug, Builder, Clone, Deserialize)]
+pub struct OgmiosClientConfig {
+    #[builder(default = r#""127.0.0.1".to_string()"#)]
+    pub host: String,
+    #[builder(default = "1337")]
+    pub port: u32,
+    #[builder(default = "false")]
+    pub verbose: bool,
+    #[builder(default = "Network::Testnet")]
+    pub network: Network,
+    #[builder(default = "90")]
+    pub startup_timeout: u64,
+}
+
+impl From<OgmiosConfig> for OgmiosClientConfig {
+    fn from(config: OgmiosConfig) -> OgmiosClientConfig {
+        OgmiosClientConfig {
+            host: config.host,
+            port: config.port,
+            verbose: config.verbose,
+            network: config.network,
+            startup_timeout: config.startup_timeout,
+        }
+    }
 }

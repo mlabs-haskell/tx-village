@@ -795,16 +795,20 @@ mod tests {
         burn_with_secret, claim_eq_datum, lock_eq_datum, mint_with_ref_input, mint_with_secret,
         store_ref_script, use_ref_script, with_last_output_change, with_metadata, zero_ada_mint,
     };
+    use assertables::*;
     use chrono::Local;
     use lbf_tx_bakery_tests_config_api::demo::config::Config;
     use lbf_tx_bakery_tests_plutus_api::demo::plutus::{EqDatum, EqRedeemer, Product, Record, Sum};
     use lbr_prelude::json::Json;
+    use num_bigint::BigInt;
     use plutus_ledger_api::v2::address::{Address, Credential};
     use plutus_ledger_api::v2::crypto::LedgerBytes;
     use plutus_ledger_api::v2::datum::OutputDatum;
+    use plutus_ledger_api::v2::transaction::{POSIXTime, TransactionInput};
     use plutus_ledger_api::v2::value::{AssetClass, CurrencySymbol, TokenName};
     use serial_test::serial;
     use std::fs;
+    use std::path::Path;
     use tx_bakery::chain_query::ChainQuery;
     use tx_bakery::error::Result;
     use tx_bakery::submitter::Submitter;
@@ -826,18 +830,27 @@ mod tests {
     #[serial]
     async fn time_test() -> Result<()> {
         let (_plutip, ogmios) = setup_plutip_test().await;
-        let posix_time_now = Local::now().into();
+        let posix_time_now: POSIXTime = Local::now().into();
 
         let system_start = ogmios.query_system_start().await?;
         let era_summaries = ogmios.query_era_summaries().await?;
-        let slot =
-            tx_bakery::time::posix_time_into_slot(&era_summaries, &system_start, posix_time_now)?;
+        let slot = tx_bakery::time::posix_time_into_slot(
+            &era_summaries,
+            &system_start,
+            posix_time_now.clone(),
+        )?;
 
         TxBakery::init(&ogmios).await?;
 
         let tip = ogmios.query_tip().await?;
-        let diff = slot.abs_diff(tip.slot());
-        assert!(diff < 10);
+        let tip_diff = slot.abs_diff(tip.slot());
+        assert_in_delta!(tip.slot(), slot, 10);
+        assert!(tip_diff < 10);
+
+        let roundtrip_time =
+            tx_bakery::time::slot_into_posix_time(&era_summaries, &system_start, slot)?;
+        assert_in_delta!(posix_time_now.0, roundtrip_time.0, BigInt::from(1000));
+
         Ok(())
     }
 
@@ -845,12 +858,9 @@ mod tests {
     #[serial]
     async fn test_is_eq_validator() -> Result<()> {
         let config = read_config("data/tx-bakery-test-scripts-config.json");
-        let eq_validator = ScriptOrRef::from_bytes(
-            config.eq_validator.0,
-            tx_bakery::utils::script::PlutusVersion::V2,
-        )
-        .unwrap()
-        .as_validator();
+        let eq_validator = ScriptOrRef::from_bytes(config.eq_validator.0)
+            .unwrap()
+            .as_validator();
         let (example_eq_datum_a, _) = setup_test_data();
 
         let (plutip, ogmios) = setup_plutip_test().await;
@@ -866,6 +876,30 @@ mod tests {
         .await?;
 
         ogmios.await_tx_confirm(&tx_hash_lock_a).await?;
+
+        // TODO(chfanghr): We need something more thorough than this
+        assert_eq!(
+            ogmios
+                .query_utxos_by_ref(vec![
+                    &TransactionInput {
+                        transaction_id: tx_hash_lock_a.clone(),
+                        index: 0u8.into(),
+                    },
+                    &TransactionInput {
+                        transaction_id: tx_hash_lock_a.clone(),
+                        index: 1u8.into(),
+                    },
+                    &TransactionInput {
+                        transaction_id: tx_hash_lock_a.clone(),
+                        index: 3u8.into(),
+                    }
+                ])
+                .await?
+                .into_iter()
+                .map(|(r, _)| r.index)
+                .collect::<Vec<_>>(),
+            vec![0.into(), 1.into()],
+        );
 
         let tx_hash_claim_a = claim_eq_datum::build_and_submit(
             &wallet,
@@ -885,12 +919,9 @@ mod tests {
     #[serial]
     async fn test_mint() -> Result<()> {
         let config = read_config("data/tx-bakery-test-scripts-config.json");
-        let minting_policy = ScriptOrRef::from_bytes(
-            config.minting_policy.0,
-            tx_bakery::utils::script::PlutusVersion::V2,
-        )
-        .unwrap()
-        .as_minting_policy();
+        let minting_policy = ScriptOrRef::from_bytes(config.minting_policy.0)
+            .unwrap()
+            .as_minting_policy();
 
         let (plutip, ogmios) = setup_plutip_test().await;
         let wallet = plutip.get_own_wallet().await.unwrap();
@@ -912,18 +943,12 @@ mod tests {
     #[serial]
     async fn test_ref_input() -> Result<()> {
         let config = read_config("data/tx-bakery-test-scripts-config.json");
-        let eq_validator = ScriptOrRef::from_bytes(
-            config.eq_validator.0,
-            tx_bakery::utils::script::PlutusVersion::V2,
-        )
-        .unwrap()
-        .as_validator();
-        let ref_input_minting_policy = ScriptOrRef::from_bytes(
-            config.ref_input_minting_policy.0,
-            tx_bakery::utils::script::PlutusVersion::V2,
-        )
-        .unwrap()
-        .as_minting_policy();
+        let eq_validator = ScriptOrRef::from_bytes(config.eq_validator.0)
+            .unwrap()
+            .as_validator();
+        let ref_input_minting_policy = ScriptOrRef::from_bytes(config.ref_input_minting_policy.0)
+            .unwrap()
+            .as_minting_policy();
         let (example_eq_datum_a, _) = setup_test_data();
 
         let (plutip, ogmios) = setup_plutip_test().await;
@@ -958,12 +983,9 @@ mod tests {
     #[serial]
     async fn test_zero_ada_mint() -> Result<()> {
         let config = read_config("data/tx-bakery-test-scripts-config.json");
-        let minting_policy = ScriptOrRef::from_bytes(
-            config.minting_policy.0,
-            tx_bakery::utils::script::PlutusVersion::V2,
-        )
-        .unwrap()
-        .as_minting_policy();
+        let minting_policy = ScriptOrRef::from_bytes(config.minting_policy.0)
+            .unwrap()
+            .as_minting_policy();
 
         let (plutip, ogmios) = setup_plutip_test().await;
         let wallet = plutip.get_own_wallet().await.unwrap();
@@ -979,12 +1001,9 @@ mod tests {
     #[serial]
     async fn test_ref_script() -> Result<()> {
         let config = read_config("data/tx-bakery-test-scripts-config.json");
-        let minting_policy = ScriptOrRef::from_bytes(
-            config.minting_policy.0,
-            tx_bakery::utils::script::PlutusVersion::V2,
-        )
-        .unwrap()
-        .as_minting_policy();
+        let minting_policy = ScriptOrRef::from_bytes(config.minting_policy.0)
+            .unwrap()
+            .as_minting_policy();
 
         let (plutip, ogmios) = setup_plutip_test().await;
         let wallet = plutip.get_own_wallet().await.unwrap();
@@ -1071,12 +1090,9 @@ mod tests {
 
     fn setup_test_data() -> (EqDatum, EqDatum) {
         let config = read_config("data/tx-bakery-test-scripts-config.json");
-        let plutarch_script = ScriptOrRef::from_bytes(
-            config.eq_validator.0,
-            tx_bakery::utils::script::PlutusVersion::V2,
-        )
-        .unwrap()
-        .as_validator();
+        let plutarch_script = ScriptOrRef::from_bytes(config.eq_validator.0)
+            .unwrap()
+            .as_validator();
 
         let example_token_name = TokenName(LedgerBytes(b"example token name".to_vec()));
         let example_currency_symbol = CurrencySymbol::Ada;
@@ -1118,13 +1134,15 @@ mod tests {
         (example_eq_datum_a, example_eq_datum_b)
     }
 
-    fn read_config(path: &str) -> Config {
-        let conf_str = fs::read_to_string(path).expect(&format!(
+    fn read_config(path: impl AsRef<Path>) -> Config {
+        let conf_str = fs::read_to_string(&path).expect(&format!(
             "Couldn't read plutarch config JSON file at {}.",
-            path
+            path.as_ref().display()
         ));
 
-        Json::from_json_string(&conf_str)
-            .expect(&format!("Couldn't deserialize JSON data of file {}", path))
+        Json::from_json_string(&conf_str).expect(&format!(
+            "Couldn't deserialize JSON data of file {}",
+            path.as_ref().display()
+        ))
     }
 }

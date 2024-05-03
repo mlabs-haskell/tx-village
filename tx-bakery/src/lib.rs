@@ -240,14 +240,12 @@ impl TxBakery {
                         };
 
                         let script_source = match &script_or_ref {
-                            ScriptOrRef::PlutusScript(script, _) => {
-                                PlutusScriptSource::new(&script)
-                            }
-                            ScriptOrRef::RefScript(tx_in, _, lang) => {
+                            ScriptOrRef::PlutusScript(script) => PlutusScriptSource::new(&script),
+                            ScriptOrRef::RefScript(tx_in, script) => {
                                 PlutusScriptSource::new_ref_input_with_lang_ver(
                                     &validator_hash.0.try_to_csl()?,
                                     &tx_in.try_to_csl()?,
-                                    &lang.into(),
+                                    &script.language_version(),
                                 )
                             }
                         };
@@ -263,11 +261,11 @@ impl TxBakery {
 
                             OutputDatum::InlineDatum(Datum(input_datum)) => {
                                 Some(match &script_or_ref {
-                                    ScriptOrRef::PlutusScript(_, _) => {
+                                    ScriptOrRef::PlutusScript(_) => {
                                         DatumSource::new(&input_datum.try_to_csl()?)
                                     }
 
-                                    ScriptOrRef::RefScript(tx_in, _, _) => {
+                                    ScriptOrRef::RefScript(tx_in, _) => {
                                         DatumSource::new_ref_input(&tx_in.try_to_csl()?)
                                     }
                                 })
@@ -371,14 +369,12 @@ impl TxBakery {
                         };
 
                         let script_source = match &script_or_ref {
-                            ScriptOrRef::PlutusScript(script, _) => {
-                                PlutusScriptSource::new(&script)
-                            }
-                            ScriptOrRef::RefScript(tx_in, _, lang) => {
+                            ScriptOrRef::PlutusScript(script) => PlutusScriptSource::new(&script),
+                            ScriptOrRef::RefScript(tx_in, script) => {
                                 PlutusScriptSource::new_ref_input_with_lang_ver(
                                     &minting_policy_hash.0.try_to_csl()?,
                                     &tx_in.try_to_csl()?,
-                                    &lang.into(),
+                                    &script.language_version(),
                                 )
                             }
                         };
@@ -687,8 +683,8 @@ impl TxBakery {
             .collect::<Result<Vec<_>>>()?
             .into_iter()
             .filter_map(|script_or_ref| match script_or_ref {
-                ScriptOrRef::PlutusScript(script, _) => Some(script),
-                ScriptOrRef::RefScript(_, _, _) => None,
+                ScriptOrRef::PlutusScript(script) => Some(script),
+                ScriptOrRef::RefScript(_, _) => None,
             })
             .collect())
     }
