@@ -1,7 +1,7 @@
 use super::{
     callback::{Callback, Handler},
     config::{n2c_config, n2n_config, IndexerConfig},
-    types::{Indexer, IsNetworkMagic, NodeAddress},
+    types::{Indexer, IsNetworkConfig, NodeAddress},
 };
 use anyhow::Result;
 use oura::{
@@ -15,13 +15,13 @@ use std::sync::Arc;
 use tracing::{span, Level};
 
 // This is based on: https://github.com/txpipe/oura/blob/27fb7e876471b713841d96e292ede40101b151d7/src/bin/oura/daemon.rs
-pub async fn run_indexer<H: Handler, T: IsNetworkMagic>(
+pub async fn run_indexer<H: Handler, T: IsNetworkConfig>(
     conf: IndexerConfig<H, T>,
 ) -> Result<Indexer, Error> {
     let span = span!(Level::INFO, "run_indexer");
     let _enter = span.enter();
 
-    let chain = conf.network_magic.to_chain_info();
+    let chain = conf.network_config.to_chain_info();
     let utils = Arc::new(Utils::new(chain));
     let (source_handle, source_rx) = match conf.node_address {
         NodeAddress::UnixSocket(path) => {
@@ -29,7 +29,7 @@ pub async fn run_indexer<H: Handler, T: IsNetworkMagic>(
                 WithUtils::new(
                     n2c_config(
                         AddressArg(BearerKind::Unix, path),
-                        conf.network_magic.to_magic_arg(),
+                        conf.network_config.to_magic_arg(),
                         conf.since_slot,
                         conf.safe_block_depth,
                     ),
@@ -43,7 +43,7 @@ pub async fn run_indexer<H: Handler, T: IsNetworkMagic>(
                 WithUtils::new(
                     n2n_config(
                         AddressArg(BearerKind::Tcp, format!("{}:{}", hostname, port)),
-                        conf.network_magic.to_magic_arg(),
+                        conf.network_config.to_magic_arg(),
                         conf.since_slot,
                         conf.safe_block_depth,
                     ),

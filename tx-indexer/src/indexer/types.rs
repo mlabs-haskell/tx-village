@@ -23,73 +23,73 @@ pub enum NodeAddress {
 
 /// Typed network magic restricted to specific networks fully supported by Oura.
 #[derive(Clone, Debug, Display)]
-pub enum NetworkMagic {
+pub enum NetworkName {
     PREPROD,
     PREVIEW,
     MAINNET,
 }
 
 #[derive(Clone, Debug)]
-pub struct NetworkMagicRaw {
+pub struct NetworkConfig {
     pub magic: u64,
-    pub chain_info_path: String,
+    pub node_config_path: String,
 }
 
 #[derive(Clone, Debug, PartialEq, Eq)]
-pub struct NetworkMagicParseErr;
+pub struct NetworkNameParseErr;
 
-impl fmt::Display for NetworkMagicParseErr {
+impl fmt::Display for NetworkNameParseErr {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         "provided string was not `preprod` or `preview` or `mainnet`".fmt(f)
     }
 }
-impl Error for NetworkMagicParseErr {}
+impl Error for NetworkNameParseErr {}
 
-impl FromStr for NetworkMagic {
-    type Err = NetworkMagicParseErr;
-    fn from_str(s: &str) -> Result<NetworkMagic, Self::Err> {
+impl FromStr for NetworkName {
+    type Err = NetworkNameParseErr;
+    fn from_str(s: &str) -> Result<NetworkName, Self::Err> {
         match &s.to_lowercase()[..] {
-            "preprod" => Ok(NetworkMagic::PREPROD),
-            "preview" => Ok(NetworkMagic::PREVIEW),
-            "mainnet" => Ok(NetworkMagic::MAINNET),
-            _ => Err(NetworkMagicParseErr),
+            "preprod" => Ok(NetworkName::PREPROD),
+            "preview" => Ok(NetworkName::PREVIEW),
+            "mainnet" => Ok(NetworkName::MAINNET),
+            _ => Err(NetworkNameParseErr),
         }
     }
 }
 
-pub trait IsNetworkMagic {
+pub trait IsNetworkConfig {
     /// Convert to Oura's `MagicArg`, which is just a `u64`.
     fn to_magic_arg(&self) -> MagicArg;
     /// Obtain `ChainWellKnownInfo` corresponding to the network.
     fn to_chain_info(&self) -> ChainWellKnownInfo;
 }
 
-impl IsNetworkMagic for NetworkMagic {
+impl IsNetworkConfig for NetworkName {
     fn to_magic_arg(&self) -> MagicArg {
         MagicArg(match self {
-            NetworkMagic::PREPROD => PREPROD_MAGIC,
-            NetworkMagic::PREVIEW => PREVIEW_MAGIC,
-            NetworkMagic::MAINNET => MAINNET_MAGIC,
+            NetworkName::PREPROD => PREPROD_MAGIC,
+            NetworkName::PREVIEW => PREVIEW_MAGIC,
+            NetworkName::MAINNET => MAINNET_MAGIC,
         })
     }
 
     fn to_chain_info(&self) -> ChainWellKnownInfo {
         match self {
-            NetworkMagic::PREPROD => ChainWellKnownInfo::preprod(),
-            NetworkMagic::PREVIEW => ChainWellKnownInfo::preview(),
-            NetworkMagic::MAINNET => ChainWellKnownInfo::mainnet(),
+            NetworkName::PREPROD => ChainWellKnownInfo::preprod(),
+            NetworkName::PREVIEW => ChainWellKnownInfo::preview(),
+            NetworkName::MAINNET => ChainWellKnownInfo::mainnet(),
         }
     }
 }
 
-impl IsNetworkMagic for NetworkMagicRaw {
+impl IsNetworkConfig for NetworkConfig {
     fn to_magic_arg(&self) -> MagicArg {
         MagicArg(self.magic)
     }
 
     fn to_chain_info(&self) -> ChainWellKnownInfo {
         let file =
-            File::open(self.chain_info_path.clone()).expect("Chain Info not found at given path");
+            File::open(self.node_config_path.clone()).expect("Chain Info not found at given path");
         let reader = BufReader::new(file);
         serde_json::from_reader(reader).expect("Invalid JSON format for ChainWellKnownInfo")
     }

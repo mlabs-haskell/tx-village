@@ -2,13 +2,13 @@ use super::{
     callback::Handler,
     filter::Filter,
     retry::RetryPolicy,
-    types::{IsNetworkMagic, NodeAddress},
+    types::{IsNetworkConfig, NodeAddress},
 };
 
-pub struct IndexerConfig<H: Handler, T: IsNetworkMagic> {
+pub struct IndexerConfig<H: Handler, T: IsNetworkConfig> {
     pub handler: H,
     pub node_address: NodeAddress,
-    pub network_magic: T,
+    pub network_config: T,
     /// Slot number and hash as hex string (optional).
     /// If not provided, sync will begin from the tip of the chain.
     pub since_slot: Option<(u64, String)>,
@@ -24,11 +24,11 @@ pub struct IndexerConfig<H: Handler, T: IsNetworkMagic> {
     pub database_url: String,
 }
 
-impl<H: Handler, T: IsNetworkMagic> IndexerConfig<H, T> {
+impl<H: Handler, T: IsNetworkConfig> IndexerConfig<H, T> {
     pub fn new(
         handler: H,
         node_address: NodeAddress,
-        network_magic: T,
+        network_config: T,
         since_slot: Option<(u64, String)>,
         safe_block_depth: usize,
         event_filter: Option<Filter>,
@@ -38,7 +38,7 @@ impl<H: Handler, T: IsNetworkMagic> IndexerConfig<H, T> {
         Self {
             handler,
             node_address,
-            network_magic,
+            network_config,
             since_slot,
             safe_block_depth,
             event_filter,

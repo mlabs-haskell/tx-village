@@ -12,7 +12,7 @@ use tx_indexer::indexer::{
     error::{ErrorPolicy, ErrorPolicyProvider},
     filter::Filter,
     run_indexer,
-    types::{NetworkMagic, NetworkMagicRaw, NodeAddress},
+    types::{NetworkConfig, NetworkName, NodeAddress},
 };
 
 mod aux;
@@ -28,32 +28,32 @@ struct IndexStartArgs {
     #[arg(
         short('n'),
         long,
-        value_parser = clap::value_parser!(NetworkMagic),
-        required_unless_present="network_magic_raw",
-        conflicts_with="network_magic_raw"
+        value_parser = clap::value_parser!(NetworkName),
+        required_unless_present="network",
+        conflicts_with="network_magic"
     )]
-    network_magic: Option<NetworkMagic>,
+    network: Option<NetworkName>,
 
     /// Network magic number
     #[arg(
         short('m'),
         long("magic"),
-        requires = "chain_info_path",
+        requires = "node_config_path",
         conflicts_with = "network_magic"
     )]
-    network_magic_raw: Option<u64>,
+    network_magic: Option<u64>,
 
     /// Cardano node configuration path
-    #[arg(long("chain_info_path"))]
-    chain_info_path: Option<String>,
+    #[arg(long)]
+    node_config_path: Option<String>,
 
     /// Sync from this slot
-    #[arg(short, long, requires = "since_slot_hash")]
+    #[arg(short, long, requires = "since_block_hash")]
     since_slot: Option<u64>,
 
     /// Sync from this block hash
     #[arg(short('a'), long, requires = "since_slot")]
-    since_slot_hash: Option<String>,
+    since_block_hash: Option<String>,
 
     /// Filter for transactions minting this currency symbol (multiple allowed)
     #[arg(short('c'), long = "curr_symbol")]
@@ -107,24 +107,24 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         Command::Index(index_cmd) => match index_cmd {
             IndexCommand::Start(IndexStartArgs {
                 socket_path,
+                network,
                 network_magic,
-                network_magic_raw,
-                chain_info_path,
+                node_config_path,
                 since_slot,
-                since_slot_hash,
+                since_block_hash,
                 curr_symbols,
                 database_url,
             }) => {
-                let indexer = match (network_magic, network_magic_raw) {
+                let indexer = match (network, network_magic) {
                     (_, Some(x)) => {
                         run_indexer(IndexerConfig::new(
                             DummyHandler,
                             NodeAddress::UnixSocket(socket_path),
-                            NetworkMagicRaw {
+                            NetworkConfig {
                                 magic: x,
-                                chain_info_path: chain_info_path.unwrap(),
+                                node_config_path: node_config_path.unwrap(),
                             },
-                            since_slot.zip(since_slot_hash),
+                            since_slot.zip(since_block_hash),
                             4,
                             if curr_symbols.is_empty() {
                                 None
@@ -146,7 +146,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
                             DummyHandler,
                             NodeAddress::UnixSocket(socket_path),
                             x,
-                            since_slot.zip(since_slot_hash),
+                            since_slot.zip(since_block_hash),
                             4,
                             if curr_symbols.is_empty() {
                                 None
