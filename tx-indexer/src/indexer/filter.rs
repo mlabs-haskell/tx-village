@@ -8,24 +8,32 @@ pub struct Filter {
     pub curr_symbols: Vec<CurrencySymbol>,
 }
 
+// We only obtain Transaction events that contain the policy in the output
+// NOTE: Must enable 'include_transaction_details' in oura Mapper config.
 impl Filter {
     pub fn to_selection_config(self) -> Config {
         Config {
-            check: Predicate::AnyOf(
-                self.curr_symbols
-                    .into_iter()
-                    .map(|cur_sym| match cur_sym {
-                        CurrencySymbol::Ada => Predicate::PolicyEquals(String::new()),
-                        CurrencySymbol::NativeToken(MintingPolicyHash(script_hash)) => {
-                            Predicate::PolicyEquals(
-                                csl::crypto::ScriptHash::try_from_pla(&script_hash)
-                                    .unwrap()
-                                    .to_hex(),
-                            )
-                        }
-                    })
-                    .collect(),
-            ),
+            check: Predicate::AllOf(vec![
+                Predicate::VariantIn(vec!["Transaction".to_string()]),
+                Predicate::AnyOf(
+                    self.curr_symbols
+                        .into_iter()
+                        .map(serialize_cur_sym)
+                        .map(Predicate::PolicyEquals)
+                        .collect(),
+                ),
+            ]),
+        }
+    }
+}
+
+fn serialize_cur_sym(cur_sym: CurrencySymbol) -> String {
+    match cur_sym {
+        CurrencySymbol::Ada => String::new(),
+        CurrencySymbol::NativeToken(MintingPolicyHash(script_hash)) => {
+            csl::crypto::ScriptHash::try_from_pla(&script_hash)
+                .unwrap()
+                .to_hex()
         }
     }
 }

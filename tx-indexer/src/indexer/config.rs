@@ -2,14 +2,13 @@ use super::{
     callback::Handler,
     filter::Filter,
     retry::RetryPolicy,
-    types::{NetworkMagic, NodeAddress},
+    types::{IsNetworkMagic, NodeAddress},
 };
 
-pub struct IndexerConfig<H: Handler> {
-    /// Handler configuration implementing the Handler trait
+pub struct IndexerConfig<H: Handler, T: IsNetworkMagic> {
     pub handler: H,
     pub node_address: NodeAddress,
-    pub network_magic: NetworkMagic,
+    pub network_magic: T,
     /// Slot number and hash as hex string (optional).
     /// If not provided, sync will begin from the tip of the chain.
     pub since_slot: Option<(u64, String)>,
@@ -25,11 +24,11 @@ pub struct IndexerConfig<H: Handler> {
     pub database_url: String,
 }
 
-impl<H: Handler> IndexerConfig<H> {
+impl<H: Handler, T: IsNetworkMagic> IndexerConfig<H, T> {
     pub fn new(
         handler: H,
         node_address: NodeAddress,
-        network_magic: NetworkMagic,
+        network_magic: T,
         since_slot: Option<(u64, String)>,
         safe_block_depth: usize,
         event_filter: Option<Filter>,
@@ -57,28 +56,22 @@ pub mod deprecation_usage {
     use oura::mapper::Config as MapperConfig;
     use oura::sources::n2c::Config as N2CConfig;
     use oura::sources::n2n::Config as N2NConfig;
-    use oura::sources::{AddressArg, IntersectArg, PointArg};
-
-    use super::super::types::NetworkMagic;
+    use oura::sources::{AddressArg, IntersectArg, MagicArg, PointArg};
 
     pub fn n2c_config(
         addr: AddressArg,
-        magic: NetworkMagic,
+        magic: MagicArg,
         since_slot: Option<(u64, String)>,
         safe_block_depth: usize,
     ) -> N2CConfig {
         N2CConfig {
             address: addr,
-            magic: Some(magic.to_magic_arg()),
+            magic: Some(magic),
             intersect: since_slot
                 .map(|since_slot| IntersectArg::Point(PointArg(since_slot.0, since_slot.1))),
             mapper: MapperConfig {
-                include_block_end_events: false,
                 include_transaction_details: true,
-                include_transaction_end_events: false,
-                include_block_details: false,
-                include_block_cbor: false,
-                include_byron_ebb: false,
+                ..Default::default()
             },
             min_depth: safe_block_depth,
             retry_policy: None,
@@ -91,22 +84,18 @@ pub mod deprecation_usage {
 
     pub fn n2n_config(
         addr: AddressArg,
-        magic: NetworkMagic,
+        magic: MagicArg,
         since_slot: Option<(u64, String)>,
         safe_block_depth: usize,
     ) -> N2NConfig {
         N2NConfig {
             address: addr,
-            magic: Some(magic.to_magic_arg()),
+            magic: Some(magic),
             intersect: since_slot
                 .map(|since_slot| IntersectArg::Point(PointArg(since_slot.0, since_slot.1))),
             mapper: MapperConfig {
-                include_block_end_events: false,
                 include_transaction_details: true,
-                include_transaction_end_events: false,
-                include_block_details: false,
-                include_block_cbor: false,
-                include_byron_ebb: false,
+                ..Default::default()
             },
             min_depth: safe_block_depth,
             retry_policy: None,

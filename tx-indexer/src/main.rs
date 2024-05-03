@@ -12,7 +12,7 @@ use tx_indexer::indexer::{
     error::{ErrorPolicy, ErrorPolicyProvider},
     filter::Filter,
     run_indexer,
-    types::{NetworkMagic, NodeAddress},
+    types::{NetworkMagic, NetworkMagicRaw, NodeAddress},
 };
 
 mod aux;
@@ -25,20 +25,39 @@ struct IndexStartArgs {
     socket_path: String,
 
     /// Network name (preprod | preview | mainnet)
-    #[arg(value_parser = clap::value_parser!(NetworkMagic))]
-    network_magic: NetworkMagic,
+    #[arg(
+        short('n'),
+        long,
+        value_parser = clap::value_parser!(NetworkMagic),
+        required_unless_present="network_magic_raw",
+        conflicts_with="network_magic_raw"
+    )]
+    network_magic: Option<NetworkMagic>,
 
-    /// Sync from this this slot
-    #[arg(short, long)]
+    /// Network magic number
+    #[arg(
+        short('m'),
+        long("magic"),
+        requires = "chain_info_path",
+        conflicts_with = "network_magic"
+    )]
+    network_magic_raw: Option<u64>,
+
+    /// Cardano node configuration path
+    #[arg(long("chain_info_path"))]
+    chain_info_path: Option<String>,
+
+    /// Sync from this slot
+    #[arg(short, long, requires = "since_slot_hash")]
     since_slot: Option<u64>,
 
     /// Sync from this block hash
-    #[arg(short('a'), long)]
+    #[arg(short('a'), long, requires = "since_slot")]
     since_slot_hash: Option<String>,
 
     /// Filter for transactions minting this currency symbol (multiple allowed)
-    #[arg(short('c'), long)]
-    curr_symbol: Vec<ParseCurrencySymbol>,
+    #[arg(short('c'), long = "curr_symbol")]
+    curr_symbols: Vec<ParseCurrencySymbol>,
 
     /// PostgreSQL database URL
     #[arg(long)]
@@ -57,6 +76,7 @@ enum Command {
     #[command(subcommand)]
     Index(IndexCommand),
 }
+
 /// Infinity Query command line interface
 #[derive(Parser, Debug)]
 #[command(author, version, about, long_about = None)]
@@ -88,38 +108,83 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
             IndexCommand::Start(IndexStartArgs {
                 socket_path,
                 network_magic,
+                network_magic_raw,
+                chain_info_path,
                 since_slot,
                 since_slot_hash,
-                curr_symbol,
+                curr_symbols,
                 database_url,
             }) => {
-                run_indexer(IndexerConfig::new(
-                    DummyHandler,
-                    NodeAddress::UnixSocket(socket_path),
-                    network_magic,
-                    since_slot.zip(since_slot_hash),
-                    4,
-                    if curr_symbol.is_empty() {
-                        None
-                    } else {
-                        Some(Filter {
-                            curr_symbols: curr_symbol
-                                .into_iter()
-                                .map(|ParseCurrencySymbol(cs)| cs)
-                                .collect(),
-                        })
-                    },
-                    Default::default(),
-                    database_url,
-                ))
-                .await
+                let indexer = match (network_magic, network_magic_raw) {
+                    (_, Some(x)) => {
+                        run_indexer(IndexerConfig::new(
+                            DummyHandler,
+                            NodeAddress::UnixSocket(socket_path),
+                            NetworkMagicRaw {
+                                magic: x,
+                                chain_info_path: chain_info_path.unwrap(),
+                            },
+                            since_slot.zip(since_slot_hash),
+                            4,
+                            if curr_symbols.is_empty() {
+                                None
+                            } else {
+                                Some(Filter {
+                                    curr_symbols: curr_symbols
+                                        .into_iter()
+                                        .map(|ParseCurrencySymbol(cur_sym)| cur_sym)
+                                        .collect(),
+                                })
+                            },
+                            Default::default(),
+                            database_url,
+                        ))
+                        .await
+                    }
+                    (Some(x), _) => {
+                        run_indexer(IndexerConfig::new(
+                            DummyHandler,
+                            NodeAddress::UnixSocket(socket_path),
+                            x,
+                            since_slot.zip(since_slot_hash),
+                            4,
+                            if curr_symbols.is_empty() {
+                                None
+                            } else {
+                                Some(Filter {
+                                    curr_symbols: curr_symbols
+                                        .into_iter()
+                                        .map(|ParseCurrencySymbol(cur_sym)| cur_sym)
+                                        .collect(),
+                                })
+                            },
+                            Default::default(),
+                            database_url,
+                        ))
+                        .await
+                    }
+                    _ => panic!("absurd: Clap did not parse any network magic arg"),
+                }?;
+                indexer
+                    .sink_handle
+                    .join()
+                    .map_err(|_| "error in sink thread")?;
+                indexer
+                    .filter_handle
+                    .map_or(Ok(()), |h| h.join().map_err(|_| "error in sink thread"))?;
+                indexer
+                    .source_handle
+                    .join()
+                    .map_err(|_| "error in source thread")?;
+
+                Ok(())
             }
         },
     }
 }
 
 #[derive(Debug)]
-pub struct Error();
+struct Error();
 
 impl ErrorPolicyProvider for Error {
     fn get_error_policy(&self) -> ErrorPolicy<Self> {
