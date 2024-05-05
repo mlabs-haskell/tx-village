@@ -130,6 +130,12 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "d92bec98840b8f03a5ff5413de5293bfcd8bf96467cf5452609f939ec6f5de16"
 
 [[package]]
+name = "assertables"
+version = "7.0.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "0c24e9d990669fbd16806bff449e4ac644fd9b1fca014760087732fe4102f131"
+
+[[package]]
 name = "async-stream"
 version = "0.3.5"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -3715,12 +3721,14 @@ name = "tx-bakery"
 version = "0.1.0"
 dependencies = [
  "anyhow",
+ "assertables",
  "cardano-serialization-lib",
  "cbor_event",
  "chrono",
  "data-encoding",
  "derive_builder",
  "futures",
+ "hex",
  "jsonrpsee",
  "lbf-prelude",
  "linked-hash-map",
