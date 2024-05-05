@@ -25,6 +25,7 @@ pub struct IndexerConfig<H: Handler, T: IsNetworkConfig> {
 }
 
 impl<H: Handler, T: IsNetworkConfig> IndexerConfig<H, T> {
+    #[allow(clippy::too_many_arguments)]
     pub fn new(
         handler: H,
         node_address: NodeAddress,
