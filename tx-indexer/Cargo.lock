@@ -130,6 +130,12 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "d92bec98840b8f03a5ff5413de5293bfcd8bf96467cf5452609f939ec6f5de16"
 
 [[package]]
+name = "assertables"
+version = "7.0.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "0c24e9d990669fbd16806bff449e4ac644fd9b1fca014760087732fe4102f131"
+
+[[package]]
 name = "async-stream"
 version = "0.3.5"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -1925,9 +1931,9 @@ checksum = "e2355d85b9a3786f481747ced0e0ff2ba35213a1f9bd406ed906554d7af805a1"
 
 [[package]]
 name = "oura"
-version = "1.8.1"
+version = "1.8.5"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "814bec57619db0486594ac5a0abfce32cdd09ebd6e35621084ba20bb5f7d026a"
+checksum = "5a4d590c0d1b51cf4d461f326b457a10422c24b15f989a219e7ee74151797dde"
 dependencies = [
  "bech32 0.9.1",
  "clap 3.2.25",
@@ -3715,12 +3721,14 @@ name = "tx-bakery"
 version = "0.1.0"
 dependencies = [
  "anyhow",
+ "assertables",
  "cardano-serialization-lib",
  "cbor_event",
  "chrono",
  "data-encoding",
  "derive_builder",
  "futures",
+ "hex",
  "jsonrpsee",
  "lbf-prelude",
  "linked-hash-map",
@@ -3757,6 +3765,7 @@ dependencies = [
  "num-traits",
  "oura",
  "pallas",
+ "plutus-ledger-api",
  "proptest",
  "serde",
  "serde_json",

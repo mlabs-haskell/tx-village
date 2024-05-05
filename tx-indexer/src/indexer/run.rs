@@ -1,5 +1,8 @@
-use std::{fmt::Debug, sync::Arc};
-
+use super::{
+    callback::{Callback, Handler},
+    config::{n2c_config, n2n_config, IndexerConfig},
+    types::{Indexer, IsNetworkConfig, NodeAddress},
+};
 use anyhow::Result;
 use oura::{
     pipelining::{FilterProvider, SinkProvider, SourceProvider},
@@ -7,23 +10,18 @@ use oura::{
     utils::{Utils, WithUtils},
     Error,
 };
+use sqlx::PgPool;
+use std::sync::Arc;
 use tracing::{span, Level};
 
-use super::{
-    callback::Callback,
-    config::{n2c_config, n2n_config, IndexerConfig},
-    error::ErrorPolicyProvider,
-    types::{Indexer, IsNetworkMagic, NodeAddress},
-};
-
 // This is based on: https://github.com/txpipe/oura/blob/27fb7e876471b713841d96e292ede40101b151d7/src/bin/oura/daemon.rs
-pub fn run_indexer<T: IsNetworkMagic, E: Debug + ErrorPolicyProvider + 'static>(
-    conf: IndexerConfig<T, E>,
+pub async fn run_indexer<H: Handler, T: IsNetworkConfig>(
+    conf: IndexerConfig<H, T>,
 ) -> Result<Indexer, Error> {
     let span = span!(Level::INFO, "run_indexer");
     let _enter = span.enter();
 
-    let chain = conf.network_magic.to_chain_info();
+    let chain = conf.network_config.to_chain_info();
     let utils = Arc::new(Utils::new(chain));
     let (source_handle, source_rx) = match conf.node_address {
         NodeAddress::UnixSocket(path) => {
@@ -31,7 +29,7 @@ pub fn run_indexer<T: IsNetworkMagic, E: Debug + ErrorPolicyProvider + 'static>(
                 WithUtils::new(
                     n2c_config(
                         AddressArg(BearerKind::Unix, path),
-                        conf.network_magic.to_magic_arg(),
+                        conf.network_config.to_magic_arg(),
                         conf.since_slot,
                         conf.safe_block_depth,
                     ),
@@ -45,7 +43,7 @@ pub fn run_indexer<T: IsNetworkMagic, E: Debug + ErrorPolicyProvider + 'static>(
                 WithUtils::new(
                     n2n_config(
                         AddressArg(BearerKind::Tcp, format!("{}:{}", hostname, port)),
-                        conf.network_magic.to_magic_arg(),
+                        conf.network_config.to_magic_arg(),
                         conf.since_slot,
                         conf.safe_block_depth,
                     ),
@@ -65,14 +63,10 @@ pub fn run_indexer<T: IsNetworkMagic, E: Debug + ErrorPolicyProvider + 'static>(
         None => (None, source_rx),
     };
 
+    let pg_pool = PgPool::connect(&conf.database_url).await?;
+
     let sink_handle = span!(Level::INFO, "BootstrapSink").in_scope(|| {
-        Callback {
-            // Storing a thread-safe shareable pointer to the async function
-            f: conf.callback_fn,
-            retry_policy: conf.retry_policy,
-            utils,
-        }
-        .bootstrap(next_rx)
+        Callback::new(conf.handler, conf.retry_policy, utils, pg_pool).bootstrap(next_rx)
     })?;
 
     Ok(Indexer {

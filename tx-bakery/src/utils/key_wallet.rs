@@ -10,6 +10,7 @@ use futures::future::OptionFuture;
 use plutus_ledger_api::v2::address::{Address, Credential, StakingCredential};
 use plutus_ledger_api::v2::crypto::Ed25519PubKeyHash;
 use std::io::Cursor;
+use std::path::Path;
 use thiserror::Error;
 use tokio;
 use tokio::fs;
@@ -49,9 +50,9 @@ pub struct KeyWallet {
 }
 
 impl KeyWallet {
-    pub async fn new(
-        payment_skey: &str,
-        staking_skey: Option<&str>,
+    pub async fn new<P: AsRef<Path>>(
+        payment_skey: P,
+        staking_skey: Option<P>,
     ) -> Result<KeyWallet, KeyWalletError> {
         let pay_priv_key = Self::read_priv_key(payment_skey).await?;
         let pay_pkh: Ed25519PubKeyHash = pay_priv_key.to_public().hash().to_pla();
@@ -79,7 +80,7 @@ impl KeyWallet {
         })
     }
     /// Get the private key used by Plutip
-    async fn read_priv_key(filepath: &str) -> Result<PrivateKey, KeyWalletError> {
+    async fn read_priv_key(filepath: impl AsRef<Path>) -> Result<PrivateKey, KeyWalletError> {
         let skey_str = fs::read_to_string(&filepath)
             .await
             .map_err(KeyWalletError::PrivateKeyReadError)?;

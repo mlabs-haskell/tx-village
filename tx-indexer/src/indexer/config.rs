@@ -1,16 +1,14 @@
-use std::{future::Future, sync::Arc};
-
-use oura::model::Event;
-
 use super::{
+    callback::Handler,
     filter::Filter,
     retry::RetryPolicy,
-    types::{AsyncFunction, AsyncResult, IsNetworkMagic, NodeAddress},
+    types::{IsNetworkConfig, NodeAddress},
 };
 
-pub struct IndexerConfig<T: IsNetworkMagic, E> {
+pub struct IndexerConfig<H: Handler, T: IsNetworkConfig> {
+    pub handler: H,
     pub node_address: NodeAddress,
-    pub network_magic: T,
+    pub network_config: T,
     /// Slot number and hash as hex string (optional).
     /// If not provided, sync will begin from the tip of the chain.
     pub since_slot: Option<(u64, String)>,
@@ -18,32 +16,35 @@ pub struct IndexerConfig<T: IsNetworkMagic, E> {
     /// See: https://oura.txpipe.io/v1/advanced/rollback_buffer
     pub safe_block_depth: usize,
     pub event_filter: Option<Filter>,
-    /// Callback function to pass events to
-    pub callback_fn: Arc<AsyncFunction<Event, AsyncResult<E>>>,
     /// Retry policy - how much to retry for each event callback failure
     /// This only takes effect on ErrorPolicy for a particular error is `Retry`.
     /// Once retries are exhausted, the handler will error (same treatment as ErrorPolicy::Exit)
     pub retry_policy: RetryPolicy,
+    /// Postgres database URL
+    pub database_url: String,
 }
 
-impl<T: IsNetworkMagic, E> IndexerConfig<T, E> {
-    pub fn new<R: Future<Output = Result<(), E>> + Send + Sync + 'static>(
+impl<H: Handler, T: IsNetworkConfig> IndexerConfig<H, T> {
+    #[allow(clippy::too_many_arguments)]
+    pub fn new(
+        handler: H,
         node_address: NodeAddress,
-        network_magic: T,
+        network_config: T,
         since_slot: Option<(u64, String)>,
         safe_block_depth: usize,
         event_filter: Option<Filter>,
-        callback_fn: impl Fn(Event) -> R + Send + Sync + 'static,
         retry_policy: RetryPolicy,
+        database_url: String,
     ) -> Self {
         Self {
+            handler,
             node_address,
-            network_magic,
+            network_config,
             since_slot,
             safe_block_depth,
             event_filter,
-            callback_fn: Arc::new(move |ev: Event| Box::pin(callback_fn(ev))),
             retry_policy,
+            database_url,
         }
     }
 }

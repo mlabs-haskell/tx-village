@@ -71,7 +71,7 @@ impl ToRpcParams for QueryLedgerStateUtxoByAddressParams {
 
 #[derive(Clone, Debug, Serialize, Deserialize)]
 pub(crate) struct OutputReference {
-    id: TransactionId,
+    transaction: TransactionId,
     index: u32,
 }
 
@@ -81,12 +81,12 @@ impl TryFrom<pla::v2::transaction::TransactionInput> for OutputReference {
     fn try_from(
         i: pla::v2::transaction::TransactionInput,
     ) -> std::result::Result<Self, Self::Error> {
-        let id = TransactionId::from(i.transaction_id);
+        let transaction = TransactionId::from(i.transaction_id);
         let index = u32::try_from(i.index).map_err(|err| OgmiosError::ConversionError {
             label: "BigInt to u32".into(),
             source: anyhow!(err),
         })?;
-        Ok(Self { id, index })
+        Ok(Self { transaction, index })
     }
 }
 
@@ -194,7 +194,7 @@ pub(crate) struct Seconds {
 
 #[derive(Clone, Debug, Serialize, Deserialize)]
 pub(crate) struct MilliSeconds {
-    pub milliseconds: f64,
+    pub milliseconds: u64,
 }
 
 #[derive(Clone, Debug, Serialize, Deserialize)]
@@ -359,47 +359,60 @@ impl TryFrom<&Utxo> for FullTransactionOutput {
             pla::v2::datum::OutputDatum::None
         };
 
-        let reference_script = utxo
-            .script
-            .clone()
-            .map(|script| -> Result<_> {
-                match script {
-                    Script::Native { cbor, .. } => {
-                        let script = csl::NativeScript::from_hex(&cbor).map_err(|source| {
-                            OgmiosError::ConversionError {
-                                label: "NativeScript".to_string(),
-                                source: anyhow!(source),
-                            }
-                        })?;
+        let reference_script =
+            utxo.script
+                .clone()
+                .map(|script| -> Result<_> {
+                    match script {
+                        Script::Native { cbor, .. } => {
+                            let script = csl::NativeScript::from_hex(&cbor).map_err(|source| {
+                                OgmiosError::ConversionError {
+                                    label: "NativeScript".to_string(),
+                                    source: anyhow!(source),
+                                }
+                            })?;
 
-                        Ok(crate::utils::script::Script::NativeScript(script))
-                    }
-                    Script::Plutus { cbor, language } => {
-                        let script =
-                            csl::plutus::PlutusScript::from_hex(&cbor).map_err(|source| {
+                            Ok(crate::utils::script::Script::NativeScript(script))
+                        }
+                        Script::Plutus { cbor, language } => {
+                            let plutus_version = match &language[..] {
+                                "plutus:v1" => csl::plutus::Language::new_plutus_v1(),
+                                "plutus:v2" => csl::plutus::Language::new_plutus_v2(),
+                                _ => Err(OgmiosError::ConversionError {
+                                    label: "Plutus language".to_string(),
+                                    source: anyhow!("Couldn't parse Plutus language version."),
+                                })?,
+                            };
+
+                            let flat_bytes =
+                                hex::decode(&cbor).map_err(|err| OgmiosError::ConversionError {
+                                    label: "Plutus script".to_string(),
+                                    source: anyhow!(
+                                        "Couldn't decode hex encoded plutus script: {}",
+                                        err
+                                    ),
+                                })?;
+
+                            let mut serializer = cbor_event::se::Serializer::new_vec();
+                            serializer.write_bytes(flat_bytes).unwrap();
+                            let script_bytes = serializer.finalize();
+
+                            let script = csl::plutus::PlutusScript::from_bytes_with_version(
+                                script_bytes,
+                                &plutus_version,
+                            )
+                            .map_err(|source| {
                                 OgmiosError::ConversionError {
                                     label: "PlutusScript".to_string(),
                                     source: anyhow!(source),
                                 }
                             })?;
 
-                        let plutus_version = match &language[..] {
-                            "plutus:v1" => crate::utils::script::PlutusVersion::V1,
-                            "plutus:v2" => crate::utils::script::PlutusVersion::V2,
-                            _ => Err(OgmiosError::ConversionError {
-                                label: "Plutus language".to_string(),
-                                source: anyhow!("Couldn't parse Plutus language version."),
-                            })?,
-                        };
-
-                        Ok(crate::utils::script::Script::PlutusScript(
-                            script,
-                            plutus_version,
-                        ))
+                            Ok(crate::utils::script::Script::PlutusScript(script))
+                        }
                     }
-                }
-            })
-            .transpose()?;
+                })
+                .transpose()?;
 
         Ok(FullTransactionOutput {
             address: csl::address::Address::from_bech32(&utxo.address)
