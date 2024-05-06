@@ -5,6 +5,7 @@ use oura::{
     utils::{PREPROD_MAGIC, PREVIEW_MAGIC},
 };
 use pallas::network::miniprotocols::MAINNET_MAGIC;
+use sqlx::PgPool;
 use std::error::Error;
 use std::fmt;
 use std::fs::File;
@@ -100,4 +101,5 @@ pub struct Indexer {
     pub source_handle: JoinHandle<()>,
     pub filter_handle: Option<JoinHandle<()>>,
     pub sink_handle: JoinHandle<()>,
+    pub pg_pool: PgPool,
 }
