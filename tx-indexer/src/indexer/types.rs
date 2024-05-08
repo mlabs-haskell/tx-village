@@ -5,6 +5,10 @@ use oura::{
     utils::{PREPROD_MAGIC, PREVIEW_MAGIC},
 };
 use pallas::network::miniprotocols::MAINNET_MAGIC;
+use plutus_ledger_api::v2::datum::{Datum, DatumHash};
+use plutus_ledger_api::v2::transaction::{TransactionHash, TransactionInput, TransactionOutput};
+use plutus_ledger_api::v2::value::Value;
+use std::collections::HashMap;
 use std::error::Error;
 use std::fmt;
 use std::fs::File;
@@ -100,4 +104,38 @@ pub struct Indexer {
     pub source_handle: JoinHandle<()>,
     pub filter_handle: Option<JoinHandle<()>>,
     pub sink_handle: JoinHandle<()>,
+}
+
+// Indication of when an event happened in the context of the chain.
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub struct ChainEventTime {
+    pub block_number: u64,
+    pub block_hash: String,
+    pub slot: u64,
+}
+
+// Chain events that the indexer is configured to produce.
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub enum ChainEvent {
+    TransactionEvent(TransactionEventRecord),
+    RollbackEvent { block_slot: u64, block_hash: String },
+}
+
+// Details on an transaction event (excluding unnecessary information).
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub struct TransactionEventRecord {
+    pub hash: TransactionHash,
+    pub fee: u64,
+    pub size: u32,
+
+    pub inputs: Vec<TransactionInput>,
+    pub outputs: Vec<TransactionOutput>,
+    pub mint: Value,
+
+    pub plutus_data: HashMap<DatumHash, Datum>,
+    // TODO(chase): Which of these would be realistically be interested in?
+    // pub vkey_witnesses: Option<Vec<VKeyWitnessRecord>>,
+    // pub native_witnesses: Option<Vec<NativeWitnessRecord>>,
+    // pub plutus_witnesses: Option<Vec<PlutusWitnessRecord>>,
+    // pub plutus_redeemers: Option<Vec<PlutusRedeemerRecord>>,
 }

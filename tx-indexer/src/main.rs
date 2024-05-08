@@ -1,7 +1,6 @@
 use anyhow::Result;
 use aux::ParseCurrencySymbol;
 use clap::Parser;
-use oura::model::Event;
 use sqlx::PgConnection;
 use std::{default::Default, fmt::Debug};
 use thiserror::Error;
@@ -12,7 +11,7 @@ use tx_indexer::indexer::{
     error::{ErrorPolicy, ErrorPolicyProvider},
     filter::Filter,
     run_indexer,
-    types::{NetworkConfig, NetworkName, NodeAddress},
+    types::{ChainEvent, ChainEventTime, NetworkConfig, NetworkName, NodeAddress},
 };
 
 mod aux;
@@ -210,7 +209,8 @@ impl Handler for DummyHandler {
 
     async fn handle<'a>(
         &self,
-        _event: Event,
+        _event_time: ChainEventTime,
+        _event: ChainEvent,
         _pg_connection: &'a mut PgConnection,
     ) -> Result<(), Self::Error> {
         Ok(())

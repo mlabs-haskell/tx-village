@@ -1,9 +1,9 @@
 use super::{
     error::ErrorPolicyProvider,
     retry::{perform_with_retry, RetryPolicy},
+    types::{ChainEvent, ChainEventTime},
 };
 use oura::{
-    model::Event,
     pipelining::{BootstrapResult, SinkProvider, StageReceiver},
     utils::Utils,
 };
@@ -21,7 +21,8 @@ where
 
     fn handle<'a>(
         &self,
-        event: Event,
+        event_time: ChainEventTime,
+        event: ChainEvent,
         pg_conn: &'a mut PgConnection,
     ) -> impl Future<Output = Result<(), Self::Error>>;
 }
