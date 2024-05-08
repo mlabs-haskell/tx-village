@@ -75,12 +75,12 @@ mod e2e_tests {
             NetworkName::MAINNET,
             None,
             4,
-            Some(Filter {
+            Filter {
                 curr_symbols: vec![Json::from_json_string(
                     "\"ec56549aaed71fba1ba7174672831cc20aac44c4a3b4607c38bed7f3\"",
                 )
                 .unwrap()],
-            }),
+            },
             Default::default(),
             "postgresql://postgres@localhost:5555/txvillage".to_string(),
         ))
