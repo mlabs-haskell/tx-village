@@ -101,23 +101,63 @@ mod e2e_tests {
         actual_tx: TransactionEventRecord,
     ) {
         assert_eq!(expected_hash, actual_tx.hash);
-        assert!(loose_vec_eq(
+        // In the case of inputs, we don't want any extra actual inputs. Only the expected ones.
+        assert_eq_vec_unsorted(
+            &actual_tx.inputs,
             &expected_info
                 .inputs
                 .into_iter()
                 .map(|x| x.reference)
                 .collect::<Vec<_>>(),
-            &actual_tx.inputs
-        ));
-        assert!(loose_vec_eq(&expected_info.outputs, &actual_tx.outputs));
+        );
+        // In the case of outputs, there may be extra change outputs.
+        // Therefore, left: expected, right: actual
+        assert_eq_vec_loose(
+            &expected_info.outputs,
+            // We need to ignore ada since it doesn't appear in expected tx info but does in the actual transaction.
+            &actual_tx
+                .outputs
+                .into_iter()
+                .map(
+                    |TransactionOutput {
+                         address,
+                         datum,
+                         reference_script,
+                         value,
+                     }| TransactionOutput {
+                        address,
+                        datum,
+                        reference_script,
+                        // Remove ada.
+                        value: value
+                            .filter(|cs, _, _| *cs != CurrencySymbol::Ada)
+                            .normalize(),
+                    },
+                )
+                .collect(),
+        );
         assert_eq!(expected_info.mint, actual_tx.mint);
     }
 
-    // Loose equality. Does not ensure order is the same in both vectors.
-    fn loose_vec_eq<T: Eq>(expected: &Vec<T>, actual: &Vec<T>) -> bool {
+    // Ensures two vectors are equal regardless of order of elements. (i.e, they contain same elements)
+    fn assert_eq_vec_unsorted<T: Eq + std::fmt::Debug>(left: &Vec<T>, right: &Vec<T>) {
+        assert_eq!(left.len(), right.len());
+        assert_eq_vec_loose(left, right);
+    }
+
+    // Loose equality. Ensures that all elements in `left` appear in `right`
+    // This means that `right` may be a superset of `left`.
+    fn assert_eq_vec_loose<T: Eq + std::fmt::Debug>(left: &Vec<T>, right: &Vec<T>) {
         /* TODO(chase): This could be more efficient with sets but not all required traits are implemented
         across the board. */
-        expected.len() == actual.len() && expected.iter().all(|x| actual.iter().any(|y| x == y))
+        for x in left {
+            assert!(
+                right.iter().any(|y| x == y),
+                "Could not find any matches for {:?} in {:?}",
+                x,
+                right
+            );
+        }
     }
 
     async fn test_mint(plutip: &Plutip, ogmios: &Ogmios) -> (TransactionHash, TransactionInfo) {
