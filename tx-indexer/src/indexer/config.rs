@@ -15,7 +15,8 @@ pub struct IndexerConfig<H: Handler, T: IsNetworkConfig> {
     /// Minimum depth a block has to be from the tip for it to be considered "confirmed"
     /// See: https://oura.txpipe.io/v1/advanced/rollback_buffer
     pub safe_block_depth: usize,
-    pub event_filter: Option<Filter>,
+    // Filter transaction events by specific component(s).
+    pub event_filter: Filter,
     /// Retry policy - how much to retry for each event callback failure
     /// This only takes effect on ErrorPolicy for a particular error is `Retry`.
     /// Once retries are exhausted, the handler will error (same treatment as ErrorPolicy::Exit)
@@ -32,7 +33,7 @@ impl<H: Handler, T: IsNetworkConfig> IndexerConfig<H, T> {
         network_config: T,
         since_slot: Option<(u64, String)>,
         safe_block_depth: usize,
-        event_filter: Option<Filter>,
+        event_filter: Filter,
         retry_policy: RetryPolicy,
         database_url: String,
     ) -> Self {

@@ -125,15 +125,11 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
                             },
                             since_slot.zip(since_block_hash),
                             4,
-                            if curr_symbols.is_empty() {
-                                None
-                            } else {
-                                Some(Filter {
-                                    curr_symbols: curr_symbols
-                                        .into_iter()
-                                        .map(|ParseCurrencySymbol(cur_sym)| cur_sym)
-                                        .collect(),
-                                })
+                            Filter {
+                                curr_symbols: curr_symbols
+                                    .into_iter()
+                                    .map(|ParseCurrencySymbol(cur_sym)| cur_sym)
+                                    .collect(),
                             },
                             Default::default(),
                             database_url,
@@ -147,15 +143,11 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
                             x,
                             since_slot.zip(since_block_hash),
                             4,
-                            if curr_symbols.is_empty() {
-                                None
-                            } else {
-                                Some(Filter {
-                                    curr_symbols: curr_symbols
-                                        .into_iter()
-                                        .map(|ParseCurrencySymbol(cur_sym)| cur_sym)
-                                        .collect(),
-                                })
+                            Filter {
+                                curr_symbols: curr_symbols
+                                    .into_iter()
+                                    .map(|ParseCurrencySymbol(cur_sym)| cur_sym)
+                                    .collect(),
                             },
                             Default::default(),
                             database_url,
@@ -170,7 +162,8 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
                     .map_err(|_| "error in sink thread")?;
                 indexer
                     .filter_handle
-                    .map_or(Ok(()), |h| h.join().map_err(|_| "error in sink thread"))?;
+                    .join()
+                    .map_err(|_| "error in sink thread")?;
                 indexer
                     .source_handle
                     .join()

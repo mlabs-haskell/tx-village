@@ -102,7 +102,7 @@ impl IsNetworkConfig for NetworkConfig {
 // Structure holding the thread handles associated to the indexer. These threads are never-ending.
 pub struct Indexer {
     pub source_handle: JoinHandle<()>,
-    pub filter_handle: Option<JoinHandle<()>>,
+    pub filter_handle: JoinHandle<()>,
     pub sink_handle: JoinHandle<()>,
 }
 
