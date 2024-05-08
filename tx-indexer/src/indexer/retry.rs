@@ -194,7 +194,7 @@ fn parse_oura_transaction(
                         // NOTE(chase): There is currently no way to know about reference scripts with Oura.
                         reference_script: None,
                         value: Value::ada_value(&BigInt::from_oura(amount)?)
-                            + Value::from_oura(assets.unwrap_or(Vec::new()))?,
+                            + Value::from_oura(assets.unwrap_or_default())?,
                     })
                 },
             )
@@ -202,7 +202,7 @@ fn parse_oura_transaction(
         mint: Value::from_oura(tx.mint.unwrap())?,
         plutus_data: tx
             .plutus_data
-            .unwrap_or(Vec::new())
+            .unwrap_or_default()
             .into_iter()
             .map(
                 |oura::PlutusDatumRecord {
