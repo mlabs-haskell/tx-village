@@ -1,21 +1,14 @@
 #[cfg(test)]
 mod e2e_tests {
-    use std::{collections::BTreeMap, str::FromStr, sync::mpsc};
+    use std::{collections::BTreeMap, sync::mpsc};
 
-    use cardano_serialization_lib as csl;
     use num_bigint::BigInt;
-    use num_traits::FromPrimitive;
-    use oura::model::{
-        Event, EventData, MintRecord, OutputAssetRecord, PlutusDatumRecord, TransactionRecord,
-        TxInputRecord, TxOutputRecord,
-    };
     use plutus_ledger_api::{
         json::Json,
         plutus_data::IsPlutusData,
         v2::{
-            address::Address,
             crypto::LedgerBytes,
-            datum::{Datum, DatumHash, OutputDatum},
+            datum::OutputDatum,
             redeemer::Redeemer,
             transaction::{TransactionHash, TransactionInfo, TransactionOutput, TxInInfo},
             value::{AssetClass, CurrencySymbol, TokenName, Value},
@@ -28,25 +21,20 @@ mod e2e_tests {
         submitter::Submitter,
         tx_info_builder::TxScaffold,
         utils::{
-            csl_to_pla::{FromCSL, TryToPLA},
             ogmios::{Ogmios, OgmiosConfigBuilder},
-            pla_to_csl::TryToCSLWithDef,
             plutip::{Plutip, PlutipConfigBuilder},
             script::ScriptOrRef,
         },
         wallet::Wallet,
         ChangeStrategy, CollateralStrategy, TxBakery, TxWithCtx,
     };
-    use tx_indexer::{
-        aux::ParseCurrencySymbol,
-        indexer::{
-            callback::Handler,
-            config::IndexerConfig,
-            error::{ErrorPolicy, ErrorPolicyProvider},
-            filter::Filter,
-            run_indexer,
-            types::{NetworkName, NodeAddress},
-        },
+    use tx_indexer::indexer::{
+        callback::Handler,
+        config::IndexerConfig,
+        error::{ErrorPolicy, ErrorPolicyProvider},
+        filter::Filter,
+        run_indexer,
+        types::{ChainEvent, ChainEventTime, NetworkName, NodeAddress, TransactionEventRecord},
     };
 
     #[tokio::test]
@@ -110,139 +98,26 @@ mod e2e_tests {
     fn assert_eq_tx(
         expected_hash: TransactionHash,
         expected_info: TransactionInfo,
-        actual_tx: TransactionRecord,
+        actual_tx: TransactionEventRecord,
     ) {
-        assert!(expected_hash.oura_eq(&actual_tx.hash));
-        assert!(expected_info.inputs.oura_eq(&actual_tx.inputs.unwrap()));
-        assert!(expected_info.outputs.oura_eq(&actual_tx.outputs.unwrap()));
-        assert!(expected_info.mint.oura_eq(&actual_tx.mint.unwrap()));
-    }
-
-    trait OuraEq<O> {
-        fn oura_eq(&self, actual: &O) -> bool;
+        assert_eq!(expected_hash, actual_tx.hash);
+        assert!(loose_vec_eq(
+            &expected_info
+                .inputs
+                .into_iter()
+                .map(|x| x.reference)
+                .collect::<Vec<_>>(),
+            &actual_tx.inputs
+        ));
+        assert!(loose_vec_eq(&expected_info.outputs, &actual_tx.outputs));
+        assert_eq!(expected_info.mint, actual_tx.mint);
     }
 
     // Loose equality. Does not ensure order is the same in both vectors.
-    impl<O, T: OuraEq<O>> OuraEq<Vec<O>> for Vec<T> {
-        fn oura_eq(&self, actual: &Vec<O>) -> bool {
-            /* TODO(chase): This could be more efficient with sets but not all required traits are implemented
-            across the board. */
-            self.len() == actual.len() && self.iter().all(|t| actual.iter().any(|o| t.oura_eq(o)))
-        }
-    }
-
-    impl<O, T: OuraEq<O>> OuraEq<Option<O>> for Option<T> {
-        fn oura_eq(&self, actual: &Option<O>) -> bool {
-            match (self, actual) {
-                (None, None) => true,
-                (Some(x), Some(y)) => x.oura_eq(y),
-                _ => false,
-            }
-        }
-    }
-
-    impl OuraEq<String> for TransactionHash {
-        fn oura_eq(&self, actual: &String) -> bool {
-            format!("{:?}", &self) == *actual
-        }
-    }
-
-    impl OuraEq<u64> for BigInt {
-        fn oura_eq(&self, actual: &u64) -> bool {
-            BigInt::from_u64(*actual).map_or(false, |x| *self == x)
-        }
-    }
-
-    impl OuraEq<TxInputRecord> for TxInInfo {
-        fn oura_eq(&self, actual: &TxInputRecord) -> bool {
-            self.reference.transaction_id.oura_eq(&actual.tx_id)
-                && self.reference.index.oura_eq(&actual.index)
-        }
-    }
-
-    impl OuraEq<String> for Address {
-        fn oura_eq(&self, actual: &String) -> bool {
-            csl::address::Address::from_bech32(&actual)
-                .ok()
-                .and_then(|actual_csl| actual_csl.try_to_pla().ok())
-                .map_or(false, |actual_pla: Address| *self == actual_pla)
-        }
-    }
-
-    impl OuraEq<String> for DatumHash {
-        fn oura_eq(&self, actual: &String) -> bool {
-            format!("{:?}", &self) == *actual
-        }
-    }
-
-    impl OuraEq<PlutusDatumRecord> for Datum {
-        fn oura_eq(&self, actual: &PlutusDatumRecord) -> bool {
-            // TODO(chase): Could we use the Hash impl for PLA Datum instead?
-            self.try_to_csl()
-                .ok()
-                .map_or(false, |x: csl::plutus::PlutusData| {
-                    <DatumHash as FromCSL<csl::crypto::DataHash>>::from_csl(
-                        &csl::utils::hash_plutus_data(&x),
-                    )
-                    .oura_eq(&actual.datum_hash)
-                })
-        }
-    }
-
-    impl OuraEq<Vec<OutputAssetRecord>> for Value {
-        fn oura_eq(&self, actual: &Vec<OutputAssetRecord>) -> bool {
-            actual
-                .iter()
-                .try_fold(Value::new(), |acc, x| {
-                    let amt = BigInt::from_u64(x.amount)?;
-                    let cs: ParseCurrencySymbol = FromStr::from_str(&x.policy).ok()?;
-                    Some(acc.insert_token(&cs.0, &TokenName::from_string(&x.asset), &amt))
-                })
-                .map_or(false, |actual_value| {
-                    self.clone().normalize() == actual_value.normalize()
-                })
-        }
-    }
-
-    impl OuraEq<Vec<MintRecord>> for Value {
-        fn oura_eq(&self, actual: &Vec<MintRecord>) -> bool {
-            actual
-                .iter()
-                .try_fold(Value::new(), |acc, x| {
-                    let amt = BigInt::from_i64(x.quantity)?;
-                    let cs: ParseCurrencySymbol = FromStr::from_str(&x.policy).ok()?;
-                    Some(acc.insert_token(&cs.0, &TokenName::from_string(&x.asset), &amt))
-                })
-                .map_or(false, |actual_value| {
-                    self.clone().normalize() == actual_value.normalize()
-                })
-        }
-    }
-
-    impl OuraEq<TxOutputRecord> for TransactionOutput {
-        fn oura_eq(&self, actual: &TxOutputRecord) -> bool {
-            let value_without_ada = self
-                .value
-                .clone()
-                .filter(|cs, tk, _| *cs != CurrencySymbol::Ada && *tk != TokenName::ada());
-            self.address.oura_eq(&actual.address)
-                && self.value.get_ada_amount().oura_eq(&actual.amount)
-                && OuraEq::<Vec<OutputAssetRecord>>::oura_eq(
-                    &value_without_ada,
-                    &actual.assets.as_ref().unwrap_or(&Vec::new()),
-                )
-                && match &self.datum {
-                    OutputDatum::None => actual.datum_hash == None && actual.inline_datum == None,
-                    OutputDatum::DatumHash(x) => actual
-                        .datum_hash
-                        .as_ref()
-                        .map_or(false, |actual_hash| x.oura_eq(&actual_hash)),
-                    OutputDatum::InlineDatum(x) => actual
-                        .inline_datum
-                        .as_ref()
-                        .map_or(false, |actual_inline_datum| x.oura_eq(&actual_inline_datum)),
-                }
-        }
+    fn loose_vec_eq<T: Eq>(expected: &Vec<T>, actual: &Vec<T>) -> bool {
+        /* TODO(chase): This could be more efficient with sets but not all required traits are implemented
+        across the board. */
+        expected.len() == actual.len() && expected.iter().all(|x| actual.iter().any(|y| x == y))
     }
 
     async fn test_mint(plutip: &Plutip, ogmios: &Ogmios) -> (TransactionHash, TransactionInfo) {
@@ -324,7 +199,7 @@ mod e2e_tests {
 
     #[derive(Clone)]
     struct ObserveHandler {
-        observer_channel: mpsc::Sender<TransactionRecord>,
+        observer_channel: mpsc::Sender<TransactionEventRecord>,
     }
 
     impl Handler for ObserveHandler {
@@ -332,11 +207,12 @@ mod e2e_tests {
 
         async fn handle<'a>(
             &self,
-            ev: Event,
+            _: ChainEventTime,
+            ev: ChainEvent,
             _pg_connection: &'a mut PgConnection,
         ) -> Result<(), Self::Error> {
-            match ev.data {
-                EventData::Transaction(dat) => self.observer_channel.send(dat).unwrap(),
+            match ev {
+                ChainEvent::TransactionEvent(dat) => self.observer_channel.send(dat).unwrap(),
                 _ => (),
             };
             Ok(())
