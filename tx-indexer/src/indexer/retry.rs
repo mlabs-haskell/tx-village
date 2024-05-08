@@ -144,6 +144,7 @@ fn parse_oura_event(ev: oura::Event) -> Result<(ChainEventTime, ChainEvent), Our
     };
     let event = match ev.data {
         oura::EventData::Transaction(dat) => {
+            event!(Level::DEBUG, label="TransactionEvent", data=?dat);
             ChainEvent::TransactionEvent(parse_oura_transaction(dat)?)
         }
         _ => panic!("absurd: Indexer filter should only allow transaction event variant."),
@@ -272,6 +273,16 @@ impl FromOura<String> for CurrencySymbol {
     }
 }
 
+impl FromOura<String> for TokenName {
+    fn from_oura(value: String) -> Result<Self, OuraParseError> {
+        Ok(if value.is_empty() {
+            TokenName::ada()
+        } else {
+            TokenName(LedgerBytes::from_oura(value)?)
+        })
+    }
+}
+
 impl FromOura<serde_json::Value> for Datum {
     fn from_oura(value: serde_json::Value) -> Result<Self, OuraParseError> {
         serde_json::from_value(value.clone())
@@ -297,7 +308,7 @@ impl FromOura<Vec<OutputAssetRecord>> for Value {
             let amt = BigInt::from_oura(x.amount)?;
             Ok(acc.insert_token(
                 &CurrencySymbol::from_oura(x.policy.clone())?,
-                &TokenName::from_string(&x.asset),
+                &TokenName::from_oura(x.asset.clone())?,
                 &amt,
             ))
         })
@@ -310,7 +321,7 @@ impl FromOura<Vec<MintRecord>> for Value {
             let amt = BigInt::from_oura(x.quantity)?;
             Ok(acc.insert_token(
                 &CurrencySymbol::from_oura(x.policy.clone())?,
-                &TokenName::from_string(&x.asset),
+                &TokenName::from_oura(x.asset.clone())?,
                 &amt,
             ))
         })
