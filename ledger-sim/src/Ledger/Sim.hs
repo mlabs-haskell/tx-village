@@ -1,4 +1,12 @@
-module Ledger.Sim (LedgerSim, LedgerState (..), LedgerConfig (..), LedgerValidatorError (..), runLedgerSim, runLedgerSimWithState, submitTx) where
+module Ledger.Sim (
+    LedgerSim,
+    LedgerState (..),
+    LedgerConfig (..),
+    LedgerValidatorError (..),
+    runLedgerSim,
+    runLedgerSimWithState,
+    submitTx,
+) where
 
 import Control.Monad (unless)
 import Control.Monad.Trans.Class (lift)
@@ -7,7 +15,7 @@ import Control.Monad.Trans.Reader (ReaderT (runReaderT), asks)
 import Control.Monad.Trans.State.Strict (StateT (runStateT), get, gets, modify')
 import Data.Map.Strict (Map)
 import Data.Map.Strict qualified as M
-import Data.Maybe (mapMaybe, maybeToList)
+import Data.Maybe (isJust, mapMaybe, maybeToList)
 import Data.Set qualified as S
 import Data.String (fromString)
 
@@ -16,8 +24,6 @@ import PlutusLedgerApi.Common.Versions qualified as Plutus
 import PlutusLedgerApi.V1.Interval (contains)
 import PlutusLedgerApi.V1.Value qualified as Value
 import PlutusLedgerApi.V2 (
-    Address (Address),
-    Credential (PubKeyCredential, ScriptCredential),
     CurrencySymbol (CurrencySymbol),
     Datum,
     DatumHash,
@@ -68,6 +74,7 @@ import Ledger.Sim.Types.Config (
  )
 import Ledger.Sim.Types.Slot (Slot (Slot, getSlot), SlotConfig (SlotConfig, sc'slotLength, sc'slotZeroTime), slotToPOSIXTimeRange)
 import Ledger.Sim.Types.TxInfo (TxInfoWithScripts (TxInfoWithScripts, txInfoRaw, txInfoScripts))
+import PlutusLedgerApi.V1.Address (toPubKeyHash, toScriptHash)
 import PlutusTx.Builtins qualified as PlutusTx
 
 data LedgerState = LedgerState
@@ -199,7 +206,7 @@ checkTx
         checkSpendable :: LedgerValidator ()
         checkSpendable = do
             let keys = S.fromList txInfoSignatories
-            unlessExists TxMissingOwnerSignature keys $ mapMaybe (pubKeyHashFromAddress . txOutAddress . txInInfoResolved) txInfoInputs
+            unlessExists TxMissingOwnerSignature keys $ mapMaybe (toPubKeyHash . txOutAddress . txInInfoResolved) txInfoInputs
 
         checkNewReferenceScripts :: LedgerValidator ()
         checkNewReferenceScripts = do
@@ -224,7 +231,7 @@ checkTx
                     _ -> Nothing
             unlessExists TxMissingPolicyInvocation invokedPolicies . filter (/= fromString "") $ Value.symbols txInfoMint
             unlessExists TxMissingValidatorInvocation invokedValidatorRefs . map txInInfoOutRef $
-                filter (isScriptAddress . txOutAddress . txInInfoResolved) txInfoInputs
+                filter (isJust . toScriptHash . txOutAddress . txInInfoResolved) txInfoInputs
 
         getScript :: ScriptPurpose -> LedgerValidator (ScriptForEvaluation, Maybe Datum)
         getScript (Minting (CurrencySymbol (ScriptHash -> sh))) = do
@@ -234,9 +241,12 @@ checkTx
             (txInInfoResolved -> utxo) <-
                 maybe (throwLVE $ TxInfoAbsurd "Spending an utxo that is not an input") pure $
                     find (\TxInInfo{txInInfoOutRef} -> txInInfoOutRef == ref) txInfoInputs
-            sh <- case txOutAddress utxo of
-                Address (ScriptCredential sh) _ -> pure sh
-                _ -> throwLVE $ TxInfoAbsurd "absurd: TxInfo is spending a script input from a pub key address"
+            sh <-
+                maybe
+                    (throwLVE $ TxInfoAbsurd "absurd: TxInfo is spending a script input from a pub key address")
+                    pure
+                    . toScriptHash
+                    $ txOutAddress utxo
             script <- lookupScript sh
             datm <- case txOutDatum utxo of
                 OutputDatumHash dh -> maybe (throwLVE $ TxMissingDatum dh) pure $ dh `M.lookup` datumMap
@@ -274,11 +284,6 @@ checkTx
                         then pure script
                         else throwLVE $ TxMissingReference sh
                 _ -> throwLVE $ TxMissingScript sh
-
-        isScriptAddress (Address (ScriptCredential _) _) = True
-        isScriptAddress _ = False
-        pubKeyHashFromAddress (Address (PubKeyCredential pkh) _) = Just pkh
-        pubKeyHashFromAddress _ = Nothing
 
 updateUtxos :: TxInfo -> LedgerSim ()
 updateUtxos TxInfo{txInfoId, txInfoInputs, txInfoOutputs} = do
