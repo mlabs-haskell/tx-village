@@ -2,20 +2,20 @@
 module Ledger.Sim.Types.Slot (Slot (..), SlotConfig (..), slotToPOSIXTimeRange, practicalSlotConfig) where
 
 import PlutusLedgerApi.V1.Interval (interval)
-import PlutusLedgerApi.V2 (POSIXTime (POSIXTime, getPOSIXTime), POSIXTimeRange)
+import PlutusLedgerApi.V2 (POSIXTime, POSIXTimeRange)
 
 {- | The slot number. This is a good proxy for time, since on the Cardano blockchain
  slots pass at a constant rate.
 -}
-newtype Slot = Slot {getSlot :: Integer}
+newtype Slot = Slot {getSlot :: POSIXTime}
     deriving stock (Eq, Ord, Show)
 
 {- | Datatype to configure the length (ms) of one slot and the beginning of the
  first slot.
 -}
 data SlotConfig = SlotConfig
-    { sc'slotLength :: Integer
-    -- ^ Length (number of milliseconds) of one slot
+    { sc'slotLength :: POSIXTime
+    -- ^ Length (in milliseconds) of one slot
     , sc'slotZeroTime :: POSIXTime
     -- ^ Beginning of slot 0 (in milliseconds)
     }
@@ -40,9 +40,9 @@ slotToPOSIXTimeRange sc slot =
 slotToBeginPOSIXTime :: SlotConfig -> Slot -> POSIXTime
 slotToBeginPOSIXTime SlotConfig{sc'slotLength, sc'slotZeroTime} (Slot n) =
     let msAfterBegin = n * sc'slotLength
-     in POSIXTime $ getPOSIXTime sc'slotZeroTime + msAfterBegin
+     in sc'slotZeroTime + msAfterBegin
 
 -- | Get the ending 'POSIXTime' of a 'Slot' given a 'SlotConfig'.
 slotToEndPOSIXTime :: SlotConfig -> Slot -> POSIXTime
 slotToEndPOSIXTime sc@SlotConfig{sc'slotLength} slot =
-    slotToBeginPOSIXTime sc slot + POSIXTime (sc'slotLength - 1)
+    slotToBeginPOSIXTime sc slot + sc'slotLength - 1
