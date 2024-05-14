@@ -36,7 +36,7 @@ library
   exposed-modules:
     Ledger.Sim
     Ledger.Sim.Types.Config
-    Ledger.Sim.Types.Slot
+    Ledger.Sim.Types.Script
     Ledger.Sim.Types.TxInfo
 
   hs-source-dirs:  src
