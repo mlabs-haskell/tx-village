@@ -21,7 +21,6 @@ import Data.String (fromString)
 
 import PlutusLedgerApi.Common qualified as Plutus
 import PlutusLedgerApi.Common.Versions qualified as Plutus
-import PlutusLedgerApi.V1.Interval (contains)
 import PlutusLedgerApi.V1.Value qualified as Value
 import PlutusLedgerApi.V2 (
     CurrencySymbol (CurrencySymbol),
@@ -70,15 +69,15 @@ import Data.Functor.Identity (Identity (runIdentity))
 import Data.Set (Set)
 import Data.Traversable (for)
 import Ledger.Sim.Types.Config (
-    LedgerConfig (lc'evaluationContext, lc'slotConfig),
+    LedgerConfig (lc'evaluationContext),
  )
-import Ledger.Sim.Types.Slot (Slot (Slot, getSlot), SlotConfig (SlotConfig, sc'slotLength, sc'slotZeroTime), slotToPOSIXTimeRange)
 import Ledger.Sim.Types.TxInfo (TxInfoWithScripts (TxInfoWithScripts, txInfoRaw, txInfoScripts))
 import PlutusLedgerApi.V1.Address (toPubKeyHash, toScriptHash)
+import PlutusLedgerApi.V1.Interval qualified as IV
 import PlutusTx.Builtins qualified as PlutusTx
 
 data LedgerState = LedgerState
-    { ls'currentSlot :: !Slot
+    { ls'currentTime :: !POSIXTime
     , ls'utxos :: !(Map TxOutRef TxOut)
     , ls'existingScripts :: !(Map ScriptHash ScriptForEvaluation)
     -- ^ Scripts which are stored on the chain by a reference script utxo.
@@ -90,7 +89,7 @@ type LedgerValidator = ReaderT LedgerConfig (Except LedgerValidatorError)
 
 data LedgerValidatorError
     = -- | The transaction is outside its validity range.
-      TxInvalidRange {lve'txSlot :: !Slot, lve'txValidityRange :: POSIXTimeRange}
+      TxInvalidRange {lve'txTime :: !POSIXTime, lve'txValidityRange :: POSIXTimeRange}
     | -- | The specified input in the transaction does not exist in the ledger utxo set.
       TxNonExistentInput {lve'txOutRef :: !TxOutRef}
     | -- | The owner of a utxo being spent has not signed this transaction.
@@ -116,13 +115,14 @@ data LedgerValidatorError
       TxUnsupportedScriptPurpose
     | -- | Some absurd TxInfo construction.
       TxInfoAbsurd {lve'absurd :: !String}
+    deriving stock (Eq, Show)
 
 runLedgerSim :: LedgerConfig -> Map TxOutRef TxOut -> LedgerSim a -> Either LedgerValidatorError a
 runLedgerSim ledgerCfg existingUtxos =
     runLedgerSimWithState
         ledgerCfg
         LedgerState
-            { ls'currentSlot = Slot . sc'slotZeroTime $ lc'slotConfig ledgerCfg
+            { ls'currentTime = 1
             , ls'utxos = existingUtxos
             , ls'existingScripts = M.empty
             }
@@ -140,13 +140,13 @@ runLedgerSimWithState ledgerCfg ledgerState =
   This is because we don't have a real Cardano.Api TxBody available at hand and creating one from PLA would
   require a lot of effort.
   As a stopgap, Tx id is generated from current POSIX time. This may violate the assumptions of any scripts that
-  use hashing inside them. ex: script that checks `txId txInfo != blake2b_224 slot` where slot is some slot from validity range.
+  use hashing inside them. ex: script that checks `txId txInfo != blake2b_224 time` where time is some time from validity range.
 - See: 'checkTx'
 -}
 submitTx :: TxInfoWithScripts -> LedgerSim ()
 submitTx TxInfoWithScripts{txInfoRaw, txInfoScripts} = do
-    currentSlot <- gets ls'currentSlot
-    let txInfo = txInfoRaw{txInfoId = genTxId currentSlot}
+    currentTime <- gets ls'currentTime
+    let txInfo = txInfoRaw{txInfoId = genTxId currentTime}
     ledgerState <- get
     -- TODO(chase): Find a way to utilize tx script budget.
     _txBudget <- lift . checkTx ledgerState $ TxInfoWithScripts txInfo txInfoScripts
@@ -162,7 +162,7 @@ submitTx TxInfoWithScripts{txInfoRaw, txInfoScripts} = do
 checkTx :: LedgerState -> TxInfoWithScripts -> LedgerValidator ExBudget
 checkTx
     LedgerState
-        { ls'currentSlot
+        { ls'currentTime
         , ls'utxos
         , ls'existingScripts
         }
@@ -193,10 +193,9 @@ checkTx
 
         checkValidity :: LedgerValidator ()
         checkValidity = do
-            slotConfig <- asks lc'slotConfig
-            unless (txInfoValidRange `contains` slotToPOSIXTimeRange slotConfig ls'currentSlot)
+            unless (ls'currentTime `IV.member` txInfoValidRange)
                 . throwLVE
-                $ TxInvalidRange ls'currentSlot txInfoValidRange
+                $ TxInvalidRange ls'currentTime txInfoValidRange
 
         checkUtxosExist :: LedgerValidator ()
         checkUtxosExist = do
@@ -307,8 +306,7 @@ saveReferenceScripts TxInfoWithScripts{txInfoRaw = TxInfo{txInfoOutputs}, txInfo
 
 incrementSlot :: LedgerSim ()
 incrementSlot = do
-    SlotConfig{sc'slotLength} <- lift $ asks lc'slotConfig
-    modify' $ \st -> st{ls'currentSlot = Slot $ getSlot (ls'currentSlot st) + sc'slotLength}
+    modify' $ \st -> st{ls'currentTime = ls'currentTime st + 1}
 
 -- | Make sure every `k` in `f k` exists in the given set.
 unlessExists :: (Traversable f, Ord k) => (k -> LedgerValidatorError) -> Set k -> f k -> LedgerValidator ()
@@ -317,10 +315,10 @@ unlessExists errF m l = void . for l $ \k -> unless (k `S.member` m) . throwLVE 
 throwLVE :: LedgerValidatorError -> LedgerValidator a
 throwLVE = lift . throwE
 
-{- | Generate tx id from slot. NOTE: This is simply a stopgap measure used in the simulator. In reality,
+{- | Generate tx id from time. NOTE: This is simply a stopgap measure used in the simulator. In reality,
 tx ids are hashes of a transaction body.
 -}
-genTxId :: Slot -> TxId
+genTxId :: POSIXTime -> TxId
 genTxId =
     TxId
         . PlutusTx.toBuiltin
@@ -329,4 +327,3 @@ genTxId =
         . LBS.toStrict
         . serialise
         . getPOSIXTime
-        . getSlot
