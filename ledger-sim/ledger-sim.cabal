@@ -50,3 +50,22 @@ library
     , plutus-tx
     , serialise
     , transformers
+
+test-suite ledger-sim-test
+  import:         common-language
+  type:           exitcode-stdio-1.0
+  main-is:        Spec.hs
+  build-depends:
+    , base
+    , base16-bytestring
+    , bytestring
+    , containers
+    , ledger-sim
+    , plutus-ledger-api
+    , plutus-tx
+    , tasty
+    , tasty-hunit
+    , transformers
+
+  hs-source-dirs: test
+  ghc-options:    -threaded -rtsopts -with-rtsopts=-N
