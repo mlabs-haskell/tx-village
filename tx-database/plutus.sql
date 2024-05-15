@@ -8,79 +8,73 @@ CREATE DOMAIN Hash28 AS
 CREATE DOMAIN Hash32 AS
    BYTEA NOT NULL CHECK (LENGTH(value) = 32);
 
-CREATE TYPE CurrencySymbol AS Hash28;
+CREATE DOMAIN CurrencySymbol AS Hash28;
 
 CREATE DOMAIN TokenName As
     BYTEA NOT NULL CHECK (LENGTH(value) <= 32);
 
-CREATE TYPE TxId AS Hash32;
+CREATE DOMAIN TxId AS Hash32;
 
-CREATE TYPE PubKeyHash AS Hash28;
+CREATE DOMAIN PubKeyHash AS Hash28;
 
-CREATE TYPE ScriptHash AS Hash28;
+CREATE DOMAIN ScriptHash AS Hash28;
 
-CREATE TYPE DatumHash AS Hash28;
+CREATE DOMAIN DatumHash AS Hash28;
 
-CREATE TABLE Credential (
-    id BIGSERIAL PRIMARY KEY
+CREATE TYPE Credential_ AS (
+    pub_key_hash PubKeyHash,
+    script_hash ScriptHash
 );
 
-CREATE TABLE PubKeyCredential (
-    id BIGINT REFERENCES Credential(id),
-    pub_key_hash PubKeyHash UNIQUE NOT NULL,
-    PRIMARY KEY id
+CREATE DOMAIN Credential AS
+    Credential_ CHECK (
+        ((value).pub_key_hash IS NULL AND (value).script_hash IS NOT NULL)
+        OR (((value).pub_key_hash IS NOT NULL AND (value).script_hash IS NULL))
+    );
+
+CREATE TYPE StakingPtr_ AS (
+    slot_num INTEGER,
+    tx_idx INTEGER,
+    cert_idx INTEGER
 );
 
-CREATE TABLE ScriptCredential (
-    id BIGINT REFERENCES Credential(id),
-    script_hash ScriptHash UNIQUE NOT NULL,
-    PRIMARY KEY id
+CREATE DOMAIN StakingPtr AS StakingPtr_ CHECK (
+    (value).slot_num IS NOT NULL AND (value).tx_idx IS NOT NULL AND (value).cert_idx IS NOT NULL);
+
+CREATE TYPE StakingCredential_ AS (
+    staking_hash Credential,
+    staking_tr StakingPtr
 );
 
-CREATE TABLE StakingCredential (
-    id BIGSERIAL PRIMARY KEY
+CREATE DOMAIN StakingCredential AS
+    StakingCredential_ CHECK (
+        ((value).staking_hash IS NULL AND (value).staking_tr IS NOT NULL)
+        OR (((value).staking_hash IS NOT NULL AND (value).staking_tr IS NULL))
+    );
+
+CREATE TYPE Address_ AS (
+    credential Credential,
+    staking_credential StakingCredential
 );
 
-CREATE TABLE StakingHash (
-    id BIGINT REFERENCES StakingCredential(id),
-    staking_hash BIGINT NOT NULL REFERENCES Credential(id) UNIQUE,
-    PRIMARY KEY id
+CREATE DOMAIN Address AS Address_ CHECK ((value).credential IS NOT NULL);
+
+CREATE TYPE AssetQuantity_ AS (
+    currency_symbol CurrencySymbol,
+    token_name TokenName,
+    amount BIGINT
 );
 
-CREATE TABLE StakingPtr (
-    id BIGINT REFERENCES StakingCredential(id),
-    slot_num INTEGER NOT NULL,
-    tx_idx INTEGER NOT NULL,
-    cert_idx INTEGER NOT NULL,
-    UNIQUE (slot_num, tx_idx, cert_idx),
-    PRIMARY KEY id
+CREATE DOMAIN AssetQuantity AS
+    AssetQuantity_ CHECK ((value).currency_symbol IS NOT NULL AND (value).token_name IS NOT NULL AND (value).amount IS NOT NULL);
+
+CREATE TYPE Value_ AS (
+    assets AssetQuantity[],
+    lovelace BIGINT
 );
 
-CREATE TABLE Address (
-    id BIGSERIAL PRIMARY KEY,
-    credential_id BIGINT NOT NULL REFERENCES Credential(id),
-    staking_credential_id BIGINT NOT NULL REFERENCES StakingCredential(id),
-    UNIQUE (credential_id, staking_credential_id)
-);
-
-CREATE TABLE Asset (
-    id BIGSERIAL PRIMARY KEY,
-    currency_symbol CurrencySymbol NOT NULL,
-    token_name TokenName NOT NULL,
-    UNIQUE (currency_symbol, token_name)
-);
-
-CREATE TABLE Value (
-    id BIGSERIAL PRIMARY KEY,
-    lovelace BIGINT DEFAULT 0
-);
-
-CREATE TABLE ValueComponent (
-    owner_id BIGINT REFERENCES Value(id),
-    asset BIGINT REFERENCES Asset(id) UNIQUE,
-    amount BIGINT NOT NULL,
-    PRIMARY KEY owner_id
-);
+CREATE DOMAIN Value AS
+    Value_ CHECK ((value).assets IS NOT NULL AND (value).lovelace IS NOT NULL);
 
 CREATE TYPE TxOutRef_ AS (
     tx_id TxId,
@@ -90,68 +84,29 @@ CREATE TYPE TxOutRef_ AS (
 CREATE DOMAIN TxOutRef AS
     TxOutRef_ CHECK ((value).tx_id IS NOT NULL AND (value).tx_idx IS NOT NULL);
 
-CREATE TABLE OutputDatum (
-    id BIGSERIAL PRIMRAY KEY
-);
-
-CREATE TABLE DatumHash (
-    id BIGINT REFERENCES OutputDatum(id),
-    datum_hash DatumHash UNIQUE NOT NULL
-);
-
-CREATE TABLE InlineDatum (
-    id BIGINT REFERENCES OutputDatum(id),
-    inline_datum JSONB NOT NULL
-);
-
-CREATE TABLE TxOut (
-    id BIGSERIAL PRIMARY KEY,
-    address_id BIGINT NOT NULL REFERENCES Address(id),
-    value_id BIGINT NOT NULL REFERENCES Value(id),
-    datum_id BIGINT NOT NULL REFERENCES OutputDatum(id),
-    reference_script ScriptHash,
-);
-
-CREATE TABLE TxInInfo (
-    id BIGSERIAL PRIMARY KEY,
-    ref TxOutRef NOT NULL,
-    resolved BIGINT NOT NULL REFERENCES TxOut(id)
-);
-
-CREATE TABLE TxInfo (
-    id BIGSERIAL PRIMARY KEY,
-    tx_id TxId NOT NULL UNIQUE,
-    fee_id BIGINT NOT NULL REFERENCES Value(id),
-    mint_id BIGINT NOT NULL REFERENCES Value(id)
-);
-
-CREATE TABLE TxInfoInputs (
-    id BIGINT REFERENCES TxInfo(id),
-    input_id BIGINT REFERENCES TxInInfo(id),
-    PRIMARY KEY (id, input_id)
-);
-
-CREATE TABLE TxInfoReferenceInputs (
-    id BIGINT REFERENCES TxInfo(id),
-    input_id BIGINT REFERENCES TxInInfo(id),
-    PRIMARY KEY (id, input_id)
-);
-
-CREATE TABLE TxInfoOutputs (
-    id BIGINT REFERENCES TxInfo(id),
-    output_id BIGINT REFERENCES TxOut(id),
-    PRIMARY KEY (id, output_id)
-);
-
-CREATE TABLE TxInfoSignatories (
-    id BIGINT REFERENCES TxInfo(id),
-    pub_key_hash PubKeyHash,
-    PRIMARY KEY (id, output_id)
-);
-
-CREATE TABLE TxInfoData (
-    id BIGINT REFERENCES TxInfo(id),
+CREATE TYPE OutputDatum_ AS (
     datum_hash DatumHash,
-    datum JSONB,
-    PRIMARY KEY (id, datum_hash, datum)
+    inline_datum JSONB
 );
+
+CREATE DOMAIN OutputDatum AS
+    OutputDatum_ CHECK (
+        ((value).datum_hash IS NULL AND (value).inline_datum IS NOT NULL)
+        OR (((value).datum_hash IS NOT NULL AND (value).inline_datum IS NULL))
+    );
+
+CREATE TYPE TxOut_ AS (
+    address Address,
+    assets Value,
+    datum OutputDatum,
+    reference_script ScriptHash
+);
+
+CREATE DOMAIN TxOut AS TxOut_ CHECK ((value).address IS NOT NULL AND (value).assets IS NOT NULL);
+
+CREATE TYPE TxInInfo_ AS (
+    ref TxOutRef,
+    resolved TxOut
+);
+
+CREATE DOMAIN TxInInfo AS TxInInfo_ CHECK ((value).ref IS NOT NULL AND (value).resolved IS NOT NULL);
