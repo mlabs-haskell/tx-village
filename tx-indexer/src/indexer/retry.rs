@@ -295,11 +295,14 @@ impl FromOura<String> for TokenName {
 
 impl FromOura<serde_json::Value> for Datum {
     fn from_oura(value: serde_json::Value) -> Result<Self, OuraParseError> {
-        serde_json::from_value(value.clone())
-            .ok()
-            .and_then(|y: csl::plutus::PlutusData| y.try_to_pla().ok())
-            .map(Datum)
-            .ok_or(OuraParseError::DataFromJSON(value))
+        csl::plutus::encode_json_value_to_plutus_datum(
+            value.clone(),
+            csl::plutus::PlutusDatumSchema::DetailedSchema,
+        )
+        .ok()
+        .and_then(|y: csl::plutus::PlutusData| y.try_to_pla().ok())
+        .map(Datum)
+        .ok_or(OuraParseError::DataFromJSON(value))
     }
 }
 
@@ -342,12 +345,19 @@ impl FromOura<Vec<MintRecord>> for Value {
 enum OuraParseError {
     #[error("Unable to parse bigint from u64: {0}")]
     BigIntFromU64(u64),
+
     #[error("Unable to parse bigint from i64: {0}")]
     BigIntFromI64(i64),
+
     #[error("Unable to parse hash from string: {0}")]
     HashFromString(String),
+
     #[error("Unable to parse Address from bech32 string: {0}")]
     AddressFromString(String),
+
+    #[error("Byron addresses are currently not supported")]
+    ByronAddress,
+
     #[error("Unable to parse Datum from JSON: {0}")]
     DataFromJSON(serde_json::Value),
 }
