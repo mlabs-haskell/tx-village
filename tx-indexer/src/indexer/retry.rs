@@ -355,9 +355,6 @@ enum OuraParseError {
     #[error("Unable to parse Address from bech32 string: {0}")]
     AddressFromString(String),
 
-    #[error("Byron addresses are currently not supported")]
-    ByronAddress,
-
     #[error("Unable to parse Datum from JSON: {0}")]
     DataFromJSON(serde_json::Value),
 }
