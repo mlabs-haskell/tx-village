@@ -55,18 +55,15 @@ pub async fn run_indexer<H: Handler, T: IsNetworkConfig>(
     }?;
 
     // Optionally create a filter handle (if filter was provided)
-    let (filter_handle, next_rx) = match conf.event_filter {
-        Some(ev_f) => {
-            let (filter_handle, filter_rx) = ev_f.to_selection_config().bootstrap(source_rx)?;
-            (Some(filter_handle), filter_rx)
-        }
-        None => (None, source_rx),
-    };
+    let (filter_handle, filter_rx) = conf
+        .event_filter
+        .to_selection_config()
+        .bootstrap(source_rx)?;
 
     let pg_pool = PgPool::connect(&conf.database_url).await?;
 
     let sink_handle = span!(Level::INFO, "BootstrapSink").in_scope(|| {
-        Callback::new(conf.handler, conf.retry_policy, utils, pg_pool).bootstrap(next_rx)
+        Callback::new(conf.handler, conf.retry_policy, utils, pg_pool).bootstrap(filter_rx)
     })?;
 
     Ok(Indexer {

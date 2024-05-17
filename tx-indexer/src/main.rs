@@ -1,7 +1,6 @@
 use anyhow::Result;
 use aux::ParseCurrencySymbol;
 use clap::Parser;
-use oura::model::Event;
 use sqlx::PgConnection;
 use std::{default::Default, fmt::Debug};
 use thiserror::Error;
@@ -12,7 +11,7 @@ use tx_indexer::indexer::{
     error::{ErrorPolicy, ErrorPolicyProvider},
     filter::Filter,
     run_indexer,
-    types::{NetworkConfig, NetworkName, NodeAddress},
+    types::{ChainEvent, ChainEventTime, NetworkConfig, NetworkName, NodeAddress},
 };
 
 mod aux;
@@ -126,15 +125,11 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
                             },
                             since_slot.zip(since_block_hash),
                             4,
-                            if curr_symbols.is_empty() {
-                                None
-                            } else {
-                                Some(Filter {
-                                    curr_symbols: curr_symbols
-                                        .into_iter()
-                                        .map(|ParseCurrencySymbol(cur_sym)| cur_sym)
-                                        .collect(),
-                                })
+                            Filter {
+                                curr_symbols: curr_symbols
+                                    .into_iter()
+                                    .map(|ParseCurrencySymbol(cur_sym)| cur_sym)
+                                    .collect(),
                             },
                             Default::default(),
                             database_url,
@@ -148,15 +143,11 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
                             x,
                             since_slot.zip(since_block_hash),
                             4,
-                            if curr_symbols.is_empty() {
-                                None
-                            } else {
-                                Some(Filter {
-                                    curr_symbols: curr_symbols
-                                        .into_iter()
-                                        .map(|ParseCurrencySymbol(cur_sym)| cur_sym)
-                                        .collect(),
-                                })
+                            Filter {
+                                curr_symbols: curr_symbols
+                                    .into_iter()
+                                    .map(|ParseCurrencySymbol(cur_sym)| cur_sym)
+                                    .collect(),
                             },
                             Default::default(),
                             database_url,
@@ -171,7 +162,8 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
                     .map_err(|_| "error in sink thread")?;
                 indexer
                     .filter_handle
-                    .map_or(Ok(()), |h| h.join().map_err(|_| "error in sink thread"))?;
+                    .join()
+                    .map_err(|_| "error in sink thread")?;
                 indexer
                     .source_handle
                     .join()
@@ -210,7 +202,8 @@ impl Handler for DummyHandler {
 
     async fn handle<'a>(
         &self,
-        _event: Event,
+        _event_time: ChainEventTime,
+        _event: ChainEvent,
         _pg_connection: &'a mut PgConnection,
     ) -> Result<(), Self::Error> {
         Ok(())

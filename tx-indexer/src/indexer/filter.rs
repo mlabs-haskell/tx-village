@@ -4,6 +4,7 @@ use plutus_ledger_api::v2::{script::MintingPolicyHash, value::CurrencySymbol};
 use tx_bakery::utils::pla_to_csl::TryFromPLAWithDef;
 
 /// Interesting transaction components to look for when filtering transactions relevant to the protocol.
+/// Set curr_symbols to empty vectors to handle any transaction event indiscriminately.
 pub struct Filter {
     pub curr_symbols: Vec<CurrencySymbol>,
 }
@@ -15,17 +16,24 @@ impl Filter {
         Config {
             check: Predicate::AllOf(vec![
                 Predicate::VariantIn(vec!["Transaction".to_string()]),
-                Predicate::AnyOf(
-                    self.curr_symbols
-                        .into_iter()
-                        .map(serialize_cur_sym)
-                        .map(Predicate::PolicyEquals)
-                        .collect(),
-                ),
+                if self.curr_symbols.is_empty() {
+                    ALWAYS_TRUE
+                } else {
+                    Predicate::AnyOf(
+                        self.curr_symbols
+                            .into_iter()
+                            .map(serialize_cur_sym)
+                            .map(Predicate::PolicyEquals)
+                            .collect(),
+                    )
+                },
             ]),
         }
     }
 }
+
+// Filter predicate that always succeeds.
+const ALWAYS_TRUE: Predicate = Predicate::AllOf(vec![]);
 
 fn serialize_cur_sym(cur_sym: CurrencySymbol) -> String {
     match cur_sym {
