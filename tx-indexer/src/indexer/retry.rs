@@ -14,7 +14,7 @@ use plutus_ledger_api::v2::{
     crypto::LedgerBytes,
     datum::{Datum, DatumHash, OutputDatum},
     script::{MintingPolicyHash, ScriptHash},
-    transaction::{TransactionHash, TransactionInput, TransactionOutput},
+    transaction::{TransactionHash, TransactionInput, TransactionOutput, TxInInfo},
     value::{CurrencySymbol, TokenName, Value},
 };
 use sqlx::{Acquire, PgPool};
@@ -156,7 +156,7 @@ fn parse_oura_transaction(
     tx: oura::TransactionRecord,
 ) -> Result<TransactionEventRecord, OuraParseError> {
     Ok(TransactionEventRecord {
-        hash: TransactionHash::from_oura(tx.hash)?,
+        hash: TransactionHash::from_oura(tx.hash.clone())?,
         fee: tx.fee,
         size: tx.size,
         // All these unwraps should succeed since we enable `include_transaction_details` in the mapper config.
@@ -175,15 +175,23 @@ fn parse_oura_transaction(
             .outputs
             .unwrap()
             .into_iter()
+            .enumerate()
             .map(
-                |oura::TxOutputRecord {
-                     address,
-                     amount,
-                     assets,
-                     datum_hash,
-                     inline_datum,
-                 }| {
-                    Ok(TransactionOutput {
+                |(
+                    index,
+                    oura::TxOutputRecord {
+                        address,
+                        amount,
+                        assets,
+                        datum_hash,
+                        inline_datum,
+                    },
+                )| {
+                    let reference = TransactionInput {
+                        transaction_id: TransactionHash::from_oura(tx.hash.clone())?,
+                        index: index.into(),
+                    };
+                    let output = TransactionOutput {
                         address: Address::from_oura(address)?,
                         datum: match (datum_hash, inline_datum) {
                             (None, None) => OutputDatum::None,
@@ -196,7 +204,9 @@ fn parse_oura_transaction(
                         reference_script: None,
                         value: Value::ada_value(&BigInt::from_oura(amount)?)
                             + Value::from_oura(assets.unwrap_or_default())?,
-                    })
+                    };
+
+                    Ok(TxInInfo { reference, output })
                 },
             )
             .collect::<Result<_, _>>()?,
@@ -285,11 +295,14 @@ impl FromOura<String> for TokenName {
 
 impl FromOura<serde_json::Value> for Datum {
     fn from_oura(value: serde_json::Value) -> Result<Self, OuraParseError> {
-        serde_json::from_value(value.clone())
-            .ok()
-            .and_then(|y: csl::plutus::PlutusData| y.try_to_pla().ok())
-            .map(Datum)
-            .ok_or(OuraParseError::DataFromJSON(value))
+        csl::plutus::encode_json_value_to_plutus_datum(
+            value.clone(),
+            csl::plutus::PlutusDatumSchema::DetailedSchema,
+        )
+        .ok()
+        .and_then(|y: csl::plutus::PlutusData| y.try_to_pla().ok())
+        .map(Datum)
+        .ok_or(OuraParseError::DataFromJSON(value))
     }
 }
 
@@ -332,12 +345,16 @@ impl FromOura<Vec<MintRecord>> for Value {
 enum OuraParseError {
     #[error("Unable to parse bigint from u64: {0}")]
     BigIntFromU64(u64),
+
     #[error("Unable to parse bigint from i64: {0}")]
     BigIntFromI64(i64),
+
     #[error("Unable to parse hash from string: {0}")]
     HashFromString(String),
+
     #[error("Unable to parse Address from bech32 string: {0}")]
     AddressFromString(String),
+
     #[error("Unable to parse Datum from JSON: {0}")]
     DataFromJSON(serde_json::Value),
 }

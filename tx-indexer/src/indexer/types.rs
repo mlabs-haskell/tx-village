@@ -6,7 +6,7 @@ use oura::{
 };
 use pallas::network::miniprotocols::MAINNET_MAGIC;
 use plutus_ledger_api::v2::datum::{Datum, DatumHash};
-use plutus_ledger_api::v2::transaction::{TransactionHash, TransactionInput, TransactionOutput};
+use plutus_ledger_api::v2::transaction::{TransactionHash, TransactionInput, TxInInfo};
 use plutus_ledger_api::v2::value::Value;
 use std::collections::HashMap;
 use std::error::Error;
@@ -129,7 +129,7 @@ pub struct TransactionEventRecord {
     pub size: u32,
 
     pub inputs: Vec<TransactionInput>,
-    pub outputs: Vec<TransactionOutput>,
+    pub outputs: Vec<TxInInfo>,
     pub mint: Value,
 
     pub plutus_data: HashMap<DatumHash, Datum>,
