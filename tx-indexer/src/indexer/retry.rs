@@ -138,14 +138,29 @@ fn parse_oura_event(ev: oura::Event) -> Result<(ChainEventTime, ChainEvent), Our
         block_number: ev.context.block_number.unwrap(),
         slot: ev.context.slot.unwrap(),
     };
-    let event = match ev.data {
+    Ok(match ev.data {
         oura::EventData::Transaction(dat) => {
             event!(Level::DEBUG, label="TransactionEvent", data=?dat);
-            ChainEvent::TransactionEvent(parse_oura_transaction(dat)?)
+            (
+                time,
+                ChainEvent::TransactionEvent(parse_oura_transaction(dat)?),
+            )
         }
-        _ => panic!("absurd: Indexer filter should only allow transaction event variant."),
-    };
-    Ok((time, event))
+        oura::EventData::RollBack {
+            block_slot,
+            block_hash,
+        } => {
+            event!(Level::DEBUG, label="RollbackEvent", block_slot=?block_slot, block_hash=?block_hash);
+            (
+                time,
+                ChainEvent::RollbackEvent {
+                    block_slot,
+                    block_hash,
+                },
+            )
+        }
+        _ => panic!("absurd: Indexer filter should only allow Transaction event variant."),
+    })
 }
 
 fn parse_oura_transaction(

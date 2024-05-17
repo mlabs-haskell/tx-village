@@ -15,7 +15,10 @@ impl Filter {
     pub fn to_selection_config(self) -> Config {
         Config {
             check: Predicate::AllOf(vec![
-                Predicate::VariantIn(vec!["Transaction".to_string()]),
+                Predicate::VariantIn(vec![
+                    "Transaction".to_string(),
+                    "RollBack".to_string(),
+                ]),
                 if self.curr_symbols.is_empty() {
                     ALWAYS_TRUE
                 } else {
