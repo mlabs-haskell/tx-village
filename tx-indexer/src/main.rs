@@ -1,7 +1,6 @@
 use anyhow::Result;
 use aux::ParseCurrencySymbol;
 use clap::Parser;
-use sqlx::PgConnection;
 use std::{default::Default, fmt::Debug};
 use thiserror::Error;
 use tracing::Level;
@@ -204,7 +203,6 @@ impl Handler for DummyHandler {
         &self,
         _event_time: ChainEventTime,
         _event: ChainEvent,
-        _pg_connection: &'a mut PgConnection,
     ) -> Result<(), Self::Error> {
         Ok(())
     }

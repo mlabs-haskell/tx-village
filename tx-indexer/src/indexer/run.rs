@@ -10,7 +10,6 @@ use oura::{
     utils::{Utils, WithUtils},
     Error,
 };
-use sqlx::PgPool;
 use std::sync::Arc;
 use tracing::{span, Level};
 
@@ -60,11 +59,8 @@ pub async fn run_indexer<H: Handler, T: IsNetworkConfig>(
         .to_selection_config()
         .bootstrap(source_rx)?;
 
-    let pg_pool = PgPool::connect(&conf.database_url).await?;
-
-    let sink_handle = span!(Level::INFO, "BootstrapSink").in_scope(|| {
-        Callback::new(conf.handler, conf.retry_policy, utils, pg_pool).bootstrap(filter_rx)
-    })?;
+    let sink_handle = span!(Level::INFO, "BootstrapSink")
+        .in_scope(|| Callback::new(conf.handler, conf.retry_policy, utils).bootstrap(filter_rx))?;
 
     Ok(Indexer {
         source_handle,
