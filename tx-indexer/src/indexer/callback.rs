@@ -7,7 +7,6 @@ use oura::{
     pipelining::{BootstrapResult, SinkProvider, StageReceiver},
     utils::Utils,
 };
-use sqlx::{PgConnection, PgPool};
 use std::{future::Future, sync::Arc};
 use strum_macros::Display;
 use tokio::runtime::Runtime;
@@ -23,7 +22,6 @@ where
         &self,
         event_time: ChainEventTime,
         event: ChainEvent,
-        pg_conn: &'a mut PgConnection,
     ) -> impl Future<Output = Result<(), Self::Error>>;
 }
 
@@ -33,16 +31,14 @@ pub(crate) struct Callback<H: Handler> {
     pub(crate) handler: H,
     pub(crate) retry_policy: RetryPolicy,
     pub(crate) utils: Arc<Utils>,
-    pub(crate) pg_pool: PgPool,
 }
 
 impl<H: Handler> Callback<H> {
-    pub fn new(handler: H, retry_policy: RetryPolicy, utils: Arc<Utils>, pg_pool: PgPool) -> Self {
+    pub fn new(handler: H, retry_policy: RetryPolicy, utils: Arc<Utils>) -> Self {
         Self {
             handler,
             retry_policy,
             utils,
-            pg_pool,
         }
     }
 }
@@ -54,7 +50,6 @@ impl<H: Handler> SinkProvider for Callback<H> {
 
         let retry_policy = self.retry_policy;
         let utils = self.utils.clone();
-        let pool = self.pg_pool.clone();
         let handler = self.handler.clone();
 
         let handle = span!(Level::DEBUG, "SpawningThread").in_scope(|| {
@@ -64,7 +59,7 @@ impl<H: Handler> SinkProvider for Callback<H> {
 
                 // Running async function sycnhronously within another thread.
                 let rt = Runtime::new().unwrap();
-                rt.block_on(handle_event(handler, input, &retry_policy, utils, pool))
+                rt.block_on(handle_event(handler, input, &retry_policy, utils))
                     .map_err(|err| {
                         event!(Level::ERROR, label=%Events::EventHandlerFailure, ?err);
                         err
@@ -83,11 +78,9 @@ async fn handle_event<'a, H: Handler>(
     input: StageReceiver,
     retry_policy: &RetryPolicy,
     utils: Arc<Utils>,
-    mut pg_pool: PgPool,
 ) -> Result<(), H::Error> {
     let span = span!(Level::DEBUG, "handle_event");
     let _enter = span.enter();
-    let pg_pool = &mut pg_pool;
     for chain_event in input.into_iter() {
         let span = span!(
           Level::DEBUG,
@@ -95,7 +88,7 @@ async fn handle_event<'a, H: Handler>(
           context=?chain_event.context
         );
         // Have to clone twice here to please the borrow checker...
-        perform_with_retry(&handler, chain_event.clone(), retry_policy, pg_pool)
+        perform_with_retry(&handler, chain_event.clone(), retry_policy)
             .instrument(span)
             .await
             // Notify progress to the pipeline.

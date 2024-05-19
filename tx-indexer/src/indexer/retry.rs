@@ -17,7 +17,6 @@ use plutus_ledger_api::v2::{
     transaction::{TransactionHash, TransactionInput, TransactionOutput, TxInInfo},
     value::{CurrencySymbol, TokenName, Value},
 };
-use sqlx::{Acquire, PgPool};
 use std::{fmt::Debug, ops::Mul, time::Duration};
 use strum_macros::Display;
 use tracing::{event, span, Instrument, Level};
@@ -58,7 +57,6 @@ pub async fn perform_with_retry<H: Handler>(
     handler: &H,
     oura_event: oura::Event,
     policy: &RetryPolicy,
-    pg_pool: &mut PgPool,
 ) -> Result<(), H::Error> {
     let span = span!(Level::DEBUG, "perform_with_retry");
     let _enter = span.enter();
@@ -71,11 +69,9 @@ pub async fn perform_with_retry<H: Handler>(
 
     loop {
         // TODO(szg251): Handle errors properly
-        let mut conn = pg_pool.acquire().await.unwrap();
-        let actual_conn = conn.acquire().await.unwrap();
         let span = span!(Level::DEBUG, "TryingOperation", retry_count = retry);
         let res = async {
-          let result = handler.handle(event_time.clone(), event.clone(), actual_conn)
+          let result = handler.handle(event_time.clone(), event.clone())
             .instrument(span!(Level::DEBUG, "UserDefinedHandler")).await;
 
           match result {
