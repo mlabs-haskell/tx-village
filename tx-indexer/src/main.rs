@@ -199,7 +199,7 @@ struct DummyHandler;
 impl Handler for DummyHandler {
     type Error = DummyHandlerError;
 
-    async fn handle<'a>(
+    async fn handle(
         &self,
         _event_time: ChainEventTime,
         _event: ChainEvent,

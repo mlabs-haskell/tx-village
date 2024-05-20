@@ -18,7 +18,7 @@ where
 {
     type Error: std::error::Error + ErrorPolicyProvider;
 
-    fn handle<'a>(
+    fn handle(
         &self,
         event_time: ChainEventTime,
         event: ChainEvent,
