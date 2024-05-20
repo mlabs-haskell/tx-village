@@ -1,6 +1,6 @@
 use super::{
     error::ErrorPolicyProvider,
-    retry::{perform_with_retry, RetryPolicy},
+    retry::{perform_with_retry, ProgressTracker, RetryPolicy},
     types::{ChainEvent, ChainEventTime},
 };
 use oura::{
@@ -18,7 +18,7 @@ where
 {
     type Error: std::error::Error + ErrorPolicyProvider;
 
-    fn handle<'a>(
+    fn handle(
         &self,
         event_time: ChainEventTime,
         event: ChainEvent,
@@ -31,14 +31,21 @@ pub(crate) struct Callback<H: Handler> {
     pub(crate) handler: H,
     pub(crate) retry_policy: RetryPolicy,
     pub(crate) utils: Arc<Utils>,
+    pub(crate) progress_tracker: Option<ProgressTracker>,
 }
 
 impl<H: Handler> Callback<H> {
-    pub fn new(handler: H, retry_policy: RetryPolicy, utils: Arc<Utils>) -> Self {
+    pub fn new(
+        handler: H,
+        retry_policy: RetryPolicy,
+        utils: Arc<Utils>,
+        progress_tracker: Option<ProgressTracker>,
+    ) -> Self {
         Self {
             handler,
             retry_policy,
             utils,
+            progress_tracker,
         }
     }
 }
@@ -51,6 +58,7 @@ impl<H: Handler> SinkProvider for Callback<H> {
         let retry_policy = self.retry_policy;
         let utils = self.utils.clone();
         let handler = self.handler.clone();
+        let progress_tracker = self.progress_tracker.clone();
 
         let handle = span!(Level::DEBUG, "SpawningThread").in_scope(|| {
             std::thread::spawn(move || {
@@ -59,12 +67,18 @@ impl<H: Handler> SinkProvider for Callback<H> {
 
                 // Running async function sycnhronously within another thread.
                 let rt = Runtime::new().unwrap();
-                rt.block_on(handle_event(handler, input, &retry_policy, utils))
-                    .map_err(|err| {
-                        event!(Level::ERROR, label=%Events::EventHandlerFailure, ?err);
-                        err
-                    })
-                    .expect("request loop failed");
+                rt.block_on(handle_event(
+                    handler,
+                    input,
+                    &retry_policy,
+                    utils,
+                    progress_tracker,
+                ))
+                .map_err(|err| {
+                    event!(Level::ERROR, label=%Events::EventHandlerFailure, ?err);
+                    err
+                })
+                .expect("request loop failed");
             })
         });
 
@@ -78,6 +92,7 @@ async fn handle_event<'a, H: Handler>(
     input: StageReceiver,
     retry_policy: &RetryPolicy,
     utils: Arc<Utils>,
+    progress_tracker: Option<ProgressTracker>,
 ) -> Result<(), H::Error> {
     let span = span!(Level::DEBUG, "handle_event");
     let _enter = span.enter();
@@ -88,11 +103,16 @@ async fn handle_event<'a, H: Handler>(
           context=?chain_event.context
         );
         // Have to clone twice here to please the borrow checker...
-        perform_with_retry(&handler, chain_event.clone(), retry_policy)
-            .instrument(span)
-            .await
-            // Notify progress to the pipeline.
-            .map(|_| utils.track_sink_progress(&chain_event))?;
+        perform_with_retry(
+            &handler,
+            chain_event.clone(),
+            retry_policy,
+            progress_tracker.clone(),
+        )
+        .instrument(span)
+        .await
+        // Notify progress to the pipeline.
+        .map(|_| utils.track_sink_progress(&chain_event))?;
         // ^ This will exit the loop if an error is returned.
         // After all, `perform_with_retry` will only return error if all other options,
         // based on `ErrorPolicy`, were exhausted.

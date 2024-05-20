@@ -18,6 +18,7 @@ impl Filter {
                 Predicate::VariantIn(vec![
                     "Transaction".to_string(),
                     "RollBack".to_string(),
+                    "Block".to_string(),
                 ]),
                 if self.curr_symbols.is_empty() {
                     ALWAYS_TRUE

@@ -5,6 +5,7 @@ use super::{
 };
 use ::oura::model::{MintRecord, OutputAssetRecord};
 use cardano_serialization_lib as csl;
+use chrono::{DateTime, Utc};
 use data_encoding::HEXLOWER;
 use num_bigint::BigInt;
 use num_traits::FromPrimitive;
@@ -17,9 +18,18 @@ use plutus_ledger_api::v2::{
     transaction::{TransactionHash, TransactionInput, TransactionOutput, TxInInfo},
     value::{CurrencySymbol, TokenName, Value},
 };
-use std::{fmt::Debug, ops::Mul, time::Duration};
+use std::{
+    fmt::Debug,
+    ops::Mul,
+    sync::{
+        atomic::{AtomicUsize, Ordering},
+        Arc,
+    },
+    time::Duration,
+};
 use strum_macros::Display;
 use tracing::{event, span, Instrument, Level};
+use tx_bakery::chain_query::EraSummary;
 use tx_bakery::utils::csl_to_pla::TryToPLA;
 
 /// Influence retrying behavior.
@@ -31,6 +41,14 @@ pub struct RetryPolicy {
     pub backoff_unit: Duration,
     pub backoff_factor: u32,
     pub max_backoff: Duration,
+}
+
+#[derive(Clone, Debug)]
+pub(crate) struct ProgressTracker {
+    pub system_start: DateTime<Utc>,
+    pub era_summaries: Vec<EraSummary>,
+    pub since_slot: u64,
+    pub sync_status: Arc<AtomicUsize>,
 }
 
 impl Default for RetryPolicy {
@@ -53,24 +71,24 @@ fn compute_backoff_delay(policy: &RetryPolicy, retry: u32) -> Duration {
 /// Wrap an operation with retry logic.
 /// Retrying is based on ErrorPolicy associated with particular error.
 /// Retries are only performed for ErrorPolicy::Retry - other errors won't cause invocation of given operation again.
-pub async fn perform_with_retry<H: Handler>(
+pub(crate) async fn perform_with_retry<H: Handler>(
     handler: &H,
     oura_event: oura::Event,
     policy: &RetryPolicy,
+    progress_tracker: Option<ProgressTracker>,
 ) -> Result<(), H::Error> {
     let span = span!(Level::DEBUG, "perform_with_retry");
     let _enter = span.enter();
 
     // TODO(chase): Should we handle Oura to PLA parse failure?
-    let (event_time, event) = parse_oura_event(oura_event).unwrap();
+    if let Some((event_time, event)) = parse_oura_event(oura_event, progress_tracker).unwrap() {
+        // The retry logic is based on: https://github.com/txpipe/oura/blob/27fb7e876471b713841d96e292ede40101b151d7/src/utils/retry.rs
+        let mut retry = 0;
 
-    // The retry logic is based on: https://github.com/txpipe/oura/blob/27fb7e876471b713841d96e292ede40101b151d7/src/utils/retry.rs
-    let mut retry = 0;
-
-    loop {
-        // TODO(szg251): Handle errors properly
-        let span = span!(Level::DEBUG, "TryingOperation", retry_count = retry);
-        let res = async {
+        loop {
+            // TODO(szg251): Handle errors properly
+            let span = span!(Level::DEBUG, "TryingOperation", retry_count = retry);
+            let res = async {
           let result = handler.handle(event_time.clone(), event.clone())
             .instrument(span!(Level::DEBUG, "UserDefinedHandler")).await;
 
@@ -115,9 +133,12 @@ pub async fn perform_with_retry<H: Handler>(
         .instrument(span)
         .await;
 
-        if let Some(res) = res {
-            break res;
+            if let Some(res) = res {
+                break res;
+            }
         }
+    } else {
+        Ok(())
     }
 }
 
@@ -131,7 +152,10 @@ enum Event {
     RetryBackoff,
 }
 
-fn parse_oura_event(ev: oura::Event) -> Result<(ChainEventTime, ChainEvent), OuraParseError> {
+fn parse_oura_event(
+    ev: oura::Event,
+    progress_tracker: Option<ProgressTracker>,
+) -> Result<Option<(ChainEventTime, ChainEvent)>, OuraParseError> {
     let time = ChainEventTime {
         // These unwraps should not fail.
         block_hash: ev.context.block_hash.unwrap(),
@@ -141,25 +165,67 @@ fn parse_oura_event(ev: oura::Event) -> Result<(ChainEventTime, ChainEvent), Our
     Ok(match ev.data {
         oura::EventData::Transaction(dat) => {
             event!(Level::DEBUG, label="TransactionEvent", data=?dat);
-            (
+            Some((
                 time,
                 ChainEvent::TransactionEvent(parse_oura_transaction(dat)?),
-            )
+            ))
         }
         oura::EventData::RollBack {
             block_slot,
             block_hash,
         } => {
             event!(Level::DEBUG, label="RollbackEvent", block_slot=?block_slot, block_hash=?block_hash);
-            (
+            Some((
                 time,
                 ChainEvent::RollbackEvent {
                     block_slot,
                     block_hash,
                 },
-            )
+            ))
         }
-        _ => panic!("absurd: Indexer filter should only allow Transaction event variant."),
+        oura::EventData::Block(block_rec) => match progress_tracker {
+            Some(progress_tracker) => {
+                let block_slot = block_rec.slot;
+
+                let current_time = Utc::now();
+                let current_slot = tx_bakery::time::time_into_slot(
+                    &progress_tracker.era_summaries,
+                    &progress_tracker.system_start,
+                    current_time,
+                )
+                .map_err(OuraParseError::TimeConversionError)?;
+
+                let synced = time.slot - progress_tracker.since_slot;
+                let to_be_synced = current_slot - progress_tracker.since_slot;
+
+                let sync_status = (synced / to_be_synced) as usize;
+
+                let is_updated = progress_tracker
+                    .sync_status
+                    .fetch_update(Ordering::SeqCst, Ordering::SeqCst, |prev_status| {
+                        if prev_status < sync_status {
+                            Some(sync_status)
+                        } else {
+                            None
+                        }
+                    })
+                    .is_ok();
+
+                if is_updated {
+                    Some((
+                        time,
+                        ChainEvent::SyncProgressEvent {
+                            percentage: sync_status as u8,
+                            block_slot,
+                        },
+                    ))
+                } else {
+                    None
+                }
+            }
+            None => None,
+        },
+        _ => panic!("absurd: Indexer filter should only allow transaction event variant."),
     })
 }
 
@@ -368,4 +434,7 @@ enum OuraParseError {
 
     #[error("Unable to parse Datum from JSON: {0}")]
     DataFromJSON(serde_json::Value),
+
+    #[error("Unable to convert current time: {0}")]
+    TimeConversionError(tx_bakery::error::Error),
 }

@@ -119,6 +119,7 @@ pub struct ChainEventTime {
 pub enum ChainEvent {
     TransactionEvent(TransactionEventRecord),
     RollbackEvent { block_slot: u64, block_hash: String },
+    SyncProgressEvent { block_slot: u64, percentage: u8 },
 }
 
 // Details on an transaction event (excluding unnecessary information).
