@@ -183,48 +183,52 @@ fn parse_oura_event(
                 },
             ))
         }
-        oura::EventData::Block(block_rec) => match progress_tracker {
-            Some(progress_tracker) => {
-                let block_slot = block_rec.slot;
+        oura::EventData::Block(block_rec) => {
+            event!(Level::DEBUG, label="BlockEvent", block_record=?block_rec);
+            match progress_tracker {
+                Some(progress_tracker) => {
+                    let block_slot = block_rec.slot;
 
-                let current_time = Utc::now();
-                let current_slot = tx_bakery::time::time_into_slot(
-                    &progress_tracker.era_summaries,
-                    &progress_tracker.system_start,
-                    current_time,
-                )
-                .map_err(OuraParseError::TimeConversionError)?;
+                    let current_time = Utc::now();
+                    let current_slot = tx_bakery::time::time_into_slot(
+                        &progress_tracker.era_summaries,
+                        &progress_tracker.system_start,
+                        current_time,
+                    )
+                    .map_err(OuraParseError::TimeConversionError)?;
 
-                let synced = time.slot - progress_tracker.since_slot;
-                let to_be_synced = current_slot - progress_tracker.since_slot;
+                    let synced = time.slot - progress_tracker.since_slot;
+                    let to_be_synced = current_slot - progress_tracker.since_slot;
 
-                let sync_status = (synced * 100 / to_be_synced) as usize;
+                    let sync_status = (synced * 100 / to_be_synced) as usize;
 
-                let is_updated = progress_tracker
-                    .sync_status
-                    .fetch_update(Ordering::SeqCst, Ordering::SeqCst, |prev_status| {
-                        if prev_status < sync_status {
-                            Some(sync_status)
-                        } else {
-                            None
-                        }
-                    })
-                    .is_ok();
+                    let is_updated = progress_tracker
+                        .sync_status
+                        .fetch_update(Ordering::SeqCst, Ordering::SeqCst, |prev_status| {
+                            if prev_status < sync_status {
+                                Some(sync_status)
+                            } else {
+                                None
+                            }
+                        })
+                        .is_ok();
 
-                if is_updated {
-                    Some((
-                        time,
-                        ChainEvent::SyncProgressEvent {
-                            percentage: sync_status as u8,
-                            block_slot,
-                        },
-                    ))
-                } else {
-                    None
+                    if is_updated {
+                        Some((
+                            time,
+                            ChainEvent::SyncProgressEvent {
+                                percentage: sync_status as u8,
+                                block_slot,
+                            },
+                        ))
+                    } else {
+                        None
+                    }
                 }
+
+                None => None,
             }
-            None => None,
-        },
+        }
         _ => panic!("absurd: Indexer filter should only allow transaction event variant."),
     })
 }
