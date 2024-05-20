@@ -14,23 +14,22 @@ pub struct Filter {
 impl Filter {
     pub fn to_selection_config(self) -> Config {
         Config {
-            check: Predicate::AllOf(vec![
-                Predicate::VariantIn(vec![
-                    "Transaction".to_string(),
-                    "RollBack".to_string(),
-                    "Block".to_string(),
+            check: Predicate::AnyOf(vec![
+                Predicate::VariantIn(vec!["RollBack".to_string(), "Block".to_string()]),
+                Predicate::AllOf(vec![
+                    Predicate::VariantIn(vec!["Transaction".to_string()]),
+                    if self.curr_symbols.is_empty() {
+                        ALWAYS_TRUE
+                    } else {
+                        Predicate::AnyOf(
+                            self.curr_symbols
+                                .into_iter()
+                                .map(serialize_cur_sym)
+                                .map(Predicate::PolicyEquals)
+                                .collect(),
+                        )
+                    },
                 ]),
-                if self.curr_symbols.is_empty() {
-                    ALWAYS_TRUE
-                } else {
-                    Predicate::AnyOf(
-                        self.curr_symbols
-                            .into_iter()
-                            .map(serialize_cur_sym)
-                            .map(Predicate::PolicyEquals)
-                            .collect(),
-                    )
-                },
             ]),
         }
     }
