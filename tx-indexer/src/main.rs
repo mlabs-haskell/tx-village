@@ -10,7 +10,7 @@ use tx_indexer::indexer::{
     error::{ErrorPolicy, ErrorPolicyProvider},
     filter::Filter,
     run_indexer,
-    types::{ChainEvent, ChainEventTime, NetworkConfig, NetworkName, NodeAddress},
+    types::{ChainEvent, NetworkConfig, NetworkName, NodeAddress},
 };
 
 mod aux;
@@ -192,11 +192,7 @@ struct DummyHandler;
 impl Handler for DummyHandler {
     type Error = DummyHandlerError;
 
-    async fn handle(
-        &self,
-        _event_time: ChainEventTime,
-        _event: ChainEvent,
-    ) -> Result<(), Self::Error> {
+    async fn handle(&self, _event: ChainEvent) -> Result<(), Self::Error> {
         Ok(())
     }
 }

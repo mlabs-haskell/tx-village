@@ -1,7 +1,7 @@
 use super::{
     error::ErrorPolicyProvider,
     retry::{perform_with_retry, ProgressTracker, RetryPolicy},
-    types::{ChainEvent, ChainEventTime},
+    types::ChainEvent,
 };
 use oura::{
     pipelining::{BootstrapResult, SinkProvider, StageReceiver},
@@ -18,11 +18,7 @@ where
 {
     type Error: std::error::Error + ErrorPolicyProvider;
 
-    fn handle(
-        &self,
-        event_time: ChainEventTime,
-        event: ChainEvent,
-    ) -> impl Future<Output = Result<(), Self::Error>>;
+    fn handle(&self, event: ChainEvent) -> impl Future<Output = Result<(), Self::Error>>;
 }
 
 /// This is a custom made sink for Oura. Based on a callback function.

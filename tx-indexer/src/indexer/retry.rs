@@ -81,7 +81,7 @@ pub(crate) async fn perform_with_retry<H: Handler>(
     let _enter = span.enter();
 
     // TODO(chase): Should we handle Oura to PLA parse failure?
-    if let Some((event_time, event)) = parse_oura_event(oura_event, progress_tracker).unwrap() {
+    if let Some(event) = parse_oura_event(oura_event, progress_tracker).unwrap() {
         // The retry logic is based on: https://github.com/txpipe/oura/blob/27fb7e876471b713841d96e292ede40101b151d7/src/utils/retry.rs
         let mut retry = 0;
 
@@ -89,7 +89,7 @@ pub(crate) async fn perform_with_retry<H: Handler>(
             // TODO(szg251): Handle errors properly
             let span = span!(Level::DEBUG, "TryingOperation", retry_count = retry);
             let res = async {
-          let result = handler.handle(event_time.clone(), event.clone())
+          let result = handler.handle(event.clone())
             .instrument(span!(Level::DEBUG, "UserDefinedHandler")).await;
 
           match result {
@@ -155,33 +155,30 @@ enum Event {
 fn parse_oura_event(
     ev: oura::Event,
     progress_tracker: Option<ProgressTracker>,
-) -> Result<Option<(ChainEventTime, ChainEvent)>, OuraParseError> {
-    let time = ChainEventTime {
-        // These unwraps should not fail.
-        block_hash: ev.context.block_hash.unwrap(),
-        block_number: ev.context.block_number.unwrap(),
-        slot: ev.context.slot.unwrap(),
-    };
+) -> Result<Option<ChainEvent>, OuraParseError> {
     Ok(match ev.data {
         oura::EventData::Transaction(dat) => {
             event!(Level::DEBUG, label="TransactionEvent", data=?dat);
-            Some((
-                time,
-                ChainEvent::TransactionEvent(parse_oura_transaction(dat)?),
-            ))
+
+            Some(ChainEvent::TransactionEvent {
+                time: ChainEventTime {
+                    // These unwraps should not fail.
+                    block_hash: ev.context.block_hash.unwrap(),
+                    block_number: ev.context.block_number.unwrap(),
+                    slot: ev.context.slot.unwrap(),
+                },
+                transaction: parse_oura_transaction(dat)?,
+            })
         }
         oura::EventData::RollBack {
             block_slot,
             block_hash,
         } => {
             event!(Level::DEBUG, label="RollbackEvent", block_slot=?block_slot, block_hash=?block_hash);
-            Some((
-                time,
-                ChainEvent::RollbackEvent {
-                    block_slot,
-                    block_hash,
-                },
-            ))
+            Some(ChainEvent::RollbackEvent {
+                block_slot,
+                block_hash,
+            })
         }
         oura::EventData::Block(block_rec) => {
             event!(Level::DEBUG, label="BlockEvent", block_record=?block_rec);
@@ -197,7 +194,7 @@ fn parse_oura_event(
                     )
                     .map_err(OuraParseError::TimeConversionError)?;
 
-                    let synced = time.slot - progress_tracker.since_slot;
+                    let synced = block_slot - progress_tracker.since_slot;
                     let to_be_synced = current_slot - progress_tracker.since_slot;
 
                     let sync_status = (synced * 100 / to_be_synced) as usize;
@@ -214,13 +211,10 @@ fn parse_oura_event(
                         .is_ok();
 
                     if is_updated {
-                        Some((
-                            time,
-                            ChainEvent::SyncProgressEvent {
-                                percentage: sync_status as u8,
-                                block_slot,
-                            },
-                        ))
+                        Some(ChainEvent::SyncProgressEvent {
+                            percentage: sync_status as u8,
+                            block_slot,
+                        })
                     } else {
                         None
                     }
@@ -291,7 +285,7 @@ fn parse_oura_transaction(
                 },
             )
             .collect::<Result<_, _>>()?,
-        mint: Value::from_oura(tx.mint.unwrap())?,
+        mint: tx.mint.map_or(Ok(Value::new()), Value::from_oura)?,
         plutus_data: tx
             .plutus_data
             .unwrap_or_default()
