@@ -198,7 +198,7 @@ fn parse_oura_event(
                 let synced = time.slot - progress_tracker.since_slot;
                 let to_be_synced = current_slot - progress_tracker.since_slot;
 
-                let sync_status = (synced / to_be_synced) as usize;
+                let sync_status = (synced * 100 / to_be_synced) as usize;
 
                 let is_updated = progress_tracker
                     .sync_status
