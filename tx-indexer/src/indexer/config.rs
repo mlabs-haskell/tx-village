@@ -21,8 +21,6 @@ pub struct IndexerConfig<H: Handler, T: IsNetworkConfig> {
     /// This only takes effect on ErrorPolicy for a particular error is `Retry`.
     /// Once retries are exhausted, the handler will error (same treatment as ErrorPolicy::Exit)
     pub retry_policy: RetryPolicy,
-    /// Postgres database URL
-    pub database_url: String,
 }
 
 impl<H: Handler, T: IsNetworkConfig> IndexerConfig<H, T> {
@@ -35,7 +33,6 @@ impl<H: Handler, T: IsNetworkConfig> IndexerConfig<H, T> {
         safe_block_depth: usize,
         event_filter: Filter,
         retry_policy: RetryPolicy,
-        database_url: String,
     ) -> Self {
         Self {
             handler,
@@ -45,7 +42,6 @@ impl<H: Handler, T: IsNetworkConfig> IndexerConfig<H, T> {
             safe_block_depth,
             event_filter,
             retry_policy,
-            database_url,
         }
     }
 }

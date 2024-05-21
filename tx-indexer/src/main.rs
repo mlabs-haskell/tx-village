@@ -10,7 +10,7 @@ use tx_indexer::indexer::{
     error::{ErrorPolicy, ErrorPolicyProvider},
     filter::Filter,
     run_indexer,
-    types::{ChainEvent, ChainEventTime, NetworkConfig, NetworkName, NodeAddress},
+    types::{ChainEvent, NetworkConfig, NetworkName, NodeAddress},
 };
 
 mod aux;
@@ -37,7 +37,7 @@ struct IndexStartArgs {
         short('m'),
         long("magic"),
         requires = "node_config_path",
-        conflicts_with = "network_magic"
+        conflicts_with = "network"
     )]
     network_magic: Option<u64>,
 
@@ -56,10 +56,6 @@ struct IndexStartArgs {
     /// Filter for transactions minting this currency symbol (multiple allowed)
     #[arg(short('c'), long = "curr_symbol")]
     curr_symbols: Vec<ParseCurrencySymbol>,
-
-    /// PostgreSQL database URL
-    #[arg(long)]
-    database_url: String,
 }
 
 #[derive(clap::Subcommand, Debug)]
@@ -82,7 +78,7 @@ struct Args {
     #[command(subcommand)]
     command: Command,
 
-    #[arg(long, short)]
+    #[arg(long, short, global = true)]
     debug: bool,
 }
 
@@ -111,7 +107,6 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
                 since_slot,
                 since_block_hash,
                 curr_symbols,
-                database_url,
             }) => {
                 let indexer = match (network, network_magic) {
                     (_, Some(x)) => {
@@ -131,7 +126,6 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
                                     .collect(),
                             },
                             Default::default(),
-                            database_url,
                         ))
                         .await
                     }
@@ -149,7 +143,6 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
                                     .collect(),
                             },
                             Default::default(),
-                            database_url,
                         ))
                         .await
                     }
@@ -199,11 +192,7 @@ struct DummyHandler;
 impl Handler for DummyHandler {
     type Error = DummyHandlerError;
 
-    async fn handle(
-        &self,
-        _event_time: ChainEventTime,
-        _event: ChainEvent,
-    ) -> Result<(), Self::Error> {
+    async fn handle(&self, _event: ChainEvent) -> Result<(), Self::Error> {
         Ok(())
     }
 }

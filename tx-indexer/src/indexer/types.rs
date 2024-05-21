@@ -117,8 +117,19 @@ pub struct ChainEventTime {
 // Chain events that the indexer is configured to produce.
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub enum ChainEvent {
-    TransactionEvent(TransactionEventRecord),
-    RollbackEvent { block_slot: u64, block_hash: String },
+    TransactionEvent {
+        time: ChainEventTime,
+        transaction: TransactionEventRecord,
+    },
+    RollbackEvent {
+        block_slot: u64,
+        block_hash: String,
+    },
+    SyncProgressEvent {
+        block_slot: u64,
+        block_hash: String,
+        percentage: u8,
+    },
 }
 
 // Details on an transaction event (excluding unnecessary information).
