@@ -12,7 +12,7 @@ use oura::{
     utils::{ChainWellKnownInfo, Utils, WithUtils},
     Error,
 };
-use std::sync::{atomic::AtomicUsize, Arc};
+use std::sync::Arc;
 use tracing::{span, Level};
 use tx_bakery::chain_query::{EraParameters, EraSummary, EraTime};
 
@@ -35,7 +35,6 @@ pub async fn run_indexer<H: Handler, T: IsNetworkConfig>(
                 system_start,
                 era_summaries: chain_info_to_era_summaries(&system_start, &chain)?,
                 since_slot,
-                sync_status: Arc::new(AtomicUsize::new(0)),
             })
         }
         None => None,

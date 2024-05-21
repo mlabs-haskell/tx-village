@@ -18,15 +18,7 @@ use plutus_ledger_api::v2::{
     transaction::{TransactionHash, TransactionInput, TransactionOutput, TxInInfo},
     value::{CurrencySymbol, TokenName, Value},
 };
-use std::{
-    fmt::Debug,
-    ops::Mul,
-    sync::{
-        atomic::{AtomicUsize, Ordering},
-        Arc,
-    },
-    time::Duration,
-};
+use std::{fmt::Debug, ops::Mul, time::Duration};
 use strum_macros::Display;
 use tracing::{event, span, Instrument, Level};
 use tx_bakery::chain_query::EraSummary;
@@ -48,7 +40,6 @@ pub(crate) struct ProgressTracker {
     pub system_start: DateTime<Utc>,
     pub era_summaries: Vec<EraSummary>,
     pub since_slot: u64,
-    pub sync_status: Arc<AtomicUsize>,
 }
 
 impl Default for RetryPolicy {
@@ -200,29 +191,18 @@ fn parse_oura_event(
 
                     let sync_status = (synced * 100 / to_be_synced) as usize;
 
-                    let is_updated = progress_tracker
-                        .sync_status
-                        .fetch_update(Ordering::SeqCst, Ordering::SeqCst, |prev_status| {
-                            if prev_status < sync_status {
-                                Some(sync_status)
-                            } else {
-                                None
-                            }
-                        })
-                        .is_ok();
-
-                    if is_updated {
-                        Some(ChainEvent::SyncProgressEvent {
-                            percentage: sync_status as u8,
-                            block_slot,
-                            block_hash,
-                        })
-                    } else {
-                        None
-                    }
+                    Some(ChainEvent::SyncProgressEvent {
+                        percentage: sync_status as u8,
+                        block_slot,
+                        block_hash,
+                    })
                 }
 
-                None => None,
+                None => Some(ChainEvent::SyncProgressEvent {
+                    percentage: 100,
+                    block_slot: block_rec.slot,
+                    block_hash: block_rec.hash,
+                }),
             }
         }
         _ => panic!("absurd: Indexer filter should only allow transaction event variant."),
