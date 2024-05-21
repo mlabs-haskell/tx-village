@@ -185,6 +185,7 @@ fn parse_oura_event(
             match progress_tracker {
                 Some(progress_tracker) => {
                     let block_slot = block_rec.slot;
+                    let block_hash = block_rec.hash;
 
                     let current_time = Utc::now();
                     let current_slot = tx_bakery::time::time_into_slot(
@@ -214,6 +215,7 @@ fn parse_oura_event(
                         Some(ChainEvent::SyncProgressEvent {
                             percentage: sync_status as u8,
                             block_slot,
+                            block_hash,
                         })
                     } else {
                         None

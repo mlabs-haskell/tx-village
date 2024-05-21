@@ -127,6 +127,7 @@ pub enum ChainEvent {
     },
     SyncProgressEvent {
         block_slot: u64,
+        block_hash: String,
         percentage: u8,
     },
 }
