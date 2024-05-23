@@ -9,8 +9,7 @@ import Data.ByteString.Short qualified as SBS
 import Data.Map.Strict qualified as M
 import Data.String (fromString)
 
-import Test.Tasty (TestTree, defaultMain, testGroup)
-import Test.Tasty.HUnit (testCase, (@?=))
+import Test.Tasty (TestTree, defaultMain)
 
 import PlutusLedgerApi.Common.Versions (vasilPV)
 import PlutusLedgerApi.V1 qualified as Plutus
@@ -35,9 +34,10 @@ import PlutusTx.AssocMap qualified as PlutusMap
 import Ledger.Sim (
     LedgerConfig,
     LedgerState (ls'currentTime),
-    runLedgerSim,
+    emptyLedgerState,
     submitTx,
  )
+import Ledger.Sim.Test
 import Ledger.Sim.Types.Config (PlutusCostModel (..), mkLedgerConfig)
 import Ledger.Sim.Types.Script (hashScriptV2)
 
@@ -50,39 +50,40 @@ main = do
 
 tests :: ScriptHash -> LedgerConfig -> TestTree
 tests dummyScriptHash ledgerCfg =
-    testGroup
+    ledgerTestGroup
+        ledgerCfg
+        emptyLedgerState
         "Tests"
-        [ testCase "Simple Minting Tx" $ do
-            let res = runLedgerSim ledgerCfg mempty $ do
-                    let ownPubKeyHash :: PubKeyHash = fromString "e17c366f879d0f7ef28a405f3101e46ea5c2329a4bbca5f0276f8fba19"
-                        cs = PlutusValue.CurrencySymbol $ Plutus.getScriptHash dummyScriptHash
-                        mintVal =
-                            PlutusValue.assetClassValue
-                                (PlutusValue.AssetClass (cs, fromString "A"))
-                                1
-                        ownAddress = Address (PubKeyCredential ownPubKeyHash) Nothing
-                    currentTime <- gets ls'currentTime
-                    submitTx
-                        $ TxInfo
-                            mempty
-                            mempty
-                            [ TxOut
-                                { txOutValue = mintVal
-                                , txOutReferenceScript = Nothing
-                                , txOutDatum = NoOutputDatum
-                                , txOutAddress = ownAddress
-                                }
-                            ]
-                            mempty
-                            mintVal
-                            mempty
-                            PlutusMap.empty
-                            (interval currentTime (currentTime + 1))
-                            [ownPubKeyHash]
-                            (PlutusMap.fromList [(Minting cs, Redeemer (toBuiltinData @Integer 1234))])
-                            PlutusMap.empty
-                        $ fromString "847971d6db0576dcfeb0f041630a0ff111a11cb1921c7507c65c3b0dea58bc49"
-            res @?= Right ()
+        [ ledgerTestCase "Simple Minting Tx" $ do
+            ledgerSucceeds @() $ do
+                let ownPubKeyHash :: PubKeyHash = fromString "e17c366f879d0f7ef28a405f3101e46ea5c2329a4bbca5f0276f8fba19"
+                    cs = PlutusValue.CurrencySymbol $ Plutus.getScriptHash dummyScriptHash
+                    mintVal =
+                        PlutusValue.assetClassValue
+                            (PlutusValue.AssetClass (cs, fromString "A"))
+                            1
+                    ownAddress = Address (PubKeyCredential ownPubKeyHash) Nothing
+                currentTime <- gets ls'currentTime
+                submitTx
+                    $ TxInfo
+                        mempty
+                        mempty
+                        [ TxOut
+                            { txOutValue = mintVal
+                            , txOutReferenceScript = Nothing
+                            , txOutDatum = NoOutputDatum
+                            , txOutAddress = ownAddress
+                            }
+                        ]
+                        mempty
+                        mintVal
+                        mempty
+                        PlutusMap.empty
+                        (interval currentTime (currentTime + 1))
+                        [ownPubKeyHash]
+                        (PlutusMap.fromList [(Minting cs, Redeemer (toBuiltinData @Integer 1234))])
+                        PlutusMap.empty
+                    $ fromString "847971d6db0576dcfeb0f041630a0ff111a11cb1921c7507c65c3b0dea58bc49"
         ]
 
 -- | Minting Policy that always succeeds.

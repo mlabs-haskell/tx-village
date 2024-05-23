@@ -35,6 +35,7 @@ library
   import:          common-language
   exposed-modules:
     Ledger.Sim
+    Ledger.Sim.Test
     Ledger.Sim.Types.Config
     Ledger.Sim.Types.Script
 
@@ -48,6 +49,8 @@ library
     , plutus-ledger-api
     , plutus-tx
     , serialise
+    , tasty
+    , tasty-hunit
     , transformers
 
 test-suite ledger-sim-test

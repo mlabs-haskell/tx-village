@@ -3,11 +3,13 @@ module Ledger.Sim (
     LedgerState (..),
     LedgerConfig (..),
     LedgerValidatorError (..),
+    ledgerStateWithUtxos,
+    emptyLedgerState,
     runLedgerSim,
-    runLedgerSimWithState,
     submitTx,
     incrementSlot,
     lookupUTxO,
+    throwLedgerError,
 ) where
 
 import Control.Monad (unless)
@@ -87,11 +89,21 @@ data LedgerState = LedgerState
     , ls'utxos :: !(Map TxOutRef TxOut)
     }
 
-type LedgerSim = StateT LedgerState LedgerValidator
+ledgerStateWithUtxos :: Map TxOutRef TxOut -> LedgerState
+ledgerStateWithUtxos existingUtxos =
+    LedgerState
+        { ls'currentTime = 1
+        , ls'utxos = existingUtxos
+        }
 
-type LedgerValidator = ReaderT LedgerConfig (Except LedgerValidatorError)
+emptyLedgerState :: LedgerState
+emptyLedgerState = ledgerStateWithUtxos mempty
 
-data LedgerValidatorError
+type LedgerSim e = StateT LedgerState (LedgerValidator e)
+
+type LedgerValidator e = ReaderT LedgerConfig (Except (LedgerValidatorError e))
+
+data LedgerValidatorError e
     = -- | The transaction is outside its validity range.
       TxInvalidRange {lve'txTime :: !POSIXTime, lve'txValidityRange :: POSIXTimeRange}
     | -- | The specified input in the transaction does not exist in the ledger utxo set.
@@ -119,26 +131,19 @@ data LedgerValidatorError
       TxUnsupportedScriptPurpose
     | -- | Some absurd TxInfo construction.
       TxInfoAbsurd {lve'absurd :: !String}
+    | -- | Custom Application Errors.
+      TxApplicationError {lve'appError :: !e}
     deriving stock (Eq, Show)
 
-runLedgerSim :: LedgerConfig -> Map TxOutRef TxOut -> LedgerSim a -> Either LedgerValidatorError a
-runLedgerSim ledgerCfg existingUtxos =
-    runLedgerSimWithState
-        ledgerCfg
-        LedgerState
-            { ls'currentTime = 1
-            , ls'utxos = existingUtxos
-            }
-
-runLedgerSimWithState :: LedgerConfig -> LedgerState -> LedgerSim a -> Either LedgerValidatorError a
-runLedgerSimWithState ledgerCfg ledgerState =
+runLedgerSim :: LedgerConfig -> LedgerState -> LedgerSim e a -> Either (LedgerValidatorError e) a
+runLedgerSim ledgerCfg ledgerState =
     fmap fst
         . runIdentity
         . runExceptT
         . flip runReaderT ledgerCfg
         . flip runStateT ledgerState
 
-lookupUTxO :: TxOutRef -> LedgerSim (Maybe TxOut)
+lookupUTxO :: TxOutRef -> LedgerSim e (Maybe TxOut)
 lookupUTxO ref = M.lookup ref <$> gets ls'utxos
 
 {- Known shortcomings:
@@ -149,7 +154,7 @@ lookupUTxO ref = M.lookup ref <$> gets ls'utxos
   use hashing inside them. ex: script that checks `txId txInfo != blake2b_224 time` where time is some time from validity range.
 - See: 'checkTx'
 -}
-submitTx :: TxInfo -> LedgerSim ()
+submitTx :: TxInfo -> LedgerSim e ()
 submitTx txInfoRaw = do
     currentTime <- gets ls'currentTime
     let txInfo = normalizeTxInfo txInfoRaw{txInfoId = genTxId currentTime}
@@ -204,7 +209,7 @@ normalizeTxInfo
 - TX size (size of cbor serialized txbody)
 - Budget and size within limits
 -}
-checkTx :: LedgerState -> TxInfo -> LedgerValidator ExBudget
+checkTx :: LedgerState -> TxInfo -> LedgerValidator e ExBudget
 checkTx
     LedgerState
         { ls'currentTime
@@ -231,28 +236,28 @@ checkTx
       where
         datumMap = M.fromList $ PlutusMap.toList txInfoData
 
-        checkValidity :: LedgerValidator ()
+        checkValidity :: LedgerValidator e ()
         checkValidity = do
             unless (ls'currentTime `IV.member` txInfoValidRange)
                 . throwLVE
                 $ TxInvalidRange ls'currentTime txInfoValidRange
 
-        checkUtxosExist :: LedgerValidator ()
+        checkUtxosExist :: LedgerValidator e ()
         checkUtxosExist = do
             let inps = txInfoInputs <> txInfoReferenceInputs
             unlessExists TxNonExistentInput (M.keysSet ls'utxos) $ txInInfoOutRef <$> inps
 
-        checkSpendable :: LedgerValidator ()
+        checkSpendable :: LedgerValidator e ()
         checkSpendable = do
             let keys = S.fromList txInfoSignatories
             unlessExists TxMissingOwnerSignature keys $ mapMaybe (toPubKeyHash . txOutAddress . txInInfoResolved) txInfoInputs
 
-        checkNewReferenceScripts :: LedgerValidator ()
+        checkNewReferenceScripts :: LedgerValidator e ()
         checkNewReferenceScripts = do
             scriptStorage <- asks lc'scriptStorage
             unlessExists TxMissingReferenceScript (M.keysSet scriptStorage) $ mapMaybe txOutReferenceScript txInfoOutputs
 
-        checkBalance :: LedgerValidator ()
+        checkBalance :: LedgerValidator e ()
         checkBalance = do
             let inpValue = foldMap (txOutValue . txInInfoResolved) txInfoInputs
                 outValue = foldMap txOutValue txInfoOutputs
@@ -260,7 +265,7 @@ checkTx
                 . throwLVE
                 $ TxUnbalanced inpValue txInfoMint outValue
 
-        checkScriptsInvoked :: LedgerValidator ()
+        checkScriptsInvoked :: LedgerValidator e ()
         checkScriptsInvoked = do
             let invokedScripts = PlutusMap.keys txInfoRedeemers
                 invokedPolicies = S.fromList . flip mapMaybe invokedScripts $ \case
@@ -273,7 +278,7 @@ checkTx
             unlessExists TxMissingValidatorInvocation invokedValidatorRefs . map txInInfoOutRef $
                 filter (isJust . toScriptHash . txOutAddress . txInInfoResolved) txInfoInputs
 
-        getScript :: ScriptPurpose -> LedgerValidator (ScriptForEvaluation, Maybe Datum)
+        getScript :: ScriptPurpose -> LedgerValidator e (ScriptForEvaluation, Maybe Datum)
         getScript (Minting (CurrencySymbol (ScriptHash -> sh))) = do
             script <- lookupScript sh
             pure (script, Nothing)
@@ -295,7 +300,7 @@ checkTx
             pure (script, Just datm)
         getScript _ = throwLVE TxUnsupportedScriptPurpose
 
-        evalScript :: (ScriptPurpose, Redeemer) -> LedgerValidator ExBudget
+        evalScript :: (ScriptPurpose, Redeemer) -> LedgerValidator e ExBudget
         evalScript (purpose, rdmr) = do
             (script, mDatm) <- getScript purpose
             evalCtx <- asks lc'evaluationContext
@@ -311,12 +316,12 @@ checkTx
                 Left err -> throwLVE $ TxScriptFailure logs err
                 Right budget -> pure budget
 
-        lookupScript :: ScriptHash -> LedgerValidator ScriptForEvaluation
+        lookupScript :: ScriptHash -> LedgerValidator e ScriptForEvaluation
         lookupScript sh = do
             scriptStorage <- asks lc'scriptStorage
             maybe (throwLVE $ TxMissingScript sh) pure $ sh `M.lookup` scriptStorage
 
-updateUtxos :: TxInfo -> LedgerSim ()
+updateUtxos :: TxInfo -> LedgerSim e ()
 updateUtxos TxInfo{txInfoId, txInfoInputs, txInfoOutputs} = do
     -- Remove spend utxos.
     modify' $ \st -> st{ls'utxos = M.withoutKeys (ls'utxos st) . S.fromList $ map txInInfoOutRef txInfoInputs}
@@ -327,16 +332,20 @@ updateUtxos TxInfo{txInfoId, txInfoInputs, txInfoOutputs} = do
                 M.fromList (zipWith (\ix utxo -> (TxOutRef txInfoId ix, utxo)) [0 ..] txInfoOutputs) <> ls'utxos st
             }
 
-incrementSlot :: LedgerSim ()
+incrementSlot :: LedgerSim e ()
 incrementSlot = do
     modify' $ \st -> st{ls'currentTime = ls'currentTime st + 1}
 
 -- | Make sure every `k` in `f k` exists in the given set.
-unlessExists :: (Traversable f, Ord k) => (k -> LedgerValidatorError) -> Set k -> f k -> LedgerValidator ()
+unlessExists :: (Traversable f, Ord k) => (k -> LedgerValidatorError e) -> Set k -> f k -> LedgerValidator e ()
 unlessExists errF m l = void . for l $ \k -> unless (k `S.member` m) . throwLVE $ errF k
 
-throwLVE :: LedgerValidatorError -> LedgerValidator a
+throwLVE :: LedgerValidatorError e -> LedgerValidator e a
 throwLVE = lift . throwE
+
+-- | Throw custom application error.
+throwLedgerError :: e -> LedgerSim e ()
+throwLedgerError = lift . lift . throwE . TxApplicationError
 
 {- | Generate tx id from time. NOTE: This is simply a stopgap measure used in the simulator. In reality,
 tx ids are hashes of a transaction body.
