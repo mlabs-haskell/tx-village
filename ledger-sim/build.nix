@@ -1,5 +1,5 @@
 { inputs, ... }: {
-  perSystem = { config, system, inputs', ... }:
+  perSystem = { config, system, ... }:
     let
       hsFlake =
         inputs.flake-lang.lib.${system}.haskellPlutusFlake
@@ -7,14 +7,6 @@
             src = ./.;
             name = "ledger-sim";
             inherit (config.settings.haskell) index-state compiler-nix-name;
-
-            dependencies = [
-              # LB base schema and runtime libs
-              "${inputs'.lbf.packages.lbf-prelude-haskell}"
-              "${inputs'.lbf.packages.lbr-prelude-haskell-src}"
-              "${inputs'.lbf.packages.lbf-plutus-haskell}"
-              "${inputs'.lbf.packages.lbr-plutus-haskell-src}"
-            ];
 
             devShellTools = config.settings.shell.tools;
 
