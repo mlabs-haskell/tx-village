@@ -1,4 +1,4 @@
-module Ledger.Sim.Types.Config (LedgerConfig (..), PlutusCostModel (..), ledgerConfigWithCostModel) where
+module Ledger.Sim.Types.Config (LedgerConfig (..), PlutusCostModel (..), mkLedgerConfig) where
 
 import Control.Monad.Trans.Except (runExceptT)
 import Control.Monad.Trans.Writer (WriterT (runWriterT))
@@ -11,12 +11,17 @@ import PlutusLedgerApi.V2 qualified as PlutusV2
 
 newtype PlutusCostModel = PlutusCostModel (Map PlutusV2.ParamName Integer)
 
-newtype LedgerConfig = LedgerConfig
+data LedgerConfig = LedgerConfig
     { lc'evaluationContext :: Plutus.EvaluationContext
+    , lc'scriptStorage :: !(Map PlutusV2.ScriptHash PlutusV2.ScriptForEvaluation)
     }
 
 -- | A ledger config built with 'practicalSlotConfig' and the given cost model.
-ledgerConfigWithCostModel :: PlutusCostModel -> Either PlutusV2.CostModelApplyError LedgerConfig
-ledgerConfigWithCostModel (PlutusCostModel costModel) =
+mkLedgerConfig ::
+    Map PlutusV2.ScriptHash PlutusV2.ScriptForEvaluation ->
+    PlutusCostModel ->
+    Either PlutusV2.CostModelApplyError LedgerConfig
+mkLedgerConfig scripts (PlutusCostModel costModel) =
     LedgerConfig
         <$> runIdentity (runExceptT . fmap fst . runWriterT $ PlutusV2.mkEvaluationContext (M.elems costModel))
+        <*> pure scripts

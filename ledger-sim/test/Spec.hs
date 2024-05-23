@@ -23,6 +23,7 @@ import PlutusLedgerApi.V2 (
     ParamName (..),
     PubKeyHash,
     Redeemer (Redeemer),
+    ScriptHash,
     ScriptPurpose (Minting),
     ToData (toBuiltinData),
     TxInfo (..),
@@ -37,55 +38,50 @@ import Ledger.Sim (
     runLedgerSim,
     submitTx,
  )
-import Ledger.Sim.Types.Config (PlutusCostModel (..), ledgerConfigWithCostModel)
+import Ledger.Sim.Types.Config (PlutusCostModel (..), mkLedgerConfig)
 import Ledger.Sim.Types.Script (hashScriptV2)
-import Ledger.Sim.Types.TxInfo (TxInfoWithScripts (..))
 
 main :: IO ()
 main = do
     script <- either error pure . first show . deserialiseScript vasilPV $ SBS.toShort alwaysSucceedsCbor
-    ledgerCfg <- either throwIO pure $ ledgerConfigWithCostModel testCostModel
-    defaultMain $ tests script ledgerCfg
+    let sh = hashScriptV2 script
+    ledgerCfg <- either throwIO pure $ mkLedgerConfig (M.fromList [(sh, script)]) testCostModel
+    defaultMain $ tests sh ledgerCfg
 
-tests :: Plutus.ScriptForEvaluation -> LedgerConfig -> TestTree
-tests dummyMintScript ledgerCfg =
+tests :: ScriptHash -> LedgerConfig -> TestTree
+tests dummyScriptHash ledgerCfg =
     testGroup
         "Tests"
         [ testCase "Simple Minting Tx" $ do
             let res = runLedgerSim ledgerCfg mempty $ do
                     let ownPubKeyHash :: PubKeyHash = fromString "e17c366f879d0f7ef28a405f3101e46ea5c2329a4bbca5f0276f8fba19"
-                        sh = hashScriptV2 dummyMintScript
-                        cs = PlutusValue.CurrencySymbol $ Plutus.getScriptHash sh
+                        cs = PlutusValue.CurrencySymbol $ Plutus.getScriptHash dummyScriptHash
                         mintVal =
                             PlutusValue.assetClassValue
                                 (PlutusValue.AssetClass (cs, fromString "A"))
                                 1
                         ownAddress = Address (PubKeyCredential ownPubKeyHash) Nothing
                     currentTime <- gets ls'currentTime
-                    submitTx $
-                        TxInfoWithScripts
-                            { txInfoRaw =
-                                TxInfo
-                                    mempty
-                                    mempty
-                                    [ TxOut
-                                        { txOutValue = mintVal
-                                        , txOutReferenceScript = Nothing
-                                        , txOutDatum = NoOutputDatum
-                                        , txOutAddress = ownAddress
-                                        }
-                                    ]
-                                    mempty
-                                    mintVal
-                                    mempty
-                                    PlutusMap.empty
-                                    (interval currentTime (currentTime + 1))
-                                    [ownPubKeyHash]
-                                    (PlutusMap.fromList [(Minting cs, Redeemer (toBuiltinData @Integer 1234))])
-                                    PlutusMap.empty
-                                    $ fromString "847971d6db0576dcfeb0f041630a0ff111a11cb1921c7507c65c3b0dea58bc49"
-                            , txInfoScripts = M.fromList [(sh, dummyMintScript)]
-                            }
+                    submitTx
+                        $ TxInfo
+                            mempty
+                            mempty
+                            [ TxOut
+                                { txOutValue = mintVal
+                                , txOutReferenceScript = Nothing
+                                , txOutDatum = NoOutputDatum
+                                , txOutAddress = ownAddress
+                                }
+                            ]
+                            mempty
+                            mintVal
+                            mempty
+                            PlutusMap.empty
+                            (interval currentTime (currentTime + 1))
+                            [ownPubKeyHash]
+                            (PlutusMap.fromList [(Minting cs, Redeemer (toBuiltinData @Integer 1234))])
+                            PlutusMap.empty
+                        $ fromString "847971d6db0576dcfeb0f041630a0ff111a11cb1921c7507c65c3b0dea58bc49"
             res @?= Right ()
         ]
 
