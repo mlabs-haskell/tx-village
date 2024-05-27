@@ -9,10 +9,11 @@ use plutus_ledger_api::v2::crypto::{Ed25519PubKeyHash, LedgerBytes};
 use serde::Deserialize;
 use std::path::{Path, PathBuf};
 use std::process::{Child, Command, Stdio};
-use std::time;
+use std::time::{self, Duration};
 use thiserror::Error;
 use tokio;
 use tokio::fs;
+use wait_timeout::ChildExt;
 
 use super::key_wallet::KeyWallet;
 use super::key_wallet::KeyWalletError;
@@ -182,7 +183,15 @@ impl Plutip {
         let plutip_pid = i32::try_from(self.handler.id()).map(Pid::from_raw).unwrap();
         signal::kill(plutip_pid, Signal::SIGINT)?;
         let _ = self.handler.wait();
-        Ok(())
+        match self.handler.wait_timeout(Duration::from_secs(60))? {
+            Some(_) => Ok(()),
+            None => {
+                // child hasn't exited yet
+                self.handler.kill()?;
+                self.handler.wait()?;
+                Ok(())
+            }
+        }
     }
 
     /// Cleanup all resources used by plutip
