@@ -14,7 +14,7 @@
           };
     in
     {
-      devShells.dev-ledger-sim-hs = hsFlake.devShell;
+      devShells.dev-ledger-sim = hsFlake.devShell;
 
       packages = {
         # WARN(bladyjoker): We have to pick the hsFlake.packages like this otherwise flake-parts goes into `infinite recursion`.
