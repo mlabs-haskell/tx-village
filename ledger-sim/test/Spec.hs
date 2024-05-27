@@ -75,8 +75,8 @@ tests dummyScriptHash ledgerCfg =
                             , txOutAddress = ownAddress
                             }
                         ]
-                        mempty
-                        mintVal
+                        (PlutusValue.lovelaceValue 0)
+                        (PlutusValue.lovelaceValue 0 <> mintVal)
                         mempty
                         PlutusMap.empty
                         (interval currentTime (currentTime + 1))

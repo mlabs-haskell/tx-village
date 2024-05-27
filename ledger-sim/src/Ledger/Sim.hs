@@ -46,7 +46,6 @@ import PlutusLedgerApi.V2 (
     TxInInfo (TxInInfo, txInInfoOutRef, txInInfoResolved),
     TxInfo (
         TxInfo,
-        txInfoDCert,
         txInfoData,
         txInfoFee,
         txInfoId,
@@ -56,25 +55,27 @@ import PlutusLedgerApi.V2 (
         txInfoRedeemers,
         txInfoReferenceInputs,
         txInfoSignatories,
-        txInfoValidRange,
-        txInfoWdrl
+        txInfoValidRange
     ),
     TxOut (txOutAddress, txOutDatum, txOutReferenceScript, txOutValue),
     TxOutRef (TxOutRef),
     Value,
+    adaSymbol,
+    adaToken,
  )
 import PlutusTx qualified
 import PlutusTx.AssocMap qualified as PlutusMap
 
 import Codec.Serialise (serialise)
 import Crypto.Hash (Blake2b_224 (Blake2b_224), hashWith)
+import Data.Bifunctor (second)
 import Data.ByteArray (convert)
 import Data.ByteString (ByteString)
 import Data.ByteString.Lazy qualified as LBS
-import Data.Foldable (find, fold)
+import Data.Foldable (find, fold, for_)
 import Data.Functor (void)
 import Data.Functor.Identity (Identity (runIdentity))
-import Data.List (sortOn)
+import Data.List (sort, sortOn)
 import Data.Set (Set)
 import Data.Traversable (for)
 import Ledger.Sim.Types.Config (
@@ -129,6 +130,14 @@ data LedgerValidatorError e
     | TxScriptFailure {lve'scriptLogs :: LogOutput, lve'evalError :: EvaluationError}
     | -- | Stake/Reward based script purposes are not currently supported.
       TxUnsupportedScriptPurpose
+    | TxNonNormalInputs {lve'inputs :: ![TxInInfo]}
+    | TxNonNormalReferenceInputs {lve'inputs :: ![TxInInfo]}
+    | TxNonNormalOutput {lve'output :: !TxOut}
+    | TxNonNormalMint {lve'mint :: !Value}
+    | TxNonNormalFee {lve'fee :: !Value}
+    | TxNonNormalSignatories {lve'signatories :: ![PubKeyHash]}
+    | TxNonNormalRedeemers {lve'redeemers :: !(PlutusMap.Map ScriptPurpose Redeemer)}
+    | TxNonNormalData {lve'data :: !(PlutusMap.Map DatumHash Datum)}
     | -- | Some absurd TxInfo construction.
       TxInfoAbsurd {lve'absurd :: !String}
     | -- | Custom Application Errors.
@@ -157,52 +166,70 @@ lookupUTxO ref = M.lookup ref <$> gets ls'utxos
 submitTx :: TxInfo -> LedgerSim e ()
 submitTx txInfoRaw = do
     currentTime <- gets ls'currentTime
-    let txInfo = normalizeTxInfo txInfoRaw{txInfoId = genTxId currentTime}
+    let txInfo = txInfoRaw{txInfoId = genTxId currentTime}
+    lift $ checkNormality txInfo
     ledgerState <- get
     -- TODO(chase): Find a way to utilize tx script budget.
     _txBudget <- lift $ checkTx ledgerState txInfo
     updateUtxos txInfo
     incrementSlot
 
-normalizeTxInfo :: TxInfo -> TxInfo
-normalizeTxInfo
+checkNormality :: TxInfo -> LedgerValidator e ()
+checkNormality
     TxInfo
         { txInfoReferenceInputs
         , txInfoRedeemers
-        , txInfoWdrl
-        , txInfoValidRange
         , txInfoSignatories
         , txInfoOutputs
         , txInfoMint
         , txInfoInputs
-        , txInfoId
         , txInfoFee
         , txInfoData
-        , txInfoDCert
-        } =
-        TxInfo
-            { txInfoInputs = normalizeInputs txInfoInputs
-            , txInfoReferenceInputs = normalizeInputs txInfoReferenceInputs
-            , txInfoRedeemers = PlutusMap.fromListSafe $ PlutusMap.toList txInfoRedeemers
-            , txInfoWdrl = txInfoWdrl
-            , txInfoValidRange = txInfoValidRange
-            , txInfoSignatories = normalizeList txInfoSignatories
-            , txInfoOutputs = normalizeTxOut <$> txInfoOutputs
-            , txInfoMint = normalizeValue $ Value.lovelaceValue 0 <> txInfoMint
-            , txInfoId = txInfoId
-            , txInfoFee = Value.lovelaceValue $ Value.lovelaceValueOf txInfoFee
-            , txInfoData = normalizeMap txInfoData
-            , txInfoDCert = txInfoDCert
-            }
+        } = do
+        unless (normalizeInputs txInfoInputs == txInfoInputs)
+            . throwLVE
+            $ TxNonNormalInputs txInfoInputs
+        unless (normalizeInputs txInfoReferenceInputs == txInfoReferenceInputs)
+            . throwLVE
+            $ TxNonNormalReferenceInputs txInfoReferenceInputs
+        unless (PlutusMap.fromListSafe (PlutusMap.toList txInfoRedeemers) == txInfoRedeemers)
+            . throwLVE
+            $ TxNonNormalRedeemers txInfoRedeemers
+        unless (normalizeList txInfoSignatories == txInfoSignatories)
+            . throwLVE
+            $ TxNonNormalSignatories txInfoSignatories
+        for_ txInfoOutputs $ \txOut -> do
+            unless (normalizeTxOut txOut == txOut)
+                . throwLVE
+                $ TxNonNormalSignatories txInfoSignatories
+        unless (normalizeValue txInfoMint == deconstructValue txInfoMint)
+            . throwLVE
+            $ TxNonNormalMint txInfoMint
+        unless ([(adaSymbol, [(adaToken, Value.getLovelace $ Value.lovelaceValueOf txInfoFee)])] == deconstructValue txInfoFee)
+            . throwLVE
+            $ TxNonNormalFee txInfoFee
+        unless (normalizeMap txInfoData == PlutusMap.toList txInfoData)
+            . throwLVE
+            $ TxNonNormalData txInfoData
       where
         normalizeInputs x = (\inp -> inp{txInInfoResolved = normalizeTxOut $ txInInfoResolved inp}) <$> sortOn txInInfoOutRef x
-        normalizeTxOut x = x{txOutValue = normalizeValue $ txOutValue x}
-        normalizeValue val =
-            let csMap = M.fromListWith (<>) $ (\(cs, tk, amt) -> (cs, [(tk, amt)])) <$> Value.flattenValue val
-             in Value.Value . PlutusMap.fromList . M.toList $ PlutusMap.fromList . M.toList . M.fromList <$> csMap
+        normalizeTxOut x =
+            x
+                { txOutValue =
+                    Value.Value
+                        . PlutusMap.fromList
+                        . fmap (second PlutusMap.fromList)
+                        . normalizeValue
+                        $ txOutValue x
+                }
         normalizeList = S.toAscList . S.fromList
-        normalizeMap :: (Ord k) => PlutusMap.Map k v -> PlutusMap.Map k v
-        normalizeMap = PlutusMap.fromList . M.toList . M.fromList . PlutusMap.toList
+        normalizeMap :: (Ord k, Ord v) => PlutusMap.Map k v -> [(k, v)]
+        normalizeMap = sort . PlutusMap.toList
+        normalizeValue = padAda . normalizeMap . PlutusMap.mapWithKey (const normalizeMap) . Value.getValue
+        deconstructValue = PlutusMap.toList . PlutusMap.mapWithKey (const PlutusMap.toList) . Value.getValue
+        padAda ((cs, [(tk, amt)]) : rest)
+            | cs == adaSymbol && tk == adaToken = (cs, [(tk, amt)]) : rest
+        padAda rest = (adaSymbol, [(adaToken, 0)]) : rest
 
 {- Note on missing validations - Chase
 
@@ -311,7 +338,8 @@ checkTx
                         Plutus.Verbose
                         evalCtx
                         script
-                        $ maybeToList (PlutusTx.toData <$> mDatm) <> [PlutusTx.toData rdmr, PlutusTx.toData $ ScriptContext txInfo purpose]
+                        $ maybeToList (PlutusTx.toData <$> mDatm)
+                            <> [PlutusTx.toData rdmr, PlutusTx.toData $ ScriptContext txInfo purpose]
             case res of
                 Left err -> throwLVE $ TxScriptFailure logs err
                 Right budget -> pure budget
