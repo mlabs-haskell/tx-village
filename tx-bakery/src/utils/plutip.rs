@@ -182,7 +182,7 @@ impl Plutip {
         self.cleanup()?;
         let plutip_pid = i32::try_from(self.handler.id()).map(Pid::from_raw).unwrap();
         signal::kill(plutip_pid, Signal::SIGINT)?;
-        let _ = self.handler.wait();
+
         match self.handler.wait_timeout(Duration::from_secs(60))? {
             Some(_) => Ok(()),
             None => {
