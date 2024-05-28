@@ -167,7 +167,6 @@ submitTx :: TxInfo -> LedgerSim e ()
 submitTx txInfoRaw = do
     currentTime <- gets ls'currentTime
     let txInfo = txInfoRaw{txInfoId = genTxId currentTime}
-    lift $ checkNormality txInfo
     ledgerState <- get
     -- TODO(chase): Find a way to utilize tx script budget.
     _txBudget <- lift $ checkTx ledgerState txInfo
@@ -252,6 +251,8 @@ checkTx
         , txInfoData
         , txInfoSignatories
         } = do
+        checkNormality txInfo
+
         checkValidity
         checkUtxosExist
         checkSpendable

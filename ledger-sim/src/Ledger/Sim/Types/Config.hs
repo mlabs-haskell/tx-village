@@ -1,11 +1,11 @@
-module Ledger.Sim.Types.Config (LedgerConfig (..), PlutusCostModel, mkLedgerConfig) where
+module Ledger.Sim.Types.Config (LedgerConfig (..), PlutusCostModel (..), mkLedgerConfig) where
 
 import Data.Map (Map)
 
 import PlutusLedgerApi.Common qualified as Plutus
 import PlutusLedgerApi.V2 qualified as PlutusV2
 
-import Ledger.Sim.Types.CostModel (PlutusCostModel, mkEvaluationContext)
+import Ledger.Sim.Types.CostModel (PlutusCostModel (PlutusCostModel), mkEvaluationContext)
 
 data LedgerConfig = LedgerConfig
     { lc'evaluationContext :: Plutus.EvaluationContext
