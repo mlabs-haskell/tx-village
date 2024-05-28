@@ -1,15 +1,11 @@
-module Ledger.Sim.Types.Config (LedgerConfig (..), PlutusCostModel (..), mkLedgerConfig) where
+module Ledger.Sim.Types.Config (LedgerConfig (..), PlutusCostModel, mkLedgerConfig) where
 
-import Control.Monad.Trans.Except (runExceptT)
-import Control.Monad.Trans.Writer (WriterT (runWriterT))
-import Data.Functor.Identity (Identity (runIdentity))
 import Data.Map (Map)
-import Data.Map.Strict qualified as M
 
 import PlutusLedgerApi.Common qualified as Plutus
 import PlutusLedgerApi.V2 qualified as PlutusV2
 
-newtype PlutusCostModel = PlutusCostModel (Map PlutusV2.ParamName Integer)
+import Ledger.Sim.Types.CostModel (PlutusCostModel, mkEvaluationContext)
 
 data LedgerConfig = LedgerConfig
     { lc'evaluationContext :: Plutus.EvaluationContext
@@ -21,7 +17,7 @@ mkLedgerConfig ::
     Map PlutusV2.ScriptHash PlutusV2.ScriptForEvaluation ->
     PlutusCostModel ->
     Either PlutusV2.CostModelApplyError LedgerConfig
-mkLedgerConfig scripts (PlutusCostModel costModel) =
+mkLedgerConfig scripts costModel =
     LedgerConfig
-        <$> runIdentity (runExceptT . fmap fst . runWriterT $ PlutusV2.mkEvaluationContext (M.elems costModel))
+        <$> mkEvaluationContext costModel
         <*> pure scripts

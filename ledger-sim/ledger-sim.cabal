@@ -37,10 +37,12 @@ library
     Ledger.Sim
     Ledger.Sim.Test
     Ledger.Sim.Types.Config
+    Ledger.Sim.Types.CostModel
     Ledger.Sim.Types.Script
 
   hs-source-dirs:  src
   build-depends:
+    , aeson
     , base
     , bytestring
     , containers
@@ -51,6 +53,7 @@ library
     , serialise
     , tasty
     , tasty-hunit
+    , text
     , transformers
 
 test-suite ledger-sim-test
