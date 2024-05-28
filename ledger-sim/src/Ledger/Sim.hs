@@ -57,7 +57,7 @@ import PlutusLedgerApi.V2 (
         txInfoSignatories,
         txInfoValidRange
     ),
-    TxOut (txOutAddress, txOutDatum, txOutReferenceScript, txOutValue),
+    TxOut (TxOut, txOutAddress, txOutDatum, txOutReferenceScript, txOutValue),
     TxOutRef (TxOutRef),
     Value,
     adaSymbol,
@@ -197,10 +197,10 @@ checkNormality
         unless (normalizeList txInfoSignatories == txInfoSignatories)
             . throwLVE
             $ TxNonNormalSignatories txInfoSignatories
-        for_ txInfoOutputs $ \txOut -> do
-            unless (normalizeTxOut txOut == txOut)
+        for_ txInfoOutputs $ \txOut@TxOut{txOutValue} -> do
+            unless (normalizeValue txOutValue == deconstructValue txOutValue)
                 . throwLVE
-                $ TxNonNormalSignatories txInfoSignatories
+                $ TxNonNormalOutput txOut
         unless (normalizeValue txInfoMint == deconstructValue txInfoMint)
             . throwLVE
             $ TxNonNormalMint txInfoMint
