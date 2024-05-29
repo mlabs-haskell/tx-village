@@ -53,7 +53,6 @@ library
     , serialise
     , tasty
     , tasty-hunit
-    , text
     , transformers
 
 test-suite ledger-sim-test
