@@ -42,6 +42,7 @@ import PlutusLedgerApi.V2 (
     ScriptForEvaluation,
     ScriptHash (ScriptHash),
     ScriptPurpose (Minting, Spending),
+    TokenName,
     TxId (TxId),
     TxInInfo (TxInInfo, txInInfoOutRef, txInInfoResolved),
     TxInfo (
@@ -57,7 +58,7 @@ import PlutusLedgerApi.V2 (
         txInfoSignatories,
         txInfoValidRange
     ),
-    TxOut (TxOut, txOutAddress, txOutDatum, txOutReferenceScript, txOutValue),
+    TxOut (TxOut, txOutAddress, txOutDatum, txOutValue),
     TxOutRef (TxOutRef),
     Value,
     adaSymbol,
@@ -123,23 +124,40 @@ data LedgerValidatorError e
       TxMissingValidatorInvocation {lve'utxoRef :: !TxOutRef}
     | -- | A script being invoked was not present in the witnesses.
       TxMissingScript {lve'scriptHash :: !ScriptHash}
-    | -- | A script for a new reference script output was not provided.
-      TxMissingReferenceScript {lve'scriptHash :: !ScriptHash}
     | -- | The input is at a script address but no datum has been provided during its creation.
-      TxUnspendableInput {lve'utxoRef :: !TxOutRef}
+      TxMissingDatumInScriptInput {lve'utxoRef :: !TxOutRef}
+    | -- | Tried to spend a script input located at a pub key address.
+      TxNotScriptInput {lve'input :: TxInInfo}
     | TxScriptFailure {lve'scriptLogs :: LogOutput, lve'evalError :: EvaluationError}
     | -- | Stake/Reward based script purposes are not currently supported.
       TxUnsupportedScriptPurpose
-    | TxNonNormalInputs {lve'inputs :: ![TxInInfo]}
-    | TxNonNormalReferenceInputs {lve'inputs :: ![TxInInfo]}
-    | TxNonNormalOutput {lve'output :: !TxOut}
-    | TxNonNormalMint {lve'mint :: !Value}
-    | TxNonNormalFee {lve'fee :: !Value}
-    | TxNonNormalSignatories {lve'signatories :: ![PubKeyHash]}
-    | TxNonNormalRedeemers {lve'redeemers :: !(PlutusMap.Map ScriptPurpose Redeemer)}
-    | TxNonNormalData {lve'data :: !(PlutusMap.Map DatumHash Datum)}
-    | -- | Some absurd TxInfo construction.
-      TxInfoAbsurd {lve'absurd :: !String}
+    | TxNonNormalInputs {lve'expectedInputs :: ![TxInInfo], lve'actualInputs :: ![TxInInfo]}
+    | TxNonNormalReferenceInputs {lve'expectedInputs :: ![TxInInfo], lve'actualInputs :: ![TxInInfo]}
+    | TxNonNormalOutputValue
+        { lve'expectedOutputValue :: ![(CurrencySymbol, [(TokenName, Integer)])]
+        , lve'actualOutputValue :: ![(CurrencySymbol, [(TokenName, Integer)])]
+        , lve'actualOutput :: !TxOut
+        }
+    | TxNonNormalMint
+        { lve'expectedMint :: ![(CurrencySymbol, [(TokenName, Integer)])]
+        , lve'actualMint :: ![(CurrencySymbol, [(TokenName, Integer)])]
+        }
+    | TxNonNormalFee
+        { lve'expectedFee :: ![(CurrencySymbol, [(TokenName, Integer)])]
+        , lve'actualFee :: ![(CurrencySymbol, [(TokenName, Integer)])]
+        }
+    | TxNonNormalSignatories
+        { lve'expectedSignatories :: ![PubKeyHash]
+        , lve'actualSignatories :: ![PubKeyHash]
+        }
+    | TxNonNormalRedeemers
+        { lve'expectedRedeemers :: ![(ScriptPurpose, Redeemer)]
+        , lve'actualRedeemers :: ![(ScriptPurpose, Redeemer)]
+        }
+    | TxNonNormalData
+        { lve'expectedData :: ![(DatumHash, Datum)]
+        , lve'actualData :: ![(DatumHash, Datum)]
+        }
     | -- | Custom Application Errors.
       TxApplicationError {lve'appError :: !e}
     deriving stock (Eq, Show)
@@ -185,32 +203,33 @@ checkNormality
         , txInfoFee
         , txInfoData
         } = do
-        unless (normalizeInputs txInfoInputs == txInfoInputs)
-            . throwLVE
-            $ TxNonNormalInputs txInfoInputs
-        unless (normalizeInputs txInfoReferenceInputs == txInfoReferenceInputs)
-            . throwLVE
-            $ TxNonNormalReferenceInputs txInfoReferenceInputs
-        unless (PlutusMap.fromListSafe (PlutusMap.toList txInfoRedeemers) == txInfoRedeemers)
-            . throwLVE
-            $ TxNonNormalRedeemers txInfoRedeemers
-        unless (normalizeList txInfoSignatories == txInfoSignatories)
-            . throwLVE
-            $ TxNonNormalSignatories txInfoSignatories
+        unlessThrow TxNonNormalInputs (normalizeInputs txInfoInputs) txInfoInputs
+        unlessThrow TxNonNormalInputs (normalizeInputs txInfoReferenceInputs) txInfoReferenceInputs
+        unlessThrow
+            TxNonNormalRedeemers
+            (PlutusMap.toList . PlutusMap.fromListSafe $ PlutusMap.toList txInfoRedeemers)
+            $ PlutusMap.toList txInfoRedeemers
+        unlessThrow TxNonNormalSignatories (normalizeList txInfoSignatories) txInfoSignatories
         for_ txInfoOutputs $ \txOut@TxOut{txOutValue} -> do
-            unless (normalizeValue txOutValue == deconstructValue txOutValue)
+            let expected = normalizeValue txOutValue
+                actual = deconstructValue txOutValue
+            unless (expected == actual)
                 . throwLVE
-                $ TxNonNormalOutput txOut
-        unless (normalizeValue txInfoMint == deconstructValue txInfoMint)
-            . throwLVE
-            $ TxNonNormalMint txInfoMint
-        unless ([(adaSymbol, [(adaToken, Value.getLovelace $ Value.lovelaceValueOf txInfoFee)])] == deconstructValue txInfoFee)
-            . throwLVE
-            $ TxNonNormalFee txInfoFee
-        unless (normalizeMap txInfoData == PlutusMap.toList txInfoData)
-            . throwLVE
-            $ TxNonNormalData txInfoData
+                $ TxNonNormalOutputValue expected actual txOut
+        unlessThrow TxNonNormalMint (normalizeValue txInfoMint) $ deconstructValue txInfoMint
+        unlessThrow
+            TxNonNormalFee
+            [(adaSymbol, [(adaToken, Value.getLovelace $ Value.lovelaceValueOf txInfoFee)])]
+            $ deconstructValue txInfoFee
+        unlessThrow
+            TxNonNormalData
+            (normalizeMap txInfoData)
+            $ PlutusMap.toList txInfoData
       where
+        unlessThrow err expected actual =
+            unless (expected == actual)
+                . throwLVE
+                $ err expected actual
         normalizeInputs x = (\inp -> inp{txInInfoResolved = normalizeTxOut $ txInInfoResolved inp}) <$> sortOn txInInfoOutRef x
         normalizeTxOut x =
             x
@@ -256,7 +275,6 @@ checkTx
         checkValidity
         checkUtxosExist
         checkSpendable
-        checkNewReferenceScripts
         checkBalance
         checkScriptsInvoked
 
@@ -279,11 +297,6 @@ checkTx
         checkSpendable = do
             let keys = S.fromList txInfoSignatories
             unlessExists TxMissingOwnerSignature keys $ mapMaybe (toPubKeyHash . txOutAddress . txInInfoResolved) txInfoInputs
-
-        checkNewReferenceScripts :: LedgerValidator e ()
-        checkNewReferenceScripts = do
-            scriptStorage <- asks lc'scriptStorage
-            unlessExists TxMissingReferenceScript (M.keysSet scriptStorage) $ mapMaybe txOutReferenceScript txInfoOutputs
 
         checkBalance :: LedgerValidator e ()
         checkBalance = do
@@ -316,7 +329,7 @@ checkTx
                     find (\TxInInfo{txInInfoOutRef} -> txInInfoOutRef == ref) txInfoInputs
             sh <-
                 maybe
-                    (throwLVE $ TxInfoAbsurd "absurd: TxInfo is spending a script input from a pub key address")
+                    (throwLVE $ TxNotScriptInput{lve'input = TxInInfo ref utxo})
                     pure
                     . toScriptHash
                     $ txOutAddress utxo
@@ -324,7 +337,7 @@ checkTx
             datm <- case txOutDatum utxo of
                 OutputDatumHash dh -> maybe (throwLVE $ TxMissingDatum dh) pure $ dh `M.lookup` datumMap
                 OutputDatum datm -> pure datm
-                NoOutputDatum -> throwLVE $ TxUnspendableInput ref
+                NoOutputDatum -> throwLVE $ TxMissingDatumInScriptInput ref
             pure (script, Just datm)
         getScript _ = throwLVE TxUnsupportedScriptPurpose
 
