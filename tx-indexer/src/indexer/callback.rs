@@ -1,13 +1,12 @@
 use super::{
     error::ErrorPolicyProvider,
-    retry::{perform_with_retry, RetryPolicy},
-    types::{ChainEvent, ChainEventTime},
+    retry::{perform_with_retry, ProgressTracker, RetryPolicy},
+    types::ChainEvent,
 };
 use oura::{
     pipelining::{BootstrapResult, SinkProvider, StageReceiver},
     utils::Utils,
 };
-use sqlx::{PgConnection, PgPool};
 use std::{future::Future, sync::Arc};
 use strum_macros::Display;
 use tokio::runtime::Runtime;
@@ -19,12 +18,7 @@ where
 {
     type Error: std::error::Error + ErrorPolicyProvider;
 
-    fn handle<'a>(
-        &self,
-        event_time: ChainEventTime,
-        event: ChainEvent,
-        pg_conn: &'a mut PgConnection,
-    ) -> impl Future<Output = Result<(), Self::Error>>;
+    fn handle(&self, event: ChainEvent) -> impl Future<Output = Result<(), Self::Error>>;
 }
 
 /// This is a custom made sink for Oura. Based on a callback function.
@@ -33,16 +27,21 @@ pub(crate) struct Callback<H: Handler> {
     pub(crate) handler: H,
     pub(crate) retry_policy: RetryPolicy,
     pub(crate) utils: Arc<Utils>,
-    pub(crate) pg_pool: PgPool,
+    pub(crate) progress_tracker: Option<ProgressTracker>,
 }
 
 impl<H: Handler> Callback<H> {
-    pub fn new(handler: H, retry_policy: RetryPolicy, utils: Arc<Utils>, pg_pool: PgPool) -> Self {
+    pub fn new(
+        handler: H,
+        retry_policy: RetryPolicy,
+        utils: Arc<Utils>,
+        progress_tracker: Option<ProgressTracker>,
+    ) -> Self {
         Self {
             handler,
             retry_policy,
             utils,
-            pg_pool,
+            progress_tracker,
         }
     }
 }
@@ -54,8 +53,8 @@ impl<H: Handler> SinkProvider for Callback<H> {
 
         let retry_policy = self.retry_policy;
         let utils = self.utils.clone();
-        let pool = self.pg_pool.clone();
         let handler = self.handler.clone();
+        let progress_tracker = self.progress_tracker.clone();
 
         let handle = span!(Level::DEBUG, "SpawningThread").in_scope(|| {
             std::thread::spawn(move || {
@@ -64,12 +63,18 @@ impl<H: Handler> SinkProvider for Callback<H> {
 
                 // Running async function sycnhronously within another thread.
                 let rt = Runtime::new().unwrap();
-                rt.block_on(handle_event(handler, input, &retry_policy, utils, pool))
-                    .map_err(|err| {
-                        event!(Level::ERROR, label=%Events::EventHandlerFailure, ?err);
-                        err
-                    })
-                    .expect("request loop failed");
+                rt.block_on(handle_event(
+                    handler,
+                    input,
+                    &retry_policy,
+                    utils,
+                    progress_tracker,
+                ))
+                .map_err(|err| {
+                    event!(Level::ERROR, label=%Events::EventHandlerFailure, ?err);
+                    err
+                })
+                .expect("request loop failed");
             })
         });
 
@@ -83,11 +88,10 @@ async fn handle_event<'a, H: Handler>(
     input: StageReceiver,
     retry_policy: &RetryPolicy,
     utils: Arc<Utils>,
-    mut pg_pool: PgPool,
+    progress_tracker: Option<ProgressTracker>,
 ) -> Result<(), H::Error> {
     let span = span!(Level::DEBUG, "handle_event");
     let _enter = span.enter();
-    let pg_pool = &mut pg_pool;
     for chain_event in input.into_iter() {
         let span = span!(
           Level::DEBUG,
@@ -95,11 +99,16 @@ async fn handle_event<'a, H: Handler>(
           context=?chain_event.context
         );
         // Have to clone twice here to please the borrow checker...
-        perform_with_retry(&handler, chain_event.clone(), retry_policy, pg_pool)
-            .instrument(span)
-            .await
-            // Notify progress to the pipeline.
-            .map(|_| utils.track_sink_progress(&chain_event))?;
+        perform_with_retry(
+            &handler,
+            chain_event.clone(),
+            retry_policy,
+            progress_tracker.clone(),
+        )
+        .instrument(span)
+        .await
+        // Notify progress to the pipeline.
+        .map(|_| utils.track_sink_progress(&chain_event))?;
         // ^ This will exit the loop if an error is returned.
         // After all, `perform_with_retry` will only return error if all other options,
         // based on `ErrorPolicy`, were exhausted.

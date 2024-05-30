@@ -3745,6 +3745,7 @@ dependencies = [
  "tokio-test",
  "tower",
  "uuid",
+ "wait-timeout",
 ]
 
 [[package]]
@@ -3756,6 +3757,7 @@ dependencies = [
  "bigdecimal",
  "cardano-serialization-lib",
  "cbor_event",
+ "chrono",
  "clap 4.4.8",
  "data-encoding",
  "frunk",
