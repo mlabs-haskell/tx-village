@@ -126,7 +126,7 @@ data LedgerValidatorError e
     | -- | Transaction is not balanced.
       TxUnbalanced {lve'txInputValue :: !Value, lve'txMint :: !Value, lve'txOutputValue :: !Value}
     | -- | Spending an utxo that is missing from the inputs.
-      TxMissingInput {lve'txOutRef :: !TxOutRef}
+      TxMissingInputSpent {lve'txOutRef :: !TxOutRef}
     | -- | Datum for an input being spent is missing.
       TxMissingDatum {lve'txDatumHash :: !DatumHash}
     | -- | The policy for a token in the mint field was not invoked.
@@ -371,7 +371,7 @@ checkTx
             pure (script, Nothing)
         getScript (Spending ref) = do
             (txInInfoResolved -> utxo) <-
-                maybe (throwLVE $ TxMissingInput ref) pure $
+                maybe (throwLVE $ TxMissingInputSpent ref) pure $
                     find (\TxInInfo{txInInfoOutRef} -> txInInfoOutRef == ref) txInfoInputs
             sh <-
                 maybe
