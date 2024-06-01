@@ -4,6 +4,7 @@ import Data.Bifunctor (first)
 import Data.ByteString.Base16 qualified as Base16
 import Data.ByteString.Char8 qualified as BS8
 import Data.ByteString.Short qualified as SBS
+import Data.Functor (void)
 import Data.Map.Strict qualified as M
 import Data.String (fromString)
 
@@ -20,10 +21,12 @@ import PlutusLedgerApi.V2 (
     PubKeyHash,
     Redeemer (Redeemer),
     ScriptHash,
-    ScriptPurpose (Minting),
+    ScriptPurpose (Minting, Spending),
     ToData (toBuiltinData),
+    TxInInfo (TxInInfo),
     TxInfo (TxInfo),
     TxOut (TxOut, txOutAddress, txOutDatum, txOutReferenceScript, txOutValue),
+    TxOutRef (TxOutRef),
     deserialiseScript,
  )
 import PlutusLedgerApi.V2 qualified as PlutusV2
@@ -32,10 +35,14 @@ import PlutusTx.AssocMap qualified as PlutusMap
 import Ledger.Sim (
     LedgerConfig,
     LedgerState (ls'currentTime),
+    LedgerValidatorError (TxInvalidRange, TxMissingInputSpent, TxMissingOwnerSignature, TxNonExistentInput, TxUnbalanced),
     emptyLedgerState,
+    getCurrentSlot,
+    lookupUTxO,
     submitTx,
+    throwLedgerError,
  )
-import Ledger.Sim.Test (ledgerSucceeds, ledgerTestCase, ledgerTestGroup)
+import Ledger.Sim.Test (ledgerFailsBy, ledgerSucceeds, ledgerTestCase, ledgerTestGroup)
 import Ledger.Sim.Types.Config (PlutusCostModel (PlutusCostModel), mkLedgerConfig)
 import Ledger.Sim.Types.Script (hashScriptV2)
 
@@ -52,18 +59,16 @@ tests dummyScriptHash ledgerCfg =
         ledgerCfg
         (emptyLedgerState ())
         "Tests"
-        [ ledgerTestCase "Simple Minting Tx" $ do
+        [ ledgerTestCase "Simple Minting Tx" $
             ledgerSucceeds @() $ do
-                let ownPubKeyHash :: PubKeyHash = fromString "e17c366f879d0f7ef28a405f3101e46ea5c2329a4bbca5f0276f8fba19"
-                    cs = PlutusValue.CurrencySymbol $ Plutus.getScriptHash dummyScriptHash
+                let cs = PlutusValue.CurrencySymbol $ Plutus.getScriptHash dummyScriptHash
                     mintVal =
                         PlutusValue.assetClassValue
                             (PlutusValue.AssetClass (cs, fromString "A"))
                             1
-                    ownAddress = Address (PubKeyCredential ownPubKeyHash) Nothing
                 currentTime <- gets ls'currentTime
-                submitTx
-                    $ TxInfo
+                void . submitTx $
+                    TxInfo
                         mempty
                         mempty
                         [ TxOut
@@ -81,8 +86,181 @@ tests dummyScriptHash ledgerCfg =
                         [ownPubKeyHash]
                         (PlutusMap.fromList [(Minting cs, Redeemer (toBuiltinData @Integer 1234))])
                         PlutusMap.empty
-                    $ fromString "847971d6db0576dcfeb0f041630a0ff111a11cb1921c7507c65c3b0dea58bc49"
+                        dummyTxId
+        , ledgerTestCase "Invalid range" $
+            ledgerFailsBy @() (\case TxInvalidRange{} -> True; _ -> False) $ do
+                currentTime <- gets ls'currentTime
+                void . submitTx $
+                    TxInfo
+                        mempty
+                        mempty
+                        [ TxOut
+                            { txOutValue = PlutusValue.lovelaceValue 0
+                            , txOutReferenceScript = Nothing
+                            , txOutDatum = NoOutputDatum
+                            , txOutAddress = ownAddress
+                            }
+                        ]
+                        (PlutusValue.lovelaceValue 0)
+                        (PlutusValue.lovelaceValue 0)
+                        mempty
+                        PlutusMap.empty
+                        (interval (currentTime - 2) (currentTime - 1))
+                        [ownPubKeyHash]
+                        PlutusMap.empty
+                        PlutusMap.empty
+                        dummyTxId
+        , ledgerTestCase "Non existent input" $
+            ledgerFailsBy @() (\case TxNonExistentInput{} -> True; _ -> False) $ do
+                currentTime <- gets ls'currentTime
+                void . submitTx $
+                    TxInfo
+                        [ TxInInfo
+                            (TxOutRef dummyTxId' 1)
+                            $ TxOut
+                                { txOutValue = PlutusValue.lovelaceValue 0
+                                , txOutReferenceScript = Nothing
+                                , txOutDatum = NoOutputDatum
+                                , txOutAddress = ownAddress
+                                }
+                        ]
+                        mempty
+                        [ TxOut
+                            { txOutValue = PlutusValue.lovelaceValue 0
+                            , txOutReferenceScript = Nothing
+                            , txOutDatum = NoOutputDatum
+                            , txOutAddress = ownAddress
+                            }
+                        ]
+                        (PlutusValue.lovelaceValue 0)
+                        (PlutusValue.lovelaceValue 0)
+                        mempty
+                        PlutusMap.empty
+                        (interval currentTime (currentTime + 1))
+                        [ownPubKeyHash]
+                        PlutusMap.empty
+                        PlutusMap.empty
+                        dummyTxId
+        , ledgerTestCase "Missing signature" $
+            ledgerFailsBy @String (\case TxMissingOwnerSignature{} -> True; _ -> False) $ do
+                let
+                    cs = PlutusValue.CurrencySymbol $ Plutus.getScriptHash dummyScriptHash
+                    mintVal =
+                        PlutusValue.assetClassValue
+                            (PlutusValue.AssetClass (cs, fromString "A"))
+                            1
+                currentTime <- getCurrentSlot
+                txId <-
+                    submitTx $
+                        TxInfo
+                            mempty
+                            mempty
+                            [ TxOut
+                                { txOutValue = PlutusValue.lovelaceValue 0 <> mintVal
+                                , txOutReferenceScript = Nothing
+                                , txOutDatum = NoOutputDatum
+                                , txOutAddress = ownAddress
+                                }
+                            ]
+                            (PlutusValue.lovelaceValue 0)
+                            (PlutusValue.lovelaceValue 0 <> mintVal)
+                            mempty
+                            PlutusMap.empty
+                            (interval currentTime (currentTime + 1))
+                            [ownPubKeyHash]
+                            (PlutusMap.fromList [(Minting cs, Redeemer (toBuiltinData @Integer 1234))])
+                            PlutusMap.empty
+                            dummyTxId
+                let newUTxORef = TxOutRef txId 0
+                newUTxO <-
+                    lookupUTxO newUTxORef >>= \case
+                        Just x -> pure x
+                        Nothing -> throwLedgerError "Newly created utxo absent from ledger state"
+                void . submitTx $
+                    TxInfo
+                        [TxInInfo newUTxORef newUTxO]
+                        mempty
+                        [ TxOut
+                            { txOutValue = PlutusValue.lovelaceValue 0
+                            , txOutReferenceScript = Nothing
+                            , txOutDatum = NoOutputDatum
+                            , txOutAddress = ownAddress
+                            }
+                        ]
+                        (PlutusValue.lovelaceValue 0)
+                        (PlutusValue.lovelaceValue 0)
+                        mempty
+                        PlutusMap.empty
+                        (interval currentTime (currentTime + 1))
+                        mempty
+                        PlutusMap.empty
+                        PlutusMap.empty
+                        dummyTxId
+        , ledgerTestCase "Unbalanced" $
+            ledgerFailsBy @() (\case TxUnbalanced{} -> True; _ -> False) $ do
+                let cs = PlutusValue.CurrencySymbol $ Plutus.getScriptHash dummyScriptHash
+                    mintVal =
+                        PlutusValue.assetClassValue
+                            (PlutusValue.AssetClass (cs, fromString "A"))
+                            1
+                currentTime <- getCurrentSlot
+                void . submitTx $
+                    TxInfo
+                        mempty
+                        mempty
+                        [ TxOut
+                            { txOutValue = PlutusValue.lovelaceValue 0 <> mintVal
+                            , txOutReferenceScript = Nothing
+                            , txOutDatum = NoOutputDatum
+                            , txOutAddress = ownAddress
+                            }
+                        ]
+                        (PlutusValue.lovelaceValue 0)
+                        (PlutusValue.lovelaceValue 0)
+                        mempty
+                        PlutusMap.empty
+                        (interval currentTime (currentTime + 1))
+                        [ownPubKeyHash]
+                        PlutusMap.empty
+                        PlutusMap.empty
+                        dummyTxId
+        , ledgerTestCase "Missing Input Spent" $
+            ledgerFailsBy @() (\case TxMissingInputSpent{} -> True; _ -> False) $ do
+                let ref = TxOutRef dummyTxId' 1
+                currentTime <- getCurrentSlot
+                void . submitTx $
+                    TxInfo
+                        mempty
+                        mempty
+                        [ TxOut
+                            { txOutValue = PlutusValue.lovelaceValue 0
+                            , txOutReferenceScript = Nothing
+                            , txOutDatum = NoOutputDatum
+                            , txOutAddress = ownAddress
+                            }
+                        ]
+                        (PlutusValue.lovelaceValue 0)
+                        (PlutusValue.lovelaceValue 0)
+                        mempty
+                        PlutusMap.empty
+                        (interval currentTime (currentTime + 1))
+                        [ownPubKeyHash]
+                        (PlutusMap.fromList [(Spending ref, Redeemer $ toBuiltinData ())])
+                        PlutusMap.empty
+                        dummyTxId
         ]
+
+ownAddress :: Address
+ownAddress = Address (PubKeyCredential ownPubKeyHash) Nothing
+
+ownPubKeyHash :: PubKeyHash
+ownPubKeyHash = fromString "e17c366f879d0f7ef28a405f3101e46ea5c2329a4bbca5f0276f8fba19"
+
+dummyTxId :: PlutusV2.TxId
+dummyTxId = fromString "847971d6db0576dcfeb0f041630a0ff111a11cb1921c7507c65c3b0dea58bc49"
+
+dummyTxId' :: PlutusV2.TxId
+dummyTxId' = fromString "135981d6db0576dcfeb0f021530a0ee111a11cb1921c7507c65c3b0dea35ab67"
 
 -- | Minting Policy that always succeeds.
 alwaysSucceedsCbor :: BS8.ByteString
