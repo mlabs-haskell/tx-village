@@ -5,11 +5,13 @@ module Ledger.Sim.Test (
     ledgerSucceeds,
     ledgerSucceedsWith,
     ledgerFails,
+    ledgerFailsBy,
+    ledgerFailsBy',
     ledgerFailsWith,
+    ledgerFailsWith',
 ) where
 
 import Control.Monad.Trans.Reader (Reader, ask, runReader)
-import Data.Either (isLeft)
 
 import Test.Tasty (TestName, TestTree, testGroup)
 import Test.Tasty.HUnit (Assertion, assertBool, testCase, (@?=))
@@ -18,7 +20,7 @@ import Ledger.Sim (
     LedgerConfig,
     LedgerSim,
     LedgerState,
-    LedgerValidatorError,
+    LedgerValidatorError (TxApplicationError),
     runLedgerSim,
  )
 
@@ -37,19 +39,28 @@ ledgerSucceedsWith :: (Eq e, Show e, Eq a, Show a) => a -> LedgerSim ctx st e a 
 ledgerSucceedsWith = SucceedsWith
 
 ledgerFails :: LedgerSim ctx st e () -> LedgerExpectation ctx st
-ledgerFails = Fails
+ledgerFails = ledgerFailsBy $ const True
+
+ledgerFailsBy :: (LedgerValidatorError e -> Bool) -> LedgerSim ctx st e () -> LedgerExpectation ctx st
+ledgerFailsBy = FailsBy
+
+ledgerFailsBy' :: (e -> Bool) -> LedgerSim ctx st e () -> LedgerExpectation ctx st
+ledgerFailsBy' predicate = ledgerFailsBy $ \case TxApplicationError e -> predicate e; _ -> False
 
 ledgerFailsWith :: (Eq e, Show e, Eq a, Show a) => LedgerValidatorError e -> LedgerSim ctx st e a -> LedgerExpectation ctx st
 ledgerFailsWith = FailsWith
 
+ledgerFailsWith' :: (Eq e, Show e, Eq a, Show a) => e -> LedgerSim ctx st e a -> LedgerExpectation ctx st
+ledgerFailsWith' = ledgerFailsWith . TxApplicationError
+
 data LedgerExpectation ctx st
     = forall e a. (Eq e, Show e, Eq a, Show a) => SucceedsWith a (LedgerSim ctx st e a)
     | forall e a. (Eq e, Show e, Eq a, Show a) => FailsWith (LedgerValidatorError e) (LedgerSim ctx st e a)
-    | forall e a. Fails (LedgerSim ctx st e a)
+    | forall e a. FailsBy (LedgerValidatorError e -> Bool) (LedgerSim ctx st e a)
 
 toAssertion :: LedgerConfig ctx -> LedgerState st -> LedgerExpectation ctx st -> Assertion
 toAssertion cfg st (SucceedsWith x sim) = runLedgerSim cfg st sim @?= Right x
 toAssertion cfg st (FailsWith x sim) = runLedgerSim cfg st sim @?= Left x
-toAssertion cfg st (Fails sim) =
-    assertBool "Expected contract to fail" . isLeft $
+toAssertion cfg st (FailsBy predicate sim) =
+    assertBool "Expected contract to fail" . either predicate (const False) $
         runLedgerSim cfg st sim
