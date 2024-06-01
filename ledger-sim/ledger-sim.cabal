@@ -38,7 +38,7 @@ library
     Ledger.Sim.Test
     Ledger.Sim.Types.Config
     Ledger.Sim.Types.CostModel
-    Ledger.Sim.Types.Script
+    Ledger.Sim.Utils.Hashing
 
   hs-source-dirs:  src
   build-depends:
