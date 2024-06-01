@@ -43,14 +43,14 @@ main :: IO ()
 main = do
     script <- either error pure . first show . deserialiseScript vasilPV $ SBS.toShort alwaysSucceedsCbor
     let sh = hashScriptV2 script
-    ledgerCfg <- either throwIO pure $ mkLedgerConfig (M.fromList [(sh, script)]) testCostModel
+    ledgerCfg <- either throwIO pure $ mkLedgerConfig (M.fromList [(sh, script)]) testCostModel ()
     defaultMain $ tests sh ledgerCfg
 
-tests :: ScriptHash -> LedgerConfig -> TestTree
+tests :: ScriptHash -> LedgerConfig () -> TestTree
 tests dummyScriptHash ledgerCfg =
     ledgerTestGroup
         ledgerCfg
-        emptyLedgerState
+        (emptyLedgerState ())
         "Tests"
         [ ledgerTestCase "Simple Minting Tx" $ do
             ledgerSucceeds @() $ do
