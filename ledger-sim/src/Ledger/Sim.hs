@@ -80,7 +80,7 @@ import PlutusLedgerApi.V2 (
         txInfoSignatories,
         txInfoValidRange
     ),
-    TxOut (TxOut, txOutAddress, txOutDatum, txOutValue),
+    TxOut (TxOut, txOutAddress, txOutDatum, txOutReferenceScript, txOutValue),
     TxOutRef (TxOutRef),
     Value,
     adaSymbol,
@@ -133,7 +133,9 @@ data LedgerValidatorError e
       TxMissingPolicyInvocation {lve'policyId :: !CurrencySymbol}
     | -- | The validator for an utxo being spent was not invoked.
       TxMissingValidatorInvocation {lve'utxoRef :: !TxOutRef}
-    | -- | A script being invoked was not present in the witnesses.
+    | -- | A script in a reference input was not present in the script storage.
+      TxMissingReferenceScript {lve'scriptHash :: !ScriptHash}
+    | -- | A script being invoked was not present in the script storage.
       TxMissingScript {lve'scriptHash :: !ScriptHash}
     | -- | The input is at a script address but no datum has been provided during its creation.
       TxMissingDatumInScriptInput {lve'utxoRef :: !TxOutRef}
@@ -298,6 +300,7 @@ checkTx
 
         checkValidity
         checkUtxosExist
+        checkReferenceScriptsExist
         checkSpendable
         checkScriptOutputsDatum
         checkBalance
@@ -317,6 +320,14 @@ checkTx
         checkUtxosExist = do
             let inps = txInfoInputs <> txInfoReferenceInputs
             unlessExists TxNonExistentInput (M.keysSet ls'utxos) $ txInInfoOutRef <$> inps
+
+        checkReferenceScriptsExist :: LedgerValidator ctx e ()
+        checkReferenceScriptsExist = do
+            scriptStorage <- asks lc'scriptStorage
+            unlessExists
+                TxMissingReferenceScript
+                (M.keysSet scriptStorage)
+                $ mapMaybe (txOutReferenceScript . txInInfoResolved) txInfoReferenceInputs
 
         -- \| Newly created outputs at script address should contain a datum.
         -- Though this is not formally checked by the real ledger.
