@@ -127,7 +127,7 @@ data LedgerValidatorError e
       TxUnbalanced {lve'txInputValue :: !Value, lve'txMint :: !Value, lve'txOutputValue :: !Value}
     | -- | Spending an utxo that is missing from the inputs.
       TxMissingInputSpent {lve'txOutRef :: !TxOutRef}
-    | -- | Datum for an input being spent is missing.
+    | -- | Datum for an input being spent is missing in witnesses.
       TxMissingDatum {lve'txDatumHash :: !DatumHash}
     | -- | The policy for a token in the mint field was not invoked.
       TxMissingPolicyInvocation {lve'policyId :: !CurrencySymbol}
