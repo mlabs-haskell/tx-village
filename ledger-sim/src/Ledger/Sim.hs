@@ -411,7 +411,7 @@ checkTx
 
 updateUtxos :: TxInfo -> LedgerSim ctx st e ()
 updateUtxos TxInfo{txInfoId, txInfoInputs, txInfoOutputs} = do
-    -- Remove spend utxos.
+    -- Remove spent utxos.
     modify' $ \st -> st{ls'utxos = M.withoutKeys (ls'utxos st) . S.fromList $ map txInInfoOutRef txInfoInputs}
     -- Add newly created utxos.
     modify' $ \st ->
