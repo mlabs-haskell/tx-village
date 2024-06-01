@@ -207,7 +207,7 @@ utxosAtAddress addr =
   use hashing inside them. ex: script that checks `txId txInfo != blake2b_224 time` where time is some time from validity range.
 - See: 'checkTx'
 -}
-submitTx :: TxInfo -> LedgerSim ctx st e ()
+submitTx :: TxInfo -> LedgerSim ctx st e TxId
 submitTx txInfoRaw = do
     currentTime <- gets ls'currentTime
     let txInfo = txInfoRaw{txInfoId = genTxId currentTime}
@@ -216,6 +216,7 @@ submitTx txInfoRaw = do
     _txBudget <- lift $ checkTx ledgerState txInfo
     updateUtxos txInfo
     incrementSlot
+    pure $ txInfoId txInfo
 
 checkNormality :: TxInfo -> LedgerValidator ctx e ()
 checkNormality
@@ -450,7 +451,7 @@ askLedgerCtx :: LedgerSim ctx st e ctx
 askLedgerCtx = asksLedgerCtx id
 
 -- | Throw custom application error.
-throwLedgerError :: e -> LedgerSim ctx st e ()
+throwLedgerError :: e -> LedgerSim ctx st e a
 throwLedgerError = lift . lift . throwE . TxApplicationError
 
 {- | Generate tx id from time. NOTE: This is simply a stopgap measure used in the simulator. In reality,
