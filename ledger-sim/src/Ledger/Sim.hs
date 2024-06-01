@@ -17,14 +17,29 @@ import Control.Monad.Trans.Class (lift)
 import Control.Monad.Trans.Except (Except, runExceptT, throwE)
 import Control.Monad.Trans.Reader (ReaderT (runReaderT), asks)
 import Control.Monad.Trans.State.Strict (StateT (runStateT), get, gets, modify')
+import Data.Bifunctor (second)
+import Data.ByteArray (convert)
+import Data.ByteString (ByteString)
+import Data.ByteString.Lazy qualified as LBS
+import Data.Foldable (find, fold, for_)
+import Data.Functor (void)
+import Data.Functor.Identity (Identity (runIdentity))
+import Data.List (sort, sortOn)
 import Data.Map.Strict (Map)
 import Data.Map.Strict qualified as M
 import Data.Maybe (isJust, mapMaybe, maybeToList)
+import Data.Set (Set)
 import Data.Set qualified as S
 import Data.String (fromString)
+import Data.Traversable (for)
+
+import Codec.Serialise (serialise)
+import Crypto.Hash (Blake2b_224 (Blake2b_224), hashWith)
 
 import PlutusLedgerApi.Common qualified as Plutus
 import PlutusLedgerApi.Common.Versions qualified as Plutus
+import PlutusLedgerApi.V1.Address (toPubKeyHash, toScriptHash)
+import PlutusLedgerApi.V1.Interval qualified as IV
 import PlutusLedgerApi.V1.Value qualified as Value
 import PlutusLedgerApi.V2 (
     CurrencySymbol (CurrencySymbol),
@@ -64,27 +79,14 @@ import PlutusLedgerApi.V2 (
     adaSymbol,
     adaToken,
  )
+import PlutusLedgerApi.V2.Tx (isPubKeyOut)
 import PlutusTx qualified
 import PlutusTx.AssocMap qualified as PlutusMap
+import PlutusTx.Builtins qualified as PlutusTx
 
-import Codec.Serialise (serialise)
-import Crypto.Hash (Blake2b_224 (Blake2b_224), hashWith)
-import Data.Bifunctor (second)
-import Data.ByteArray (convert)
-import Data.ByteString (ByteString)
-import Data.ByteString.Lazy qualified as LBS
-import Data.Foldable (find, fold, for_)
-import Data.Functor (void)
-import Data.Functor.Identity (Identity (runIdentity))
-import Data.List (sort, sortOn)
-import Data.Set (Set)
-import Data.Traversable (for)
 import Ledger.Sim.Types.Config (
     LedgerConfig (lc'evaluationContext, lc'scriptStorage),
  )
-import PlutusLedgerApi.V1.Address (toPubKeyHash, toScriptHash)
-import PlutusLedgerApi.V1.Interval qualified as IV
-import PlutusTx.Builtins qualified as PlutusTx
 
 data LedgerState = LedgerState
     { ls'currentTime :: !POSIXTime
@@ -126,6 +128,8 @@ data LedgerValidatorError e
       TxMissingScript {lve'scriptHash :: !ScriptHash}
     | -- | The input is at a script address but no datum has been provided during its creation.
       TxMissingDatumInScriptInput {lve'utxoRef :: !TxOutRef}
+    | -- | A script output was not supplied with a datum.
+      TxMissingDatumInScriptOutput {lve'utxo :: !TxOut}
     | -- | Tried to spend a script input located at a pub key address.
       TxNotScriptInput {lve'input :: TxInInfo}
     | TxScriptFailure {lve'scriptLogs :: LogOutput, lve'evalError :: EvaluationError}
@@ -275,6 +279,7 @@ checkTx
         checkValidity
         checkUtxosExist
         checkSpendable
+        checkScriptOutputsDatum
         checkBalance
         checkScriptsInvoked
 
@@ -292,6 +297,15 @@ checkTx
         checkUtxosExist = do
             let inps = txInfoInputs <> txInfoReferenceInputs
             unlessExists TxNonExistentInput (M.keysSet ls'utxos) $ txInInfoOutRef <$> inps
+
+        -- \| Newly created outputs at script address should contain a datum.
+        -- Though this is not formally checked by the real ledger.
+        checkScriptOutputsDatum :: LedgerValidator e ()
+        checkScriptOutputsDatum = do
+            void . for txInfoOutputs $ \txOut ->
+                unless (isPubKeyOut txOut || txOutDatum txOut /= NoOutputDatum)
+                    . throwLVE
+                    $ TxMissingDatumInScriptOutput txOut
 
         checkSpendable :: LedgerValidator e ()
         checkSpendable = do
