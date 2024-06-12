@@ -14,8 +14,11 @@ module Ledger.Sim.Validation.Validator (
     mapErrWithSubject,
     contramapAndMapErr,
     contramapAndMapErrWithSubject,
+    itemsInContext,
+    InContext (InContext, getContext, getSubject),
 ) where
 
+import Data.Bifunctor (Bifunctor (first, second))
 import Data.Function (on)
 import Data.Functor.Contravariant (Contravariant (contramap))
 import Data.Functor.Contravariant.Divisible (
@@ -127,3 +130,17 @@ contramapAndMapErrWithSubject ::
     Validator errA a ->
     Validator errB b
 contramapAndMapErrWithSubject f g = mapErrWithSubject g . contramap f
+
+data InContext a ctx = InContext
+    { getSubject :: a
+    , getContext :: ctx
+    }
+    deriving stock (Functor)
+
+instance Bifunctor InContext where
+    first f c = InContext (f $ getSubject c) (getContext c)
+    second f c = InContext (getSubject c) (f $ getContext c)
+
+itemsInContext :: InContext [a] ctx -> [InContext a ctx]
+itemsInContext =
+    liftA2 (<$>) (flip (first . const)) getSubject

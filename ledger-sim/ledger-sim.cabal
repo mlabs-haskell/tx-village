@@ -39,6 +39,7 @@ library
     Ledger.Sim.Types.Config
     Ledger.Sim.Types.CostModel
     Ledger.Sim.Utils.Hashing
+    Ledger.Sim.Validation.Local
     Ledger.Sim.Validation.Normality
     Ledger.Sim.Validation.Validator
 
