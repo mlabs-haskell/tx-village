@@ -39,6 +39,7 @@ library
     Ledger.Sim.Types.Config
     Ledger.Sim.Types.CostModel
     Ledger.Sim.Utils.Hashing
+    Ledger.Sim.Validation.Validator
 
   hs-source-dirs:  src
   build-depends:
@@ -46,6 +47,7 @@ library
     , base
     , bytestring
     , containers
+    , contravariant
     , cryptonite
     , memory
     , plutus-ledger-api
