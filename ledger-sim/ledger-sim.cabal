@@ -41,6 +41,7 @@ library
     Ledger.Sim.Utils.Hashing
     Ledger.Sim.Validation.Local
     Ledger.Sim.Validation.Normality
+    Ledger.Sim.Validation.Stateful
     Ledger.Sim.Validation.Validator
 
   hs-source-dirs:  src

@@ -52,6 +52,7 @@ import Ledger.Sim.Validation.Validator (
     validateFail,
     validateFoldable,
     validateIf,
+    validateListAndAnnotateErrWithIdx,
     validateOptional,
     validatePass,
     validateRoundtrip,
@@ -493,10 +494,7 @@ validateInputList =
                 . fmap (liftA2 (,) txInInfoOutRef id)
             )
             BadInputList'NotStrictlyOrdered
-        , contramap (zip [0 ..]) $
-            validateFoldable $
-                mapErrWithSubject (BadInputList'BadTxInInfo . fst) $
-                    contramap snd validateTxInInfo
+        , validateListAndAnnotateErrWithIdx BadInputList'BadTxInInfo validateTxInInfo
         ]
 
 --------------------------------------------------------------------------------
@@ -531,10 +529,7 @@ data BadOutputs
 validateOutputs :: Validator BadOutputs [TxOut]
 validateOutputs =
     mconcat
-        [ contramap (zip [0 ..]) $
-            validateFoldable $
-                mapErrWithSubject (BadOutputs'BadTxOut . fst) $
-                    contramap snd validateTxOut
+        [ validateListAndAnnotateErrWithIdx BadOutputs'BadTxOut validateTxOut
         , validateIf (not . null) $ const BadOutputs'NoOutput
         ]
 
@@ -590,15 +585,14 @@ data BadSignatories
     = BadSignatories'NotStrictlyOrdered
         [PubKeyHash]
         [PubKeyHash]
-    | BadSignatories'BadPubKeyHash BadPubKeyHash
+    | BadSignatories'BadPubKeyHash Int BadPubKeyHash
     | BadSignatories'NoSignature
 
 validateSignatories :: Validator BadSignatories [PubKeyHash]
 validateSignatories =
     mconcat
         [ validateRoundtrip (S.toAscList . S.fromList) BadSignatories'NotStrictlyOrdered
-        , validateFoldable $
-            mapErr BadSignatories'BadPubKeyHash validatePubKeyHash
+        , validateListAndAnnotateErrWithIdx BadSignatories'BadPubKeyHash validatePubKeyHash
         , validateIf (not . null) $
             const BadSignatories'NoSignature
         ]

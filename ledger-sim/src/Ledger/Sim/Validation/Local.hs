@@ -19,13 +19,13 @@ import Ledger.Sim.Validation.Validator (
     InContext (InContext, getContext, getSubject),
     Validator,
     contramapAndMapErr,
-    contramapAndMapErrWithSubject,
     itemsInContext,
     mapErr,
     validateBool,
     validateFail,
     validateFoldable,
     validateIf,
+    validateListAndAnnotateErrWithIdx,
     validatePass,
     validateWith,
  )
@@ -102,9 +102,8 @@ data BadInputs
 
 validateInputs :: Validator BadInputs ([TxInInfo] `InContext` TxInfo)
 validateInputs =
-    contramap (zip [0 ..] . itemsInContext . first (fmap txInInfoResolved)) $
-        validateFoldable $
-            contramapAndMapErrWithSubject snd (BadInputs'BadUnspendableInput . fst) validateInputSpendable
+    contramap (itemsInContext . first (fmap txInInfoResolved)) $
+        validateListAndAnnotateErrWithIdx BadInputs'BadUnspendableInput validateInputSpendable
 
 --------------------------------------------------------------------------------
 
@@ -126,9 +125,8 @@ data BadOutputs = BadOutputs'BadOutput Int BadOutput
 
 validateOutputs :: Validator BadOutputs ([TxOut] `InContext` TxInfo)
 validateOutputs =
-    contramap (zip [0 ..] . itemsInContext) $
-        validateFoldable $
-            contramapAndMapErrWithSubject snd (BadOutputs'BadOutput . fst) validateOutput
+    contramap itemsInContext $
+        validateListAndAnnotateErrWithIdx BadOutputs'BadOutput validateOutput
 
 --------------------------------------------------------------------------------
 
