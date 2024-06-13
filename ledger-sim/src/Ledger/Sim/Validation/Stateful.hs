@@ -64,13 +64,13 @@ data BadInputs = BadInputs'BadInput Int BadInput
 validateInputs ::
     Validator
         BadInputs
-        ([TxInInfo] `InContext` (LedgerState st, LedgerConfig cfg))
+        ([TxInInfo] `InContext` (LedgerConfig cfg, LedgerState st))
 validateInputs =
     contramap itemsInContext $
         validateListAndAnnotateErrWithIdx BadInputs'BadInput $
             mconcat
-                [ contramap (second fst) validateInputExist
-                , contramap (second snd) validateInputReferenceScriptAvailable
+                [ contramap (second snd) validateInputExist
+                , contramap (second fst) validateInputReferenceScriptAvailable
                 ]
 
 --------------------------------------------------------------------------------
@@ -102,10 +102,10 @@ data BadTxInfo
     | BadTxInfo'BadReferenceInputs BadReferenceInputs
     | BadTxInfo'BadValidRange BadValidRange
 
-validateTxInfo :: Validator BadTxInfo (TxInfo `InContext` (LedgerState st, LedgerConfig cfg))
+validateTxInfo :: Validator BadTxInfo (TxInfo `InContext` (LedgerConfig cfg, LedgerState st))
 validateTxInfo =
     mconcat
         [ contramapAndMapErr (first txInfoInputs) BadTxInfo'BadInputs validateInputs
-        , contramapAndMapErr (bimap txInfoReferenceInputs fst) BadTxInfo'BadReferenceInputs validateReferenceInputs
-        , contramapAndMapErr (bimap txInfoValidRange fst) BadTxInfo'BadValidRange validateValidRange
+        , contramapAndMapErr (bimap txInfoReferenceInputs snd) BadTxInfo'BadReferenceInputs validateReferenceInputs
+        , contramapAndMapErr (bimap txInfoValidRange snd) BadTxInfo'BadValidRange validateValidRange
         ]
