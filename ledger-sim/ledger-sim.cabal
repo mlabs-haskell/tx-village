@@ -51,6 +51,7 @@ library
     , aeson
     , base
     , bytestring
+    , composition-prelude
     , containers
     , contravariant
     , cryptonite

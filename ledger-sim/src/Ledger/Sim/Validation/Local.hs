@@ -10,16 +10,13 @@ module Ledger.Sim.Validation.Local (
 
 import Control.Category ((>>>))
 import Control.Monad (join)
-import Data.Bifunctor (Bifunctor (bimap, first))
 import Data.Functor.Contravariant (Contravariant (contramap))
 import Data.Functor.Contravariant.Divisible (Decidable (choose))
 import Data.List qualified as L
 import Data.Maybe (mapMaybe)
 import Ledger.Sim.Validation.Validator (
-    InContext (InContext, getContext, getSubject),
     Validator,
     contramapAndMapErr,
-    itemsInContext,
     mapErr,
     validateBool,
     validateFail,
@@ -62,71 +59,73 @@ data BadUnspendableInput
     | BadUnspendableInput'ScriptInput'DatumWitnessMissing DatumHash
     | BadUnspendableInput'PubKeyInput'NotAuthorized PubKeyHash
 
-validateInputSpendable :: Validator BadUnspendableInput (TxOut `InContext` TxInfo)
-validateInputSpendable =
+validateInputSpendable :: TxInfo -> Validator BadUnspendableInput TxOut
+validateInputSpendable txInfo =
     choose
-        ( join $
-            getSubject
-                >>> txOutAddress
-                >>> addressCredential
-                >>> \case
-                    PubKeyCredential pkh -> Left . (pkh,) . txInfoSignatories . getContext
-                    ScriptCredential _ -> Right . bimap txOutDatum txInfoData
+        ( \txOut ->
+            case addressCredential $ txOutAddress txOut of
+                PubKeyCredential pkh -> Left pkh
+                ScriptCredential _ -> Right $ txOutDatum txOut
         )
-        ( validateIf
-            (uncurry L.elem)
-            (BadUnspendableInput'PubKeyInput'NotAuthorized . fst)
-        )
-        $ choose
-            ( join $
-                getSubject >>> \case
-                    OutputDatumHash h -> Left . (h,) . getContext
-                    d -> Right . const d
+        validatePubKeyHashInSignatories
+        validateScriptOutputDatum
+  where
+    validatePubKeyHashInSignatories :: Validator BadUnspendableInput PubKeyHash
+    validatePubKeyHashInSignatories =
+        validateIf
+            (`L.elem` txInfoSignatories txInfo)
+            BadUnspendableInput'PubKeyInput'NotAuthorized
+
+    validateScriptOutputDatum :: Validator BadUnspendableInput OutputDatum
+    validateScriptOutputDatum =
+        choose
+            ( \case
+                OutputDatumHash h -> Left h
+                d -> Right d
             )
             ( validateIf
-                (uncurry AssocMap.member)
-                (fst >>> BadUnspendableInput'ScriptInput'DatumWitnessMissing)
+                (`AssocMap.member` txInfoData txInfo)
+                BadUnspendableInput'ScriptInput'DatumWitnessMissing
             )
-        $ choose
-            ( \case
-                NoOutputDatum -> Left ()
-                _ -> Right ()
-            )
-            (validateFail BadUnspendableInput'ScriptInput'NoDatum)
-            validatePass
+            $ choose
+                ( \case
+                    NoOutputDatum -> Left ()
+                    _ -> Right ()
+                )
+                (validateFail BadUnspendableInput'ScriptInput'NoDatum)
+                validatePass
 
 --------------------------------------------------------------------------------
 
 data BadInputs
     = BadInputs'BadUnspendableInput Int BadUnspendableInput
 
-validateInputs :: Validator BadInputs ([TxInInfo] `InContext` TxInfo)
+validateInputs :: TxInfo -> Validator BadInputs [TxInInfo]
 validateInputs =
-    contramap (itemsInContext . first (fmap txInInfoResolved)) $
-        validateListAndAnnotateErrWithIdx BadInputs'BadUnspendableInput validateInputSpendable
+    validateListAndAnnotateErrWithIdx BadInputs'BadUnspendableInput
+        . contramap txInInfoResolved
+        . validateInputSpendable
 
 --------------------------------------------------------------------------------
 
 data BadOutput = BadOutput'ScriptOutputNoDatum
 
-validateOutput :: Validator BadOutput (TxOut `InContext` TxInfo)
-validateOutput =
-    choose
-        ( getSubject >>> txOutDatum >>> \case
-            NoOutputDatum -> Left ()
-            _ -> Right ()
+validateOutput :: TxInfo -> Validator BadOutput TxOut
+validateOutput _ =
+    validateIf
+        ( txOutDatum >>> \case
+            NoOutputDatum -> False
+            _ -> True
         )
-        (validateFail BadOutput'ScriptOutputNoDatum)
-        validatePass
+        $ const BadOutput'ScriptOutputNoDatum
 
 --------------------------------------------------------------------------------
 
 data BadOutputs = BadOutputs'BadOutput Int BadOutput
 
-validateOutputs :: Validator BadOutputs ([TxOut] `InContext` TxInfo)
+validateOutputs :: TxInfo -> Validator BadOutputs [TxOut]
 validateOutputs =
-    contramap itemsInContext $
-        validateListAndAnnotateErrWithIdx BadOutputs'BadOutput validateOutput
+    validateListAndAnnotateErrWithIdx BadOutputs'BadOutput . validateOutput
 
 --------------------------------------------------------------------------------
 
@@ -136,11 +135,12 @@ data BadRedeemers
     | BadRedeemers'UnexpectedExcessEntries [ScriptPurpose]
 
 validateRedeemers ::
+    TxInfo ->
     Validator
         BadRedeemers
-        (AssocMap.Map ScriptPurpose Redeemer `InContext` TxInfo)
-validateRedeemers = validateWith $ \c ->
-    let isPurposeInMap = flip AssocMap.member $ getSubject c
+        (AssocMap.Map ScriptPurpose Redeemer)
+validateRedeemers txInfo = validateWith $ \redeemers ->
+    let isPurposeInMap = flip AssocMap.member redeemers
 
         validatorsToRun =
             mapMaybe
@@ -149,21 +149,19 @@ validateRedeemers = validateWith $ \c ->
                         ScriptCredential sh -> Just . (sh,) . txInInfoOutRef
                         _ -> const Nothing
                 )
-                $ txInfoInputs
-                $ getContext c
+                $ txInfoInputs txInfo
 
         mintingPoliciesToRun =
             filter (/= adaSymbol) $
                 AssocMap.keys $
                     getValue $
-                        txInfoMint $
-                            getContext c
+                        txInfoMint txInfo
 
         excessEntries =
             AssocMap.keys $
                 foldr
                     AssocMap.delete
-                    (getSubject c)
+                    redeemers
                     (fmap (Spending . snd) validatorsToRun <> fmap Minting mintingPoliciesToRun)
      in mconcat
             [ contramap (const validatorsToRun) $
@@ -213,8 +211,8 @@ data BadTxInfo
 validateTxInfo :: Validator BadTxInfo TxInfo
 validateTxInfo =
     mconcat
-        [ contramapAndMapErr (InContext =<< txInfoInputs) BadTxInfo'BadInputs validateInputs
-        , contramapAndMapErr (InContext =<< txInfoOutputs) BadTxInfo'BadOutputs validateOutputs
-        , contramapAndMapErr (InContext =<< txInfoRedeemers) BadTxInfo'BadRedeemers validateRedeemers
+        [ validateWith $ contramapAndMapErr txInfoInputs BadTxInfo'BadInputs . validateInputs
+        , validateWith $ contramapAndMapErr txInfoOutputs BadTxInfo'BadOutputs . validateOutputs
+        , validateWith $ contramapAndMapErr txInfoRedeemers BadTxInfo'BadRedeemers . validateRedeemers
         , mapErr BadTxInfo'BadBalaning validateBalancing
         ]

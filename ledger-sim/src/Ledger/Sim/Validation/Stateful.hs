@@ -7,7 +7,6 @@ module Ledger.Sim.Validation.Stateful (
     validateTxInfo,
 ) where
 
-import Data.Bifunctor (Bifunctor (bimap, first, second))
 import Data.Functor.Contravariant (Contravariant (contramap))
 import Data.Map qualified as M
 import Ledger.Sim (
@@ -15,11 +14,8 @@ import Ledger.Sim (
     LedgerState (ls'currentTime, ls'utxos),
  )
 import Ledger.Sim.Validation.Validator (
-    InContext (getContext, getSubject),
     Validator,
     contramapAndMapErr,
-    itemsInContext,
-    sequenceFirst,
     validateIf,
     validateListAndAnnotateErrWithIdx,
     validateOptional,
@@ -44,56 +40,50 @@ data BadInput
     = BadInput'NotFound TxOutRef
     | BadInput'ReferenceScriptNotAvailable ScriptHash
 
-validateInputExist :: Validator BadInput (TxInInfo `InContext` LedgerState st)
-validateInputExist =
-    contramap (bimap txInInfoOutRef ls'utxos) $
-        validateIf (liftA2 M.member getSubject getContext) $
-            BadInput'NotFound . getSubject
+validateInputExist :: LedgerState st -> Validator BadInput TxInInfo
+validateInputExist state =
+    contramap txInInfoOutRef $
+        validateIf (`M.member` ls'utxos state) BadInput'NotFound
 
-validateInputReferenceScriptAvailable :: Validator BadInput (TxInInfo `InContext` LedgerConfig ctx)
-validateInputReferenceScriptAvailable =
-    contramap (sequenceFirst . bimap (txOutReferenceScript . txInInfoResolved) lc'scriptStorage) $
+validateInputReferenceScriptAvailable :: LedgerConfig ctx -> Validator BadInput TxInInfo
+validateInputReferenceScriptAvailable config =
+    contramap (txOutReferenceScript . txInInfoResolved) $
         validateOptional $
-            validateIf (liftA2 M.member getSubject getContext) $
-                BadInput'ReferenceScriptNotAvailable . getSubject
+            validateIf (`M.member` lc'scriptStorage config) BadInput'ReferenceScriptNotAvailable
 
 --------------------------------------------------------------------------------
 
 data BadInputs = BadInputs'BadInput Int BadInput
 
 validateInputs ::
-    Validator
-        BadInputs
-        ([TxInInfo] `InContext` (LedgerConfig cfg, LedgerState st))
-validateInputs =
-    contramap itemsInContext $
-        validateListAndAnnotateErrWithIdx BadInputs'BadInput $
-            mconcat
-                [ contramap (second snd) validateInputExist
-                , contramap (second fst) validateInputReferenceScriptAvailable
-                ]
+    LedgerConfig cfg -> LedgerState st -> Validator BadInputs [TxInInfo]
+validateInputs config state =
+    validateListAndAnnotateErrWithIdx BadInputs'BadInput $
+        mconcat
+            [ validateInputExist state
+            , validateInputReferenceScriptAvailable config
+            ]
 
 --------------------------------------------------------------------------------
 
 data BadReferenceInputs = BadReferenceInput'BadInput Int BadInput
 
 validateReferenceInputs ::
+    LedgerState st ->
     Validator
         BadReferenceInputs
-        ([TxInInfo] `InContext` LedgerState st)
+        [TxInInfo]
 validateReferenceInputs =
-    contramap itemsInContext $
-        validateListAndAnnotateErrWithIdx BadReferenceInput'BadInput validateInputExist
+    validateListAndAnnotateErrWithIdx BadReferenceInput'BadInput . validateInputExist
 
 --------------------------------------------------------------------------------
 
 newtype BadValidRange = BadValidaRage'CurrentTimeOutOfRange POSIXTime
 
-validateValidRange :: Validator BadValidRange (POSIXTimeRange `InContext` LedgerState st)
-validateValidRange =
-    contramap (second ls'currentTime) $
-        validateIf (liftA2 IV.member getContext getSubject) $
-            BadValidaRage'CurrentTimeOutOfRange . getContext
+validateValidRange :: LedgerState st -> Validator BadValidRange POSIXTimeRange
+validateValidRange state =
+    let currentTime = ls'currentTime state
+     in validateIf (IV.member currentTime) $ const $ BadValidaRage'CurrentTimeOutOfRange currentTime
 
 --------------------------------------------------------------------------------
 
@@ -102,10 +92,10 @@ data BadTxInfo
     | BadTxInfo'BadReferenceInputs BadReferenceInputs
     | BadTxInfo'BadValidRange BadValidRange
 
-validateTxInfo :: Validator BadTxInfo (TxInfo `InContext` (LedgerConfig cfg, LedgerState st))
-validateTxInfo =
+validateTxInfo :: LedgerConfig cfg -> LedgerState st -> Validator BadTxInfo TxInfo
+validateTxInfo config state =
     mconcat
-        [ contramapAndMapErr (first txInfoInputs) BadTxInfo'BadInputs validateInputs
-        , contramapAndMapErr (bimap txInfoReferenceInputs snd) BadTxInfo'BadReferenceInputs validateReferenceInputs
-        , contramapAndMapErr (bimap txInfoValidRange snd) BadTxInfo'BadValidRange validateValidRange
+        [ contramapAndMapErr txInfoInputs BadTxInfo'BadInputs $ validateInputs config state
+        , contramapAndMapErr txInfoReferenceInputs BadTxInfo'BadReferenceInputs $ validateReferenceInputs state
+        , contramapAndMapErr txInfoValidRange BadTxInfo'BadValidRange $ validateValidRange state
         ]
