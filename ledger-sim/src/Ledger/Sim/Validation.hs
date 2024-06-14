@@ -1,8 +1,8 @@
 module Ledger.Sim.Validation (BadTxInfo (..), runTxInfoValidation) where
 
 import Control.Composition ((.*))
-import Ledger.Sim (LedgerState)
 import Ledger.Sim.Types.Config (LedgerConfig)
+import Ledger.Sim.Types.State (LedgerState)
 import Ledger.Sim.Validation.Local qualified as Local
 import Ledger.Sim.Validation.Normality qualified as Normality
 import Ledger.Sim.Validation.Stateful qualified as Stateful

@@ -9,10 +9,8 @@ module Ledger.Sim.Validation.Stateful (
 
 import Data.Functor.Contravariant (Contravariant (contramap))
 import Data.Map qualified as M
-import Ledger.Sim (
-    LedgerConfig (lc'scriptStorage),
-    LedgerState (ls'currentTime, ls'utxos),
- )
+import Ledger.Sim.Types.Config (LedgerConfig (lc'scriptStorage))
+import Ledger.Sim.Types.State (LedgerState (ls'currentTime, ls'utxos))
 import Ledger.Sim.Validation.Validator (
     Validator,
     contramapAndMapErr,
