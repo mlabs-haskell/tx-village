@@ -15,18 +15,18 @@ import PlutusLedgerApi.V2 qualified as Plutus
 -- | Hash a V2 Plutus Script.
 hashScriptV2 :: Plutus.ScriptForEvaluation -> Plutus.ScriptHash
 hashScriptV2 scr =
-    Plutus.ScriptHash
-        . Plutus.toBuiltin
-        . convert @_ @ByteString
-        . hashWith Blake2b_224
-        $ fromString "\x02" <> SBS.fromShort (Plutus.serialisedScript scr)
+  Plutus.ScriptHash
+    . Plutus.toBuiltin
+    . convert @_ @ByteString
+    . hashWith Blake2b_224
+    $ fromString "\x02" <> SBS.fromShort (Plutus.serialisedScript scr)
 
 -- | Hash a Datum.
 hashDatum :: Plutus.Datum -> Plutus.DatumHash
 hashDatum =
-    Plutus.DatumHash
-        . Plutus.toBuiltin
-        . convert @_ @ByteString
-        . hashWith Blake2b_256
-        . LBS.toStrict
-        . serialise
+  Plutus.DatumHash
+    . Plutus.toBuiltin
+    . convert @_ @ByteString
+    . hashWith Blake2b_256
+    . LBS.toStrict
+    . serialise
