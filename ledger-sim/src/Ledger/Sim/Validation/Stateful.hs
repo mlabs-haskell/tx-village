@@ -1,9 +1,9 @@
 module Ledger.Sim.Validation.Stateful (
-  BadInput (..),
-  BadInputs (..),
-  BadReferenceInputs (..),
-  BadValidRange (..),
-  BadTxInfo (..),
+  InvalidInputError (..),
+  InvalidInputsError (..),
+  InvalidReferenceInputsError (..),
+  InvalidValidRangeError (..),
+  InvalidTxInfoError (..),
   validateTxInfo,
 ) where
 
@@ -34,29 +34,29 @@ import PlutusLedgerApi.V2 (
 
 --------------------------------------------------------------------------------
 
-data BadInput
-  = BadInput'NotFound TxOutRef
-  | BadInput'ReferenceScriptNotAvailable ScriptHash
+data InvalidInputError
+  = InvalidInputError'NotFoundOnLedger TxOutRef
+  | InvalidInputError'ReferenceScriptNotAvailable ScriptHash
 
-validateInputExist :: LedgerState st -> Validator BadInput TxInInfo
+validateInputExist :: LedgerState st -> Validator InvalidInputError TxInInfo
 validateInputExist state =
   contramap txInInfoOutRef $
-    validateIf (`M.member` ls'utxos state) BadInput'NotFound
+    validateIf (`M.member` ls'utxos state) InvalidInputError'NotFoundOnLedger
 
-validateInputReferenceScriptAvailable :: LedgerConfig ctx -> Validator BadInput TxInInfo
+validateInputReferenceScriptAvailable :: LedgerConfig ctx -> Validator InvalidInputError TxInInfo
 validateInputReferenceScriptAvailable config =
   contramap (txOutReferenceScript . txInInfoResolved) $
     validateOptional $
-      validateIf (`M.member` lc'scriptStorage config) BadInput'ReferenceScriptNotAvailable
+      validateIf (`M.member` lc'scriptStorage config) InvalidInputError'ReferenceScriptNotAvailable
 
 --------------------------------------------------------------------------------
 
-data BadInputs = BadInputs'BadInput Int BadInput
+data InvalidInputsError = InvalidInputsError'InvalidInput Int InvalidInputError
 
 validateInputs ::
-  LedgerConfig cfg -> LedgerState st -> Validator BadInputs [TxInInfo]
+  LedgerConfig cfg -> LedgerState st -> Validator InvalidInputsError [TxInInfo]
 validateInputs config state =
-  validateListAndAnnotateErrWithIdx BadInputs'BadInput $
+  validateListAndAnnotateErrWithIdx InvalidInputsError'InvalidInput $
     mconcat
       [ validateInputExist state
       , validateInputReferenceScriptAvailable config
@@ -64,36 +64,36 @@ validateInputs config state =
 
 --------------------------------------------------------------------------------
 
-data BadReferenceInputs = BadReferenceInput'BadInput Int BadInput
+data InvalidReferenceInputsError = InvalidReferenceInputsError'InvalidInput Int InvalidInputError
 
 validateReferenceInputs ::
   LedgerState st ->
   Validator
-    BadReferenceInputs
+    InvalidReferenceInputsError
     [TxInInfo]
 validateReferenceInputs =
-  validateListAndAnnotateErrWithIdx BadReferenceInput'BadInput . validateInputExist
+  validateListAndAnnotateErrWithIdx InvalidReferenceInputsError'InvalidInput . validateInputExist
 
 --------------------------------------------------------------------------------
 
-newtype BadValidRange = BadValidaRage'CurrentTimeOutOfRange POSIXTime
+newtype InvalidValidRangeError = InvalidValidRangeError'CurrentTimeOutOfRange POSIXTime
 
-validateValidRange :: LedgerState st -> Validator BadValidRange POSIXTimeRange
+validateValidRange :: LedgerState st -> Validator InvalidValidRangeError POSIXTimeRange
 validateValidRange state =
   let currentTime = ls'currentTime state
-   in validateIf (IV.member currentTime) $ const $ BadValidaRage'CurrentTimeOutOfRange currentTime
+   in validateIf (IV.member currentTime) $ const $ InvalidValidRangeError'CurrentTimeOutOfRange currentTime
 
 --------------------------------------------------------------------------------
 
-data BadTxInfo
-  = BadTxInfo'BadInputs BadInputs
-  | BadTxInfo'BadReferenceInputs BadReferenceInputs
-  | BadTxInfo'BadValidRange BadValidRange
+data InvalidTxInfoError
+  = InvalidTxInfoError'InvalidInputs InvalidInputsError
+  | InvalidTxInfoError'InvalidReferenceInputs InvalidReferenceInputsError
+  | InvalidTxInfoError'InvalidValidRange InvalidValidRangeError
 
-validateTxInfo :: LedgerConfig cfg -> LedgerState st -> Validator BadTxInfo TxInfo
+validateTxInfo :: LedgerConfig cfg -> LedgerState st -> Validator InvalidTxInfoError TxInfo
 validateTxInfo config state =
   mconcat
-    [ contramapAndMapErr txInfoInputs BadTxInfo'BadInputs $ validateInputs config state
-    , contramapAndMapErr txInfoReferenceInputs BadTxInfo'BadReferenceInputs $ validateReferenceInputs state
-    , contramapAndMapErr txInfoValidRange BadTxInfo'BadValidRange $ validateValidRange state
+    [ contramapAndMapErr txInfoInputs InvalidTxInfoError'InvalidInputs $ validateInputs config state
+    , contramapAndMapErr txInfoReferenceInputs InvalidTxInfoError'InvalidReferenceInputs $ validateReferenceInputs state
+    , contramapAndMapErr txInfoValidRange InvalidTxInfoError'InvalidValidRange $ validateValidRange state
     ]

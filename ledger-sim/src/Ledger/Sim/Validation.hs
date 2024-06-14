@@ -1,4 +1,8 @@
-module Ledger.Sim.Validation (BadTxInfo (..), runTxInfoValidation) where
+module Ledger.Sim.Validation (
+  InvalidTxInfoError (..),
+  validateTxInfo,
+  runTxInfoValidation,
+) where
 
 import Control.Composition ((.*))
 import Ledger.Sim.Types.Config (LedgerConfig)
@@ -14,18 +18,18 @@ import Ledger.Sim.Validation.Validator (
  )
 import PlutusLedgerApi.V2 (TxInfo)
 
-data BadTxInfo
-  = BadTxInfo'Normality Normality.BadTxInfo
-  | BadTxInfo'Local Local.BadTxInfo
-  | BadTxInfo'Stateful Stateful.BadTxInfo
+data InvalidTxInfoError
+  = InvalidTxInfoError'Normality Normality.InvalidTxInfoError
+  | InvalidTxInfoError'Local Local.InvalidTxInfoError
+  | InvalidTxInfoError'Stateful Stateful.InvalidTxInfoError
 
-validateTxInfo :: LedgerConfig cfg -> LedgerState st -> Validator BadTxInfo TxInfo
+validateTxInfo :: LedgerConfig cfg -> LedgerState st -> Validator InvalidTxInfoError TxInfo
 validateTxInfo config state =
   mconcat
-    [ mapErr BadTxInfo'Normality Normality.validateTxInfo
-    , mapErr BadTxInfo'Local Local.validateTxInfo
-    , mapErr BadTxInfo'Stateful $ Stateful.validateTxInfo config state
+    [ mapErr InvalidTxInfoError'Normality Normality.validateTxInfo
+    , mapErr InvalidTxInfoError'Local Local.validateTxInfo
+    , mapErr InvalidTxInfoError'Stateful $ Stateful.validateTxInfo config state
     ]
 
-runTxInfoValidation :: LedgerConfig cfg -> LedgerState st -> TxInfo -> Validity BadTxInfo
+runTxInfoValidation :: LedgerConfig cfg -> LedgerState st -> TxInfo -> Validity InvalidTxInfoError
 runTxInfoValidation = runValidator .* validateTxInfo

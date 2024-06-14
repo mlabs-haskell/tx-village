@@ -1,37 +1,37 @@
 module Ledger.Sim.Validation.Normality (
-  BadPOSIXTime (..),
-  BadLedgerBytes'TooLong (..),
-  BadLedgerBytes'UnexpectedLength (..),
-  BadTokenName (..),
-  BadCurrencySymbol (..),
-  BadPubKeyHash (..),
-  BadScriptHash (..),
-  BadDatumHash (..),
-  BadTxId (..),
-  BadTxOutRef (..),
-  BadScriptPurpose (..),
-  BadCredential (..),
-  BadStakingCredential (..),
-  BadAddress (..),
-  BadOrderedAssocMap (..),
-  BadValue (..),
-  BadValueType (..),
-  BadAsset (..),
-  BadAdaToken (..),
-  BadNativeToken (..),
-  BadTxOut (..),
-  BadTxInInfo (..),
-  BadInputList (..),
-  BadInputs (..),
-  BadReferenceInputs (..),
-  BadOutputs (..),
-  BadFee (..),
-  BadMint,
-  BadValidRange (..),
-  BadSignatories (..),
-  BadRedeemers (..),
-  BadData (..),
-  BadTxInfo (..),
+  InvalidPOSIXTimeError (..),
+  InvalidLedgerBytesError'TooLong (..),
+  InvalidLedgerBytesError'UnexpectedLength (..),
+  InvalidTokenNameError (..),
+  InvalidCurrencySymbolError (..),
+  InvalidPubKeyHashError (..),
+  InvalidScriptHashError (..),
+  InvalidDatumHashError (..),
+  InvalidTxIdError (..),
+  InvalidTxOutRef (..),
+  InvalidScriptPurposeError (..),
+  InvalidCredentialError (..),
+  InvalidStakingCredentialError (..),
+  InvalidAddressError (..),
+  InvalidOrderedAssocMapError (..),
+  InvalidValueError (..),
+  InvalidValueKind (..),
+  InvalidAssetError (..),
+  InvalidAdaTokenError (..),
+  InvalidNativeTokenError (..),
+  InvalidTxOutError (..),
+  InvalidTxInInfoError (..),
+  InvalidInputListError (..),
+  InvalidInputsError (..),
+  InvalidReferenceInputsError (..),
+  InvalidOutputsError (..),
+  InvalidFeeError (..),
+  InvalidMintError (..),
+  InvalidValidRangeError (..),
+  InvalidSignatoriesError (..),
+  InvalidRedeemersError (..),
+  InvalidDataError (..),
+  InvalidTxInfoError (..),
   validateTxInfo,
 ) where
 
@@ -102,10 +102,10 @@ import PlutusTx.Builtins qualified as PlutusTx
 
 --------------------------------------------------------------------------------
 
-newtype BadPOSIXTime = BadPOSIXTime'NegativeInteger POSIXTime
+newtype InvalidPOSIXTimeError = InvalidPOSIXTimeError'NegativeInteger POSIXTime
 
-validatePOSIXTime :: Validator BadPOSIXTime POSIXTime
-validatePOSIXTime = validateIf (>= 0) BadPOSIXTime'NegativeInteger
+validatePOSIXTime :: Validator InvalidPOSIXTimeError POSIXTime
+validatePOSIXTime = validateIf (>= 0) InvalidPOSIXTimeError'NegativeInteger
 
 --------------------------------------------------------------------------------
 
@@ -117,59 +117,59 @@ validateLedgerBytesLength checkLength mkErr =
   contramap (BS.length . PlutusTx.fromBuiltin) $
     validateIf checkLength mkErr
 
-data BadLedgerBytes'TooLong
-  = BadLedgerBytes'TooLong Int Int
+data InvalidLedgerBytesError'TooLong
+  = InvalidLedgerBytesError'TooLong Int Int
 
 validateLedgerBytesLengthAtMost ::
   Int ->
-  Validator BadLedgerBytes'TooLong PlutusTx.BuiltinByteString
+  Validator InvalidLedgerBytesError'TooLong PlutusTx.BuiltinByteString
 validateLedgerBytesLengthAtMost limit =
   validateLedgerBytesLength
     (<= limit)
-    (BadLedgerBytes'TooLong limit)
+    (InvalidLedgerBytesError'TooLong limit)
 
-data BadLedgerBytes'UnexpectedLength
-  = BadLedgerBytes'UnexpectedLength Int Int
+data InvalidLedgerBytesError'UnexpectedLength
+  = InvalidLedgerBytesError'UnexpectedLength Int Int
 
 validateLedgerBytesLengthExactly ::
   Int ->
-  Validator BadLedgerBytes'UnexpectedLength PlutusTx.BuiltinByteString
+  Validator InvalidLedgerBytesError'UnexpectedLength PlutusTx.BuiltinByteString
 validateLedgerBytesLengthExactly expected =
   validateLedgerBytesLength
     (== expected)
-    (BadLedgerBytes'UnexpectedLength expected)
+    (InvalidLedgerBytesError'UnexpectedLength expected)
 
 validateBlake2b224Hash ::
   Validator
-    BadLedgerBytes'UnexpectedLength
+    InvalidLedgerBytesError'UnexpectedLength
     PlutusTx.BuiltinByteString
 validateBlake2b224Hash = validateLedgerBytesLengthExactly 28
 
 validateBlake2b256Hash ::
   Validator
-    BadLedgerBytes'UnexpectedLength
+    InvalidLedgerBytesError'UnexpectedLength
     PlutusTx.BuiltinByteString
 validateBlake2b256Hash = validateLedgerBytesLengthExactly 32
 
 --------------------------------------------------------------------------------
 
-data BadTokenName
-  = BadTokenName'TooLong TokenName BadLedgerBytes'TooLong
+data InvalidTokenNameError
+  = InvalidTokenNameError'TooLong TokenName InvalidLedgerBytesError'TooLong
 
-validateTokenName :: Validator BadTokenName TokenName
+validateTokenName :: Validator InvalidTokenNameError TokenName
 validateTokenName =
-  mapErrWithSubject BadTokenName'TooLong $
+  mapErrWithSubject InvalidTokenNameError'TooLong $
     contramap unTokenName $
       validateLedgerBytesLengthAtMost 32
 
 --------------------------------------------------------------------------------
 
-data BadCurrencySymbol
-  = BadCurrencySymbol'UnexpectedLength CurrencySymbol BadLedgerBytes'UnexpectedLength
+data InvalidCurrencySymbolError
+  = InvalidCurrencySymbolError'UnexpectedLength CurrencySymbol InvalidLedgerBytesError'UnexpectedLength
 
-validateCurrencySymbol :: Validator BadCurrencySymbol CurrencySymbol
+validateCurrencySymbol :: Validator InvalidCurrencySymbolError CurrencySymbol
 validateCurrencySymbol =
-  mapErrWithSubject BadCurrencySymbol'UnexpectedLength $
+  mapErrWithSubject InvalidCurrencySymbolError'UnexpectedLength $
     choose
       ( \cs ->
           if cs == adaSymbol then Left () else Right cs
@@ -179,185 +179,185 @@ validateCurrencySymbol =
 
 --------------------------------------------------------------------------------
 
-data BadPubKeyHash
-  = BadPubKeyHash'UnexpectedLength PubKeyHash BadLedgerBytes'UnexpectedLength
+data InvalidPubKeyHashError
+  = InvalidPubKeyHashError'UnexpectedLength PubKeyHash InvalidLedgerBytesError'UnexpectedLength
 
-validatePubKeyHash :: Validator BadPubKeyHash PubKeyHash
+validatePubKeyHash :: Validator InvalidPubKeyHashError PubKeyHash
 validatePubKeyHash =
   contramapAndMapErrWithSubject
     getPubKeyHash
-    BadPubKeyHash'UnexpectedLength
+    InvalidPubKeyHashError'UnexpectedLength
     validateBlake2b224Hash
 
 --------------------------------------------------------------------------------
 
-data BadScriptHash
-  = BadScriptHash'UnexpectedLength ScriptHash BadLedgerBytes'UnexpectedLength
+data InvalidScriptHashError
+  = InvalidScriptHashError'UnexpectedLength ScriptHash InvalidLedgerBytesError'UnexpectedLength
 
-validateScriptHash :: Validator BadScriptHash ScriptHash
+validateScriptHash :: Validator InvalidScriptHashError ScriptHash
 validateScriptHash =
   contramapAndMapErrWithSubject
     getScriptHash
-    BadScriptHash'UnexpectedLength
+    InvalidScriptHashError'UnexpectedLength
     validateBlake2b224Hash
 
 --------------------------------------------------------------------------------
 
-data BadDatumHash
-  = BadDatumHash'UnexpectedLength DatumHash BadLedgerBytes'UnexpectedLength
+data InvalidDatumHashError
+  = InvalidDatumHashError'UnexpectedLength DatumHash InvalidLedgerBytesError'UnexpectedLength
 
-validateDatumHash :: Validator BadDatumHash DatumHash
+validateDatumHash :: Validator InvalidDatumHashError DatumHash
 validateDatumHash =
   contramapAndMapErrWithSubject
     (\(DatumHash bs) -> bs)
-    BadDatumHash'UnexpectedLength
+    InvalidDatumHashError'UnexpectedLength
     validateBlake2b256Hash
 
 --------------------------------------------------------------------------------
 
-data BadTxId = BadTxId'UnexpectedLength TxId BadLedgerBytes'UnexpectedLength
+data InvalidTxIdError = InvalidTxIdError'UnexpectedLength TxId InvalidLedgerBytesError'UnexpectedLength
 
-validateTxId :: Validator BadTxId TxId
+validateTxId :: Validator InvalidTxIdError TxId
 validateTxId =
   contramapAndMapErrWithSubject
     getTxId
-    BadTxId'UnexpectedLength
+    InvalidTxIdError'UnexpectedLength
     validateBlake2b256Hash
 
 --------------------------------------------------------------------------------
 
-data BadTxOutRef
-  = BadTxOutRef'BadTxId BadTxId
-  | BadTxOutRef'NegativeIndex Integer
+data InvalidTxOutRef
+  = InvalidTxOutRef'InvalidId InvalidTxIdError
+  | InvalidTxOutRef'NegativeIndex Integer
 
-validateTxOutRef :: Validator BadTxOutRef TxOutRef
+validateTxOutRef :: Validator InvalidTxOutRef TxOutRef
 validateTxOutRef =
   mconcat
-    [ contramapAndMapErr txOutRefId BadTxOutRef'BadTxId validateTxId
-    , contramap txOutRefIdx $ validateIf (>= 0) BadTxOutRef'NegativeIndex
+    [ contramapAndMapErr txOutRefId InvalidTxOutRef'InvalidId validateTxId
+    , contramap txOutRefIdx $ validateIf (>= 0) InvalidTxOutRef'NegativeIndex
     ]
 
 --------------------------------------------------------------------------------
 
-data BadScriptPurpose
-  = BadScriptPurpose'BadMinting BadCurrencySymbol
-  | BadScriptPurpose'BadSpending BadTxOutRef
-  | BadScriptPurpose'UnsupportedScriptPurpose ScriptPurpose
+data InvalidScriptPurposeError
+  = InvalidScriptPurposeError'Minting InvalidCurrencySymbolError
+  | InvalidScriptPurposeError'Spending InvalidTxOutRef
+  | InvalidScriptPurposeError'Unsupported ScriptPurpose
 
-validateScriptPurpose :: Validator BadScriptPurpose ScriptPurpose
+validateScriptPurpose :: Validator InvalidScriptPurposeError ScriptPurpose
 validateScriptPurpose =
   choose
     ( \case
         Minting cs -> Left cs
         s -> Right s
     )
-    (mapErr BadScriptPurpose'BadMinting validateCurrencySymbol)
+    (mapErr InvalidScriptPurposeError'Minting validateCurrencySymbol)
     $ choose
       ( \case
           Spending o -> Left o
           s -> Right s
       )
-      (mapErr BadScriptPurpose'BadSpending validateTxOutRef)
-      (validateWith $ validateFail . BadScriptPurpose'UnsupportedScriptPurpose)
+      (mapErr InvalidScriptPurposeError'Spending validateTxOutRef)
+      (validateWith $ validateFail . InvalidScriptPurposeError'Unsupported)
 
 --------------------------------------------------------------------------------
 
-data BadCredential
-  = BadCredential'BadPubKeyCredential BadPubKeyHash
-  | BadCredential'BadScriptCredential BadScriptHash
+data InvalidCredentialError
+  = InvalidCredentialError'InvalidPubKeyCredential InvalidPubKeyHashError
+  | InvalidCredentialError'InvalidScriptCredential InvalidScriptHashError
 
-validateCredential :: Validator BadCredential Credential
+validateCredential :: Validator InvalidCredentialError Credential
 validateCredential =
   choose
     ( \case
         PubKeyCredential c -> Left c
         ScriptCredential c -> Right c
     )
-    (mapErr BadCredential'BadPubKeyCredential validatePubKeyHash)
-    (mapErr BadCredential'BadScriptCredential validateScriptHash)
+    (mapErr InvalidCredentialError'InvalidPubKeyCredential validatePubKeyHash)
+    (mapErr InvalidCredentialError'InvalidScriptCredential validateScriptHash)
 
 --------------------------------------------------------------------------------
 
-data BadStakingCredential
-  = BadStakingCredential'BadCredential BadCredential
-  | BadStakingCredential'StakingPtrUnsupported StakingCredential
+data InvalidStakingCredentialError
+  = InvalidStakingCredentialError'InvalidCredential InvalidCredentialError
+  | InvalidStakingCredentialError'Unsupported StakingCredential
 
-validateStakingCredential :: Validator BadStakingCredential StakingCredential
+validateStakingCredential :: Validator InvalidStakingCredentialError StakingCredential
 validateStakingCredential =
   choose
     ( \case
         StakingHash h -> Left h
         c -> Right c
     )
-    (mapErr BadStakingCredential'BadCredential validateCredential)
+    (mapErr InvalidStakingCredentialError'InvalidCredential validateCredential)
     ( mapErrWithSubject
-        (const . BadStakingCredential'StakingPtrUnsupported)
+        (const . InvalidStakingCredentialError'Unsupported)
         (validateFail ())
     )
 
 --------------------------------------------------------------------------------
 
-data BadAddress
-  = BadAddress'BadCredential BadCredential
-  | BadAddress'BadStakingCredential BadStakingCredential
+data InvalidAddressError
+  = InvalidAddressError'BadCredential InvalidCredentialError
+  | InvalidAddressError'BadStakingCredential InvalidStakingCredentialError
 
-validateAddress :: Validator BadAddress Address
+validateAddress :: Validator InvalidAddressError Address
 validateAddress =
   mconcat
-    [ contramapAndMapErr addressCredential BadAddress'BadCredential validateCredential
-    , contramapAndMapErr addressStakingCredential BadAddress'BadStakingCredential $
+    [ contramapAndMapErr addressCredential InvalidAddressError'BadCredential validateCredential
+    , contramapAndMapErr addressStakingCredential InvalidAddressError'BadStakingCredential $
         validateOptional validateStakingCredential
     ]
 
 --------------------------------------------------------------------------------
 
-data BadOrderedAssocMap k v e
-  = BadOrderedAssocMap'NotStrictlyOrdered [k] [k]
-  | BadOrderedAssocMap'BadKeyValuePair k v e
+data InvalidOrderedAssocMapError k v e
+  = InvalidOrderedAssocMapError'NotStrictlyOrdered [k] [k]
+  | InvalidOrderedAssocMapError'InvalidKeyValuePair k v e
 
 validateOrderedAssocMap ::
   (Ord k) =>
   Validator e (k, v) ->
-  Validator (BadOrderedAssocMap k v e) (AssocMap.Map k v)
+  Validator (InvalidOrderedAssocMapError k v e) (AssocMap.Map k v)
 validateOrderedAssocMap validateEach =
   mconcat
     [ contramap AssocMap.keys $
-        validateRoundtrip (S.toAscList . S.fromList) BadOrderedAssocMap'NotStrictlyOrdered
+        validateRoundtrip (S.toAscList . S.fromList) InvalidOrderedAssocMapError'NotStrictlyOrdered
     , contramap AssocMap.toList $
         validateFoldable $
           mapErrWithSubject
-            (uncurry BadOrderedAssocMap'BadKeyValuePair)
+            (uncurry InvalidOrderedAssocMapError'InvalidKeyValuePair)
             validateEach
     ]
 
 --------------------------------------------------------------------------------
 
-data BadValue = BadValue Value BadValueType
+data InvalidValueError = BadValue Value InvalidValueKind
 
-data BadValueType
-  = BadValueType'BadMap
-      ( BadOrderedAssocMap
+data InvalidValueKind
+  = InvalidValueKind'InvalidMap
+      ( InvalidOrderedAssocMapError
           CurrencySymbol
           (AssocMap.Map TokenName Integer)
-          BadAsset
+          InvalidAssetError
       )
-  | BadValueType'AdaMissing
-  | BadValueType'AdaOnly
+  | InvalidValueKind'AdaMissing
+  | InvalidValueKind'AdaOnly
 
-data BadAsset
-  = BadAsset'BadCurrencySymbol BadCurrencySymbol
-  | BadAsset'BadAda (BadOrderedAssocMap TokenName Integer BadAdaToken)
-  | BadAsset'BadNativeToken (BadOrderedAssocMap TokenName Integer BadNativeToken)
+data InvalidAssetError
+  = InvalidAssetError'InvalidCurrencySymbol InvalidCurrencySymbolError
+  | InvalidAssetError'InvalidAda (InvalidOrderedAssocMapError TokenName Integer InvalidAdaTokenError)
+  | InvalidAssetError'InvalidNativeToken (InvalidOrderedAssocMapError TokenName Integer InvalidNativeTokenError)
 
-data BadAdaToken
-  = BadAdaToken'TokenNameNotEmpty TokenName
-  | BadAdaToken'NegativeAmount Integer
-  | BadAdaToken'NonZeroAmount Integer
+data InvalidAdaTokenError
+  = InvalidAdaTokenError'TokenNameNotEmpty TokenName
+  | InvalidAdaTokenError'NegativeAmount Integer
+  | InvalidAdaTokenError'NonZeroAmount Integer
 
-data BadNativeToken
-  = BadNativeToken'BadTokenName BadTokenName
-  | BadNativeToken'ZeroAmount
-  | BadNativeToken'ZeroOrNegativeAmount Integer
+data InvalidNativeTokenError
+  = InvalidNativeTokenError'InvalidTokenName InvalidTokenNameError
+  | InvalidNativeTokenError'ZeroAmount
+  | InvalidNativeTokenError'ZeroOrNegativeAmount Integer
 
 data ValuePurpose
   = ValuePurpose'Output
@@ -367,12 +367,12 @@ data ValuePurpose
 
 validateValue ::
   ValuePurpose ->
-  Validator BadValue Value
+  Validator InvalidValueError Value
 validateValue purpose =
   mapErrWithSubject BadValue $
     contramap getValue $
       mconcat
-        [ mapErr BadValueType'BadMap $
+        [ mapErr InvalidValueKind'InvalidMap $
             validateOrderedAssocMap $
               choose
                 ( \(cs, tnMap) ->
@@ -380,22 +380,22 @@ validateValue purpose =
                       then Left tnMap
                       else Right (cs, tnMap)
                 )
-                (mapErr BadAsset'BadAda $ validateAdaTokens purpose)
+                (mapErr InvalidAssetError'InvalidAda $ validateAdaTokens purpose)
                 ( mconcat
                     [ contramap fst $
-                        mapErr BadAsset'BadCurrencySymbol validateCurrencySymbol
+                        mapErr InvalidAssetError'InvalidCurrencySymbol validateCurrencySymbol
                     , contramap snd $
-                        mapErr BadAsset'BadNativeToken $
+                        mapErr InvalidAssetError'InvalidNativeToken $
                           validateNativeTokenMap purpose
                     ]
                 )
-        , mapErr (const BadValueType'AdaMissing) $ case purpose of
+        , mapErr (const InvalidValueKind'AdaMissing) $ case purpose of
             ValuePurpose'Other -> mempty
             _ ->
               validateIf
                 (isJust . (AssocMap.lookup adaSymbol >=> AssocMap.lookup adaToken))
                 $ const ()
-        , mapErr (const BadValueType'AdaOnly) $ case purpose of
+        , mapErr (const InvalidValueKind'AdaOnly) $ case purpose of
             ValuePurpose'Fee ->
               validateIf (([adaSymbol] ==) . AssocMap.keys) $ const ()
             _ -> mempty
@@ -404,17 +404,17 @@ validateValue purpose =
 validateAdaTokens ::
   ValuePurpose ->
   Validator
-    (BadOrderedAssocMap TokenName Integer BadAdaToken)
+    (InvalidOrderedAssocMapError TokenName Integer InvalidAdaTokenError)
     (AssocMap.Map TokenName Integer)
 validateAdaTokens purpose =
   validateOrderedAssocMap $
     mconcat
-      [ contramap fst $ validateIf (== adaToken) BadAdaToken'TokenNameNotEmpty
+      [ contramap fst $ validateIf (== adaToken) InvalidAdaTokenError'TokenNameNotEmpty
       , contramap snd $
           mconcat
-            [ validateIf (>= 0) BadAdaToken'NegativeAmount
+            [ validateIf (>= 0) InvalidAdaTokenError'NegativeAmount
             , case purpose of
-                ValuePurpose'Mint -> validateIf (== 0) BadAdaToken'NonZeroAmount
+                ValuePurpose'Mint -> validateIf (== 0) InvalidAdaTokenError'NonZeroAmount
                 _ -> mempty
             ]
       ]
@@ -422,37 +422,37 @@ validateAdaTokens purpose =
 validateNativeTokenMap ::
   ValuePurpose ->
   Validator
-    (BadOrderedAssocMap TokenName Integer BadNativeToken)
+    (InvalidOrderedAssocMapError TokenName Integer InvalidNativeTokenError)
     (AssocMap.Map TokenName Integer)
 validateNativeTokenMap purpose =
   validateOrderedAssocMap $
     mconcat
-      [ contramapAndMapErr fst BadNativeToken'BadTokenName validateTokenName
+      [ contramapAndMapErr fst InvalidNativeTokenError'InvalidTokenName validateTokenName
       , contramap snd $ case purpose of
-          ValuePurpose'Output -> validateIf (> 0) BadNativeToken'ZeroOrNegativeAmount
-          _ -> validateIf (/= 0) $ const BadNativeToken'ZeroAmount
+          ValuePurpose'Output -> validateIf (> 0) InvalidNativeTokenError'ZeroOrNegativeAmount
+          _ -> validateIf (/= 0) $ const InvalidNativeTokenError'ZeroAmount
       ]
 
 --------------------------------------------------------------------------------
 
-data BadTxOut
-  = BadTxOut'BadAddress BadAddress
-  | BadTxOut'BadValue BadValue
-  | BadTxOut'BadDatumHash BadDatumHash
-  | BadTxOut'BadReferenceScriptHash BadScriptHash
+data InvalidTxOutError
+  = InvalidTxOutError'InvalidAddress InvalidAddressError
+  | InvalidTxOutError'InvalidValue InvalidValueError
+  | InvalidTxOutError'InvalidOutputDatumHash InvalidDatumHashError
+  | InvalidTxOutError'InvalidReferenceScriptHash InvalidScriptHashError
 
-validateTxOut :: Validator BadTxOut TxOut
+validateTxOut :: Validator InvalidTxOutError TxOut
 validateTxOut =
   mconcat
-    [ contramapAndMapErr txOutAddress BadTxOut'BadAddress validateAddress
-    , contramapAndMapErr txOutValue BadTxOut'BadValue $
+    [ contramapAndMapErr txOutAddress InvalidTxOutError'InvalidAddress validateAddress
+    , contramapAndMapErr txOutValue InvalidTxOutError'InvalidValue $
         validateValue ValuePurpose'Output
-    , contramapAndMapErr txOutDatum BadTxOut'BadDatumHash validateOutputDatum
-    , contramapAndMapErr txOutReferenceScript BadTxOut'BadReferenceScriptHash $
+    , contramapAndMapErr txOutDatum InvalidTxOutError'InvalidOutputDatumHash validateOutputDatum
+    , contramapAndMapErr txOutReferenceScript InvalidTxOutError'InvalidReferenceScriptHash $
         validateOptional validateScriptHash
     ]
   where
-    validateOutputDatum :: Validator BadDatumHash OutputDatum
+    validateOutputDatum :: Validator InvalidDatumHashError OutputDatum
     validateOutputDatum =
       contramap
         ( \case
@@ -463,28 +463,28 @@ validateTxOut =
 
 --------------------------------------------------------------------------------
 
-data BadTxInInfo
-  = BadInput'BadTxOutRef BadTxOutRef
-  | BadInput'BadTxOut BadTxOut
+data InvalidTxInInfoError
+  = InvalidTxInInfoError'InvalidOutRef InvalidTxOutRef
+  | InvalidTxInInfoError'InvalidResolved InvalidTxOutError
 
-validateTxInInfo :: Validator BadTxInInfo TxInInfo
+validateTxInInfo :: Validator InvalidTxInInfoError TxInInfo
 validateTxInInfo =
   mconcat
-    [ contramapAndMapErr txInInfoOutRef BadInput'BadTxOutRef validateTxOutRef
-    , contramapAndMapErr txInInfoResolved BadInput'BadTxOut validateTxOut
+    [ contramapAndMapErr txInInfoOutRef InvalidTxInInfoError'InvalidOutRef validateTxOutRef
+    , contramapAndMapErr txInInfoResolved InvalidTxInInfoError'InvalidResolved validateTxOut
     ]
 
 --------------------------------------------------------------------------------
 
-data BadInputList
-  = BadInputList'NotStrictlyOrdered
+data InvalidInputListError
+  = InvalidInputListError'NotStrictlyOrdered
       [TxInInfo] -- Expected
       [TxInInfo] -- Actual
-  | BadInputList'BadTxInInfo
+  | InvalidInputListError'InvalidTxInInfo
       Int -- Index
-      BadTxInInfo
+      InvalidTxInInfoError
 
-validateInputList :: Validator BadInputList [TxInInfo]
+validateInputList :: Validator InvalidInputListError [TxInInfo]
 validateInputList =
   mconcat
     [ validateRoundtrip
@@ -493,84 +493,85 @@ validateInputList =
             . M.fromList
             . fmap (liftA2 (,) txInInfoOutRef id)
         )
-        BadInputList'NotStrictlyOrdered
-    , validateListAndAnnotateErrWithIdx BadInputList'BadTxInInfo validateTxInInfo
+        InvalidInputListError'NotStrictlyOrdered
+    , validateListAndAnnotateErrWithIdx InvalidInputListError'InvalidTxInInfo validateTxInInfo
     ]
 
 --------------------------------------------------------------------------------
 
-data BadInputs
-  = BadInputs'BadInputList BadInputList
-  | BadInputs'NoInput
+data InvalidInputsError
+  = InvalidInputsError'InvalidInputList InvalidInputListError
+  | InvalidInputsError'NoInput
 
-validateInputs :: Validator BadInputs [TxInInfo]
+validateInputs :: Validator InvalidInputsError [TxInInfo]
 validateInputs =
   mconcat
-    [ mapErr BadInputs'BadInputList validateInputList
-    , validateIf (not . null) $ const BadInputs'NoInput
+    [ mapErr InvalidInputsError'InvalidInputList validateInputList
+    , validateIf (not . null) $ const InvalidInputsError'NoInput
     ]
 
 --------------------------------------------------------------------------------
 
-newtype BadReferenceInputs = BadReferenceInputs'BadInputList BadInputList
+newtype InvalidReferenceInputsError
+  = InvalidReferenceInputsError'InvalidInputList InvalidInputListError
 
-validateReferenceInputs :: Validator BadReferenceInputs [TxInInfo]
+validateReferenceInputs :: Validator InvalidReferenceInputsError [TxInInfo]
 validateReferenceInputs =
-  mapErr BadReferenceInputs'BadInputList validateInputList
+  mapErr InvalidReferenceInputsError'InvalidInputList validateInputList
 
 --------------------------------------------------------------------------------
 
-data BadOutputs
-  = BadOutputs'BadTxOut
+data InvalidOutputsError
+  = InvalidOutputsError'InvalidTxOut
       Int -- Index
-      BadTxOut
-  | BadOutputs'NoOutput
+      InvalidTxOutError
+  | InvalidOutputsError'NoOutput
 
-validateOutputs :: Validator BadOutputs [TxOut]
+validateOutputs :: Validator InvalidOutputsError [TxOut]
 validateOutputs =
   mconcat
-    [ validateListAndAnnotateErrWithIdx BadOutputs'BadTxOut validateTxOut
-    , validateIf (not . null) $ const BadOutputs'NoOutput
+    [ validateListAndAnnotateErrWithIdx InvalidOutputsError'InvalidTxOut validateTxOut
+    , validateIf (not . null) $ const InvalidOutputsError'NoOutput
     ]
 
 --------------------------------------------------------------------------------
 
-newtype BadFee = BadFee'BadValue BadValue
+newtype InvalidFeeError = InvalidFeeError'InvalidValue InvalidValueError
 
-validateFee :: Validator BadFee Value
-validateFee = mapErr BadFee'BadValue $ validateValue ValuePurpose'Fee
-
---------------------------------------------------------------------------------
-
-newtype BadMint = BadMint'BadValue BadValue
-
-validateMint :: Validator BadMint Value
-validateMint = mapErr BadMint'BadValue $ validateValue ValuePurpose'Mint
+validateFee :: Validator InvalidFeeError Value
+validateFee = mapErr InvalidFeeError'InvalidValue $ validateValue ValuePurpose'Fee
 
 --------------------------------------------------------------------------------
 
-data BadValidRange
-  = BadValidRange'BadLowerBound'BadPOSIXTime BadPOSIXTime
-  | BadValidRange'BadUpperBound'BadPOSIXTime BadPOSIXTime
-  | BadValidRange'BadUpperBound'CannotBeInclusive
+newtype InvalidMintError = InvalidMintError'InvalidValue InvalidValueError
 
-validateValidRange :: Validator BadValidRange POSIXTimeRange
+validateMint :: Validator InvalidMintError Value
+validateMint = mapErr InvalidMintError'InvalidValue $ validateValue ValuePurpose'Mint
+
+--------------------------------------------------------------------------------
+
+data InvalidValidRangeError
+  = InvalidValidRangeError'LowerBound'InvalidPosixTime InvalidPOSIXTimeError
+  | InvalidValidRangeError'UpperBound'InvalidPosixTime InvalidPOSIXTimeError
+  | InvalidValidRangeError'UpperBound'CannotBeInclusive
+
+validateValidRange :: Validator InvalidValidRangeError POSIXTimeRange
 validateValidRange =
   mconcat
-    [ mapErr BadValidRange'BadLowerBound'BadPOSIXTime $
+    [ mapErr InvalidValidRangeError'LowerBound'InvalidPosixTime $
         contramap
           ((\(LowerBound e _) -> e) . ivFrom)
           validateExtended
     , contramap ((\(UpperBound e c) -> (e, c)) . ivTo) $
         mconcat
           [ contramap (not . snd) $
-              validateBool BadValidRange'BadUpperBound'CannotBeInclusive
-          , mapErr BadValidRange'BadUpperBound'BadPOSIXTime $
+              validateBool InvalidValidRangeError'UpperBound'CannotBeInclusive
+          , mapErr InvalidValidRangeError'UpperBound'InvalidPosixTime $
               contramap fst validateExtended
           ]
     ]
   where
-    validateExtended :: Validator BadPOSIXTime (Extended POSIXTime)
+    validateExtended :: Validator InvalidPOSIXTimeError (Extended POSIXTime)
     validateExtended =
       contramap
         ( \case
@@ -581,78 +582,77 @@ validateValidRange =
 
 --------------------------------------------------------------------------------
 
-data BadSignatories
-  = BadSignatories'NotStrictlyOrdered
+data InvalidSignatoriesError
+  = InvalidSignatoriesError'NotStrictlyOrdered
       [PubKeyHash]
       [PubKeyHash]
-  | BadSignatories'BadPubKeyHash Int BadPubKeyHash
-  | BadSignatories'NoSignature
+  | InvalidSignatoriesError'InvalidPubKeyHash Int InvalidPubKeyHashError
+  | InvalidSignatoriesError'NoSignature
 
-validateSignatories :: Validator BadSignatories [PubKeyHash]
+validateSignatories :: Validator InvalidSignatoriesError [PubKeyHash]
 validateSignatories =
   mconcat
-    [ validateRoundtrip (S.toAscList . S.fromList) BadSignatories'NotStrictlyOrdered
-    , validateListAndAnnotateErrWithIdx BadSignatories'BadPubKeyHash validatePubKeyHash
-    , validateIf (not . null) $
-        const BadSignatories'NoSignature
+    [ validateRoundtrip (S.toAscList . S.fromList) InvalidSignatoriesError'NotStrictlyOrdered
+    , validateListAndAnnotateErrWithIdx InvalidSignatoriesError'InvalidPubKeyHash validatePubKeyHash
+    , validateIf (not . null) $ const InvalidSignatoriesError'NoSignature
     ]
 
 --------------------------------------------------------------------------------
 
-data BadRedeemers
-  = BadRedeemers'BadScriptPurpose BadScriptPurpose
-  | BadRedeemers'HasDuplicateEntries
+data InvalidRedeemersError
+  = InvalidRedeemersError'InvalidScriptPurpose InvalidScriptPurposeError
+  | InvalidRedeemersError'HasDuplicateEntries
       (AssocMap.Map ScriptPurpose Redeemer)
       (AssocMap.Map ScriptPurpose Redeemer)
 
-validateRedeemers :: Validator BadRedeemers (AssocMap.Map ScriptPurpose Redeemer)
+validateRedeemers :: Validator InvalidRedeemersError (AssocMap.Map ScriptPurpose Redeemer)
 validateRedeemers =
   mconcat
     [ contramap AssocMap.toList $
         validateFoldable $
           contramap fst $
-            mapErr BadRedeemers'BadScriptPurpose validateScriptPurpose
+            mapErr InvalidRedeemersError'InvalidScriptPurpose validateScriptPurpose
     , validateRoundtrip
         (AssocMap.fromListSafe . AssocMap.toList)
-        BadRedeemers'HasDuplicateEntries
+        InvalidRedeemersError'HasDuplicateEntries
     ]
 
 --------------------------------------------------------------------------------
 
-newtype BadData
-  = BadData'BadMap (BadOrderedAssocMap DatumHash Datum BadDatumHash)
+newtype InvalidDataError
+  = InvalidDataError'InvalidMap (InvalidOrderedAssocMapError DatumHash Datum InvalidDatumHashError)
 
-validateData :: Validator BadData (AssocMap.Map DatumHash Datum)
+validateData :: Validator InvalidDataError (AssocMap.Map DatumHash Datum)
 validateData =
-  mapErr BadData'BadMap $
+  mapErr InvalidDataError'InvalidMap $
     validateOrderedAssocMap $
       contramap fst validateDatumHash
 
 --------------------------------------------------------------------------------
 
-data BadTxInfo
-  = BadTxInfo'BadInputs BadInputs
-  | BadTxInfo'BadReferenceInputs BadReferenceInputs
-  | BadTxInfo'BadOutputs BadOutputs
-  | BadTxInfo'BadFee BadFee
-  | BadTxInfo'BadMint BadMint
-  | BadTxInfo'BadValidRange BadValidRange
-  | BadTxInfo'BadSignatories BadSignatories
-  | BadTxInfo'BadRedeemers BadRedeemers
-  | BadTxInfo'BadData BadData
-  | BadTxInfo'BadId BadTxId
+data InvalidTxInfoError
+  = InvalidTxInfoError'BadInputs InvalidInputsError
+  | InvalidTxInfoError'BadReferenceInputs InvalidReferenceInputsError
+  | InvalidTxInfoError'BadOutputs InvalidOutputsError
+  | InvalidTxInfoError'BadFee InvalidFeeError
+  | InvalidTxInfoError'BadMint InvalidMintError
+  | InvalidTxInfoError'BadValidRange InvalidValidRangeError
+  | InvalidTxInfoError'BadSignatories InvalidSignatoriesError
+  | InvalidTxInfoError'BadRedeemers InvalidRedeemersError
+  | InvalidTxInfoError'BadData InvalidDataError
+  | InvalidTxInfoError'BadId InvalidTxIdError
 
-validateTxInfo :: Validator BadTxInfo TxInfo
+validateTxInfo :: Validator InvalidTxInfoError TxInfo
 validateTxInfo =
   mconcat
-    [ contramapAndMapErr txInfoInputs BadTxInfo'BadInputs validateInputs
-    , contramapAndMapErr txInfoReferenceInputs BadTxInfo'BadReferenceInputs validateReferenceInputs
-    , contramapAndMapErr txInfoOutputs BadTxInfo'BadOutputs validateOutputs
-    , contramapAndMapErr txInfoFee BadTxInfo'BadFee validateFee
-    , contramapAndMapErr txInfoMint BadTxInfo'BadMint validateMint
-    , contramapAndMapErr txInfoSignatories BadTxInfo'BadSignatories validateSignatories
-    , contramapAndMapErr txInfoValidRange BadTxInfo'BadValidRange validateValidRange
-    , contramapAndMapErr txInfoRedeemers BadTxInfo'BadRedeemers validateRedeemers
-    , contramapAndMapErr txInfoData BadTxInfo'BadData validateData
-    , contramapAndMapErr txInfoId BadTxInfo'BadId validateTxId
+    [ contramapAndMapErr txInfoInputs InvalidTxInfoError'BadInputs validateInputs
+    , contramapAndMapErr txInfoReferenceInputs InvalidTxInfoError'BadReferenceInputs validateReferenceInputs
+    , contramapAndMapErr txInfoOutputs InvalidTxInfoError'BadOutputs validateOutputs
+    , contramapAndMapErr txInfoFee InvalidTxInfoError'BadFee validateFee
+    , contramapAndMapErr txInfoMint InvalidTxInfoError'BadMint validateMint
+    , contramapAndMapErr txInfoSignatories InvalidTxInfoError'BadSignatories validateSignatories
+    , contramapAndMapErr txInfoValidRange InvalidTxInfoError'BadValidRange validateValidRange
+    , contramapAndMapErr txInfoRedeemers InvalidTxInfoError'BadRedeemers validateRedeemers
+    , contramapAndMapErr txInfoData InvalidTxInfoError'BadData validateData
+    , contramapAndMapErr txInfoId InvalidTxInfoError'BadId validateTxId
     ]
