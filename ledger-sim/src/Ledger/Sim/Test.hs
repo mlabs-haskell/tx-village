@@ -11,18 +11,12 @@ module Ledger.Sim.Test (
   ledgerFailsWith',
 ) where
 
-import Control.Monad.Trans.Reader (Reader, ask, runReader)
-
+import Control.Monad.Reader (MonadReader (ask), Reader, runReader)
+import Ledger.Sim (LedgerSim, LedgerSimError (LedgerSimError'ApplicationError), runLedgerSim)
+import Ledger.Sim.Types.Config (LedgerConfig)
+import Ledger.Sim.Types.State (LedgerState)
 import Test.Tasty (TestName, TestTree, testGroup)
 import Test.Tasty.HUnit (Assertion, assertBool, assertFailure, testCase, (@?=))
-
-import Ledger.Sim (
-  LedgerConfig,
-  LedgerSim,
-  LedgerState,
-  LedgerValidatorError (TxApplicationError),
-  runLedgerSim,
- )
 
 ledgerTestGroup :: LedgerConfig ctx -> LedgerState st -> TestName -> [Reader (LedgerConfig ctx, LedgerState st) TestTree] -> TestTree
 ledgerTestGroup cfg st testName trees = testGroup testName $ flip runReader (cfg, st) <$> trees
@@ -41,22 +35,22 @@ ledgerSucceedsWith = SucceedsWith
 ledgerFails :: (Show e) => LedgerSim ctx st e () -> LedgerExpectation ctx st
 ledgerFails = ledgerFailsBy $ const True
 
-ledgerFailsBy :: (Show e) => (LedgerValidatorError e -> Bool) -> LedgerSim ctx st e () -> LedgerExpectation ctx st
+ledgerFailsBy :: (Show e) => (LedgerSimError e -> Bool) -> LedgerSim ctx st e () -> LedgerExpectation ctx st
 ledgerFailsBy = FailsBy
 
 ledgerFailsBy' :: (Show e) => (e -> Bool) -> LedgerSim ctx st e () -> LedgerExpectation ctx st
-ledgerFailsBy' predicate = ledgerFailsBy $ \case TxApplicationError e -> predicate e; _ -> False
+ledgerFailsBy' predicate = ledgerFailsBy $ \case LedgerSimError'ApplicationError e -> predicate e; _ -> False
 
-ledgerFailsWith :: (Eq e, Show e, Eq a, Show a) => LedgerValidatorError e -> LedgerSim ctx st e a -> LedgerExpectation ctx st
+ledgerFailsWith :: (Eq e, Show e, Eq a, Show a) => LedgerSimError e -> LedgerSim ctx st e a -> LedgerExpectation ctx st
 ledgerFailsWith = FailsWith
 
 ledgerFailsWith' :: (Eq e, Show e, Eq a, Show a) => e -> LedgerSim ctx st e a -> LedgerExpectation ctx st
-ledgerFailsWith' = ledgerFailsWith . TxApplicationError
+ledgerFailsWith' = ledgerFailsWith . LedgerSimError'ApplicationError
 
 data LedgerExpectation ctx st
   = forall e a. (Eq e, Show e, Eq a, Show a) => SucceedsWith a (LedgerSim ctx st e a)
-  | forall e a. (Eq e, Show e, Eq a, Show a) => FailsWith (LedgerValidatorError e) (LedgerSim ctx st e a)
-  | forall e a. (Show e) => FailsBy (LedgerValidatorError e -> Bool) (LedgerSim ctx st e a)
+  | forall e a. (Eq e, Show e, Eq a, Show a) => FailsWith (LedgerSimError e) (LedgerSim ctx st e a)
+  | forall e a. (Show e) => FailsBy (LedgerSimError e -> Bool) (LedgerSim ctx st e a)
 
 toAssertion :: LedgerConfig ctx -> LedgerState st -> LedgerExpectation ctx st -> Assertion
 toAssertion cfg st (SucceedsWith x sim) = runLedgerSim cfg st sim @?= Right x

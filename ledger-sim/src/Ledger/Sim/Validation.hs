@@ -22,6 +22,7 @@ data InvalidTxInfoError
   = InvalidTxInfoError'Normality Normality.InvalidTxInfoError
   | InvalidTxInfoError'Local Local.InvalidTxInfoError
   | InvalidTxInfoError'Stateful Stateful.InvalidTxInfoError
+  deriving stock (Show, Eq)
 
 validateTxInfo :: LedgerConfig cfg -> LedgerState st -> Validator InvalidTxInfoError TxInfo
 validateTxInfo config state =

@@ -37,7 +37,7 @@ import PlutusLedgerApi.V2 (
 data InvalidInputError
   = InvalidInputError'NotFoundOnLedger TxOutRef
   | InvalidInputError'ReferenceScriptNotAvailable ScriptHash
-
+  deriving stock (Show, Eq)
 validateInputExist :: LedgerState st -> Validator InvalidInputError TxInInfo
 validateInputExist state =
   contramap txInInfoOutRef $
@@ -52,6 +52,7 @@ validateInputReferenceScriptAvailable config =
 --------------------------------------------------------------------------------
 
 data InvalidInputsError = InvalidInputsError'InvalidInput Int InvalidInputError
+  deriving stock (Show, Eq)
 
 validateInputs ::
   LedgerConfig cfg -> LedgerState st -> Validator InvalidInputsError [TxInInfo]
@@ -65,6 +66,7 @@ validateInputs config state =
 --------------------------------------------------------------------------------
 
 data InvalidReferenceInputsError = InvalidReferenceInputsError'InvalidInput Int InvalidInputError
+  deriving stock (Show, Eq)
 
 validateReferenceInputs ::
   LedgerState st ->
@@ -77,6 +79,7 @@ validateReferenceInputs =
 --------------------------------------------------------------------------------
 
 newtype InvalidValidRangeError = InvalidValidRangeError'CurrentTimeOutOfRange POSIXTime
+  deriving stock (Show, Eq)
 
 validateValidRange :: LedgerState st -> Validator InvalidValidRangeError POSIXTimeRange
 validateValidRange state =
@@ -89,6 +92,7 @@ data InvalidTxInfoError
   = InvalidTxInfoError'InvalidInputs InvalidInputsError
   | InvalidTxInfoError'InvalidReferenceInputs InvalidReferenceInputsError
   | InvalidTxInfoError'InvalidValidRange InvalidValidRangeError
+  deriving stock (Show, Eq)
 
 validateTxInfo :: LedgerConfig cfg -> LedgerState st -> Validator InvalidTxInfoError TxInfo
 validateTxInfo config state =

@@ -2,9 +2,6 @@
 
 module Ledger.Sim.Types.CostModel (PlutusCostModel (..), mkEvaluationContext) where
 
-import Control.Monad.Trans.Except (runExceptT)
-import Control.Monad.Trans.Writer (WriterT (runWriterT))
-import Data.Functor.Identity (Identity (runIdentity))
 import Data.Map.Strict (Map)
 import Data.Map.Strict qualified as M
 
@@ -18,6 +15,8 @@ import Data.Aeson.Types (
     withText,
  )
 
+import Control.Monad.Except (runExcept)
+import Control.Monad.Writer (WriterT (runWriterT))
 import PlutusLedgerApi.Common qualified as Plutus
 import PlutusLedgerApi.V2 qualified as PlutusV2
 
@@ -38,8 +37,7 @@ instance FromJSON PlutusV2.ParamName where
 
 mkEvaluationContext :: PlutusCostModel -> Either PlutusV2.CostModelApplyError PlutusV2.EvaluationContext
 mkEvaluationContext (PlutusCostModel costModel) =
-    runIdentity
-        . runExceptT
+    runExcept
         . fmap fst
         . runWriterT
         $ PlutusV2.mkEvaluationContext (M.elems costModel)

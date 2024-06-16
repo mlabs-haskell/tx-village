@@ -35,6 +35,7 @@ library
   import:          common-language
   exposed-modules:
     Ledger.Sim
+    Ledger.Sim.Submission
     Ledger.Sim.Test
     Ledger.Sim.Types.Config
     Ledger.Sim.Types.CostModel
@@ -56,13 +57,14 @@ library
     , contravariant
     , cryptonite
     , memory
+    , mtl
     , plutus-ledger-api
     , plutus-tx
     , serialise
     , tasty
     , tasty-hunit
-    , transformers
 
+-- , transformers
 test-suite ledger-sim-test
   import:         common-language
   type:           exitcode-stdio-1.0

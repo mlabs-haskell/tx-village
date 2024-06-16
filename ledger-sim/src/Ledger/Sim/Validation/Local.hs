@@ -59,6 +59,7 @@ data UnspendableInputError
   = UnspendableInputError'ScriptInput'NoDatum
   | UnspendableInputError'ScriptInput'DatumWitnessMissing DatumHash
   | UnspendableInputError'PubKeyInput'NotAuthorized PubKeyHash
+  deriving stock (Show, Eq)
 
 validateInputSpendable :: TxInfo -> Validator UnspendableInputError TxOut
 validateInputSpendable txInfo =
@@ -100,6 +101,7 @@ validateInputSpendable txInfo =
 
 data InvalidInputsError
   = InvalidInputsError'UnspendableInput Int UnspendableInputError
+  deriving stock (Show, Eq)
 
 validateInputs :: TxInfo -> Validator InvalidInputsError [TxInInfo]
 validateInputs =
@@ -110,6 +112,7 @@ validateInputs =
 --------------------------------------------------------------------------------
 
 data InvalidOutputError = InvalidOutputError'ScriptOutputNoDatum
+  deriving stock (Show, Eq)
 
 validateOutput :: TxInfo -> Validator InvalidOutputError TxOut
 validateOutput _ =
@@ -123,6 +126,7 @@ validateOutput _ =
 --------------------------------------------------------------------------------
 
 data InvalidOutputsError = InvalidOutputsError'InvalidOutput Int InvalidOutputError
+  deriving stock (Show, Eq)
 
 validateOutputs :: TxInfo -> Validator InvalidOutputsError [TxOut]
 validateOutputs =
@@ -134,6 +138,7 @@ data InvalidRedeemersError
   = BadRedeemers'ValidatorNotRun ScriptHash TxOutRef
   | BadRedeemers'MintingPolicyNotRan CurrencySymbol
   | BadRedeemers'UnexpectedExcessEntries [ScriptPurpose]
+  deriving stock (Show, Eq)
 
 validateRedeemers ::
   TxInfo ->
@@ -186,6 +191,7 @@ data BalancingError
       Value -- Fee
       Value -- Total output
       Value -- Delta, input + minted - fee - output
+  deriving stock (Show, Eq)
 
 validateBalancing :: Validator BalancingError TxInfo
 validateBalancing = validateWith $ \txInfo ->
@@ -208,6 +214,7 @@ data InvalidTxInfoError
   | InvalidTxInfoError'InvalidOutputs InvalidOutputsError
   | InvalidTxInfoError'InvalidRedeemers InvalidRedeemersError
   | InvalidTxInfoError'NotBalanced BalancingError
+  deriving stock (Show, Eq)
 
 validateTxInfo :: Validator InvalidTxInfoError TxInfo
 validateTxInfo =

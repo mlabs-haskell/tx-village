@@ -103,6 +103,7 @@ import PlutusTx.Builtins qualified as PlutusTx
 --------------------------------------------------------------------------------
 
 newtype InvalidPOSIXTimeError = InvalidPOSIXTimeError'NegativeInteger POSIXTime
+  deriving stock (Show, Eq)
 
 validatePOSIXTime :: Validator InvalidPOSIXTimeError POSIXTime
 validatePOSIXTime = validateIf (>= 0) InvalidPOSIXTimeError'NegativeInteger
@@ -119,6 +120,7 @@ validateLedgerBytesLength checkLength mkErr =
 
 data InvalidLedgerBytesError'TooLong
   = InvalidLedgerBytesError'TooLong Int Int
+  deriving stock (Show, Eq)
 
 validateLedgerBytesLengthAtMost ::
   Int ->
@@ -130,6 +132,7 @@ validateLedgerBytesLengthAtMost limit =
 
 data InvalidLedgerBytesError'UnexpectedLength
   = InvalidLedgerBytesError'UnexpectedLength Int Int
+  deriving stock (Show, Eq)
 
 validateLedgerBytesLengthExactly ::
   Int ->
@@ -155,6 +158,7 @@ validateBlake2b256Hash = validateLedgerBytesLengthExactly 32
 
 data InvalidTokenNameError
   = InvalidTokenNameError'TooLong TokenName InvalidLedgerBytesError'TooLong
+  deriving stock (Show, Eq)
 
 validateTokenName :: Validator InvalidTokenNameError TokenName
 validateTokenName =
@@ -166,6 +170,7 @@ validateTokenName =
 
 data InvalidCurrencySymbolError
   = InvalidCurrencySymbolError'UnexpectedLength CurrencySymbol InvalidLedgerBytesError'UnexpectedLength
+  deriving stock (Show, Eq)
 
 validateCurrencySymbol :: Validator InvalidCurrencySymbolError CurrencySymbol
 validateCurrencySymbol =
@@ -181,6 +186,7 @@ validateCurrencySymbol =
 
 data InvalidPubKeyHashError
   = InvalidPubKeyHashError'UnexpectedLength PubKeyHash InvalidLedgerBytesError'UnexpectedLength
+  deriving stock (Show, Eq)
 
 validatePubKeyHash :: Validator InvalidPubKeyHashError PubKeyHash
 validatePubKeyHash =
@@ -193,6 +199,7 @@ validatePubKeyHash =
 
 data InvalidScriptHashError
   = InvalidScriptHashError'UnexpectedLength ScriptHash InvalidLedgerBytesError'UnexpectedLength
+  deriving stock (Show, Eq)
 
 validateScriptHash :: Validator InvalidScriptHashError ScriptHash
 validateScriptHash =
@@ -205,6 +212,7 @@ validateScriptHash =
 
 data InvalidDatumHashError
   = InvalidDatumHashError'UnexpectedLength DatumHash InvalidLedgerBytesError'UnexpectedLength
+  deriving stock (Show, Eq)
 
 validateDatumHash :: Validator InvalidDatumHashError DatumHash
 validateDatumHash =
@@ -216,6 +224,7 @@ validateDatumHash =
 --------------------------------------------------------------------------------
 
 data InvalidTxIdError = InvalidTxIdError'UnexpectedLength TxId InvalidLedgerBytesError'UnexpectedLength
+  deriving stock (Show, Eq)
 
 validateTxId :: Validator InvalidTxIdError TxId
 validateTxId =
@@ -229,6 +238,7 @@ validateTxId =
 data InvalidTxOutRef
   = InvalidTxOutRef'InvalidId InvalidTxIdError
   | InvalidTxOutRef'NegativeIndex Integer
+  deriving stock (Show, Eq)
 
 validateTxOutRef :: Validator InvalidTxOutRef TxOutRef
 validateTxOutRef =
@@ -243,6 +253,7 @@ data InvalidScriptPurposeError
   = InvalidScriptPurposeError'Minting InvalidCurrencySymbolError
   | InvalidScriptPurposeError'Spending InvalidTxOutRef
   | InvalidScriptPurposeError'Unsupported ScriptPurpose
+  deriving stock (Show, Eq)
 
 validateScriptPurpose :: Validator InvalidScriptPurposeError ScriptPurpose
 validateScriptPurpose =
@@ -265,6 +276,7 @@ validateScriptPurpose =
 data InvalidCredentialError
   = InvalidCredentialError'InvalidPubKeyCredential InvalidPubKeyHashError
   | InvalidCredentialError'InvalidScriptCredential InvalidScriptHashError
+  deriving stock (Show, Eq)
 
 validateCredential :: Validator InvalidCredentialError Credential
 validateCredential =
@@ -281,6 +293,7 @@ validateCredential =
 data InvalidStakingCredentialError
   = InvalidStakingCredentialError'InvalidCredential InvalidCredentialError
   | InvalidStakingCredentialError'Unsupported StakingCredential
+  deriving stock (Show, Eq)
 
 validateStakingCredential :: Validator InvalidStakingCredentialError StakingCredential
 validateStakingCredential =
@@ -300,6 +313,7 @@ validateStakingCredential =
 data InvalidAddressError
   = InvalidAddressError'BadCredential InvalidCredentialError
   | InvalidAddressError'BadStakingCredential InvalidStakingCredentialError
+  deriving stock (Show, Eq)
 
 validateAddress :: Validator InvalidAddressError Address
 validateAddress =
@@ -314,6 +328,7 @@ validateAddress =
 data InvalidOrderedAssocMapError k v e
   = InvalidOrderedAssocMapError'NotStrictlyOrdered [k] [k]
   | InvalidOrderedAssocMapError'InvalidKeyValuePair k v e
+  deriving stock (Show, Eq)
 
 validateOrderedAssocMap ::
   (Ord k) =>
@@ -333,6 +348,7 @@ validateOrderedAssocMap validateEach =
 --------------------------------------------------------------------------------
 
 data InvalidValueError = BadValue Value InvalidValueKind
+  deriving stock (Show, Eq)
 
 data InvalidValueKind
   = InvalidValueKind'InvalidMap
@@ -343,21 +359,25 @@ data InvalidValueKind
       )
   | InvalidValueKind'AdaMissing
   | InvalidValueKind'AdaOnly
+  deriving stock (Show, Eq)
 
 data InvalidAssetError
   = InvalidAssetError'InvalidCurrencySymbol InvalidCurrencySymbolError
   | InvalidAssetError'InvalidAda (InvalidOrderedAssocMapError TokenName Integer InvalidAdaTokenError)
   | InvalidAssetError'InvalidNativeToken (InvalidOrderedAssocMapError TokenName Integer InvalidNativeTokenError)
+  deriving stock (Show, Eq)
 
 data InvalidAdaTokenError
   = InvalidAdaTokenError'TokenNameNotEmpty TokenName
   | InvalidAdaTokenError'NegativeAmount Integer
   | InvalidAdaTokenError'NonZeroAmount Integer
+  deriving stock (Show, Eq)
 
 data InvalidNativeTokenError
   = InvalidNativeTokenError'InvalidTokenName InvalidTokenNameError
   | InvalidNativeTokenError'ZeroAmount
   | InvalidNativeTokenError'ZeroOrNegativeAmount Integer
+  deriving stock (Show, Eq)
 
 data ValuePurpose
   = ValuePurpose'Output
@@ -440,6 +460,7 @@ data InvalidTxOutError
   | InvalidTxOutError'InvalidValue InvalidValueError
   | InvalidTxOutError'InvalidOutputDatumHash InvalidDatumHashError
   | InvalidTxOutError'InvalidReferenceScriptHash InvalidScriptHashError
+  deriving stock (Show, Eq)
 
 validateTxOut :: Validator InvalidTxOutError TxOut
 validateTxOut =
@@ -466,6 +487,7 @@ validateTxOut =
 data InvalidTxInInfoError
   = InvalidTxInInfoError'InvalidOutRef InvalidTxOutRef
   | InvalidTxInInfoError'InvalidResolved InvalidTxOutError
+  deriving stock (Show, Eq)
 
 validateTxInInfo :: Validator InvalidTxInInfoError TxInInfo
 validateTxInInfo =
@@ -483,6 +505,7 @@ data InvalidInputListError
   | InvalidInputListError'InvalidTxInInfo
       Int -- Index
       InvalidTxInInfoError
+  deriving stock (Show, Eq)
 
 validateInputList :: Validator InvalidInputListError [TxInInfo]
 validateInputList =
@@ -502,6 +525,7 @@ validateInputList =
 data InvalidInputsError
   = InvalidInputsError'InvalidInputList InvalidInputListError
   | InvalidInputsError'NoInput
+  deriving stock (Show, Eq)
 
 validateInputs :: Validator InvalidInputsError [TxInInfo]
 validateInputs =
@@ -514,6 +538,7 @@ validateInputs =
 
 newtype InvalidReferenceInputsError
   = InvalidReferenceInputsError'InvalidInputList InvalidInputListError
+  deriving stock (Show, Eq)
 
 validateReferenceInputs :: Validator InvalidReferenceInputsError [TxInInfo]
 validateReferenceInputs =
@@ -526,6 +551,7 @@ data InvalidOutputsError
       Int -- Index
       InvalidTxOutError
   | InvalidOutputsError'NoOutput
+  deriving stock (Show, Eq)
 
 validateOutputs :: Validator InvalidOutputsError [TxOut]
 validateOutputs =
@@ -537,6 +563,7 @@ validateOutputs =
 --------------------------------------------------------------------------------
 
 newtype InvalidFeeError = InvalidFeeError'InvalidValue InvalidValueError
+  deriving stock (Show, Eq)
 
 validateFee :: Validator InvalidFeeError Value
 validateFee = mapErr InvalidFeeError'InvalidValue $ validateValue ValuePurpose'Fee
@@ -544,6 +571,7 @@ validateFee = mapErr InvalidFeeError'InvalidValue $ validateValue ValuePurpose'F
 --------------------------------------------------------------------------------
 
 newtype InvalidMintError = InvalidMintError'InvalidValue InvalidValueError
+  deriving stock (Show, Eq)
 
 validateMint :: Validator InvalidMintError Value
 validateMint = mapErr InvalidMintError'InvalidValue $ validateValue ValuePurpose'Mint
@@ -554,6 +582,7 @@ data InvalidValidRangeError
   = InvalidValidRangeError'LowerBound'InvalidPosixTime InvalidPOSIXTimeError
   | InvalidValidRangeError'UpperBound'InvalidPosixTime InvalidPOSIXTimeError
   | InvalidValidRangeError'UpperBound'CannotBeInclusive
+  deriving stock (Show, Eq)
 
 validateValidRange :: Validator InvalidValidRangeError POSIXTimeRange
 validateValidRange =
@@ -588,6 +617,7 @@ data InvalidSignatoriesError
       [PubKeyHash]
   | InvalidSignatoriesError'InvalidPubKeyHash Int InvalidPubKeyHashError
   | InvalidSignatoriesError'NoSignature
+  deriving stock (Show, Eq)
 
 validateSignatories :: Validator InvalidSignatoriesError [PubKeyHash]
 validateSignatories =
@@ -604,6 +634,7 @@ data InvalidRedeemersError
   | InvalidRedeemersError'HasDuplicateEntries
       (AssocMap.Map ScriptPurpose Redeemer)
       (AssocMap.Map ScriptPurpose Redeemer)
+  deriving stock (Show, Eq)
 
 validateRedeemers :: Validator InvalidRedeemersError (AssocMap.Map ScriptPurpose Redeemer)
 validateRedeemers =
@@ -621,6 +652,7 @@ validateRedeemers =
 
 newtype InvalidDataError
   = InvalidDataError'InvalidMap (InvalidOrderedAssocMapError DatumHash Datum InvalidDatumHashError)
+  deriving stock (Show, Eq)
 
 validateData :: Validator InvalidDataError (AssocMap.Map DatumHash Datum)
 validateData =
@@ -641,6 +673,7 @@ data InvalidTxInfoError
   | InvalidTxInfoError'BadRedeemers InvalidRedeemersError
   | InvalidTxInfoError'BadData InvalidDataError
   | InvalidTxInfoError'BadId InvalidTxIdError
+  deriving stock (Show, Eq)
 
 validateTxInfo :: Validator InvalidTxInfoError TxInfo
 validateTxInfo =
