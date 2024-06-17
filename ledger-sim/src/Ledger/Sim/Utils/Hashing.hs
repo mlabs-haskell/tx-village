@@ -1,14 +1,12 @@
 module Ledger.Sim.Utils.Hashing (hashScriptV2, hashDatum) where
 
+import Codec.Serialise (serialise)
+import Crypto.Hash (Blake2b_224 (Blake2b_224), Blake2b_256 (Blake2b_256), hashWith)
 import Data.ByteArray (convert)
 import Data.ByteString (ByteString)
 import Data.ByteString.Lazy qualified as LBS
 import Data.ByteString.Short qualified as SBS
 import Data.String (fromString)
-
-import Codec.Serialise (serialise)
-import Crypto.Hash (Blake2b_224 (Blake2b_224), Blake2b_256 (Blake2b_256), hashWith)
-
 import PlutusLedgerApi.Common qualified as Plutus
 import PlutusLedgerApi.V2 qualified as Plutus
 

@@ -48,7 +48,6 @@ import Ledger.Sim.Validation.Validator (
   contramapAndMapErrWithSubject,
   mapErr,
   mapErrWithSubject,
-  validateBool,
   validateFail,
   validateFoldable,
   validateIf,
@@ -593,8 +592,12 @@ validateValidRange =
           validateExtended
     , contramap ((\(UpperBound e c) -> (e, c)) . ivTo) $
         mconcat
-          [ contramap (not . snd) $
-              validateBool InvalidValidRangeError'UpperBound'CannotBeInclusive
+          [ validateIf
+              ( \case
+                  (Finite _, True) -> False
+                  _ -> True
+              )
+              $ const InvalidValidRangeError'UpperBound'CannotBeInclusive
           , mapErr InvalidValidRangeError'UpperBound'InvalidPosixTime $
               contramap fst validateExtended
           ]
