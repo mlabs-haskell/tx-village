@@ -14,7 +14,7 @@
 
     ## Code quality automation
     pre-commit-hooks.follows = "lbf/pre-commit-hooks";
-    hci-effects.url = "github:mlabs-haskell/hercules-ci-effects";
+    hci-effects.url = "github:hercules-ci/hercules-ci-effects";
 
     # Cardano transaction library (transaction building)
     ctl.follows = "lbf/ctl";
