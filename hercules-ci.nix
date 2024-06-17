@@ -36,6 +36,7 @@
                     {
                       src = config.packages.tx-bakery-rust-src;
                       secretName = "crates-io-token";
+                      extraPublishArgs = [ "--dry-run" ];
                     })
               );
           publish-tx-indexer =
@@ -49,6 +50,7 @@
                     {
                       src = config.packages.tx-indexer-rust-src;
                       secretName = "crates-io-token";
+                      extraPublishArgs = [ "--dry-run" ];
                     })
               );
         };
