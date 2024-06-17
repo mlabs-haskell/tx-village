@@ -99,7 +99,7 @@ tests dummyScriptHash ledgerCfg =
     ledgerCfg
     (ledgerStateWithUtxos (liftA2 M.singleton txInInfoOutRef txInInfoResolved dummyInput) ())
     "Tests"
-    [ ledgerTestCase "Simple Minting Tx" $
+    [ ledgerTestCase "Simple Minting TX" $
         ledgerSucceeds @() $ do
           let cs = Value.CurrencySymbol $ getScriptHash dummyScriptHash
               mintVal =
@@ -127,7 +127,7 @@ tests dummyScriptHash ledgerCfg =
               (AssocMap.fromList [(Minting cs, Redeemer (toBuiltinData @Integer 1234))])
               AssocMap.empty
               dummyTxId
-    , ledgerTestCase "Simple spending tx" $
+    , ledgerTestCase "Simple Spending TX" $
         ledgerSucceeds $ do
           let datum = Datum $ toBuiltinData ()
               datumHash = hashDatum . Datum $ toBuiltinData ()
@@ -179,7 +179,7 @@ tests dummyScriptHash ledgerCfg =
               (AssocMap.fromList [(Spending newUTxORef, Redeemer $ toBuiltinData ())])
               (AssocMap.fromList [(datumHash, datum)])
               dummyTxId
-    , ledgerTestCase "Invalid range"
+    , ledgerTestCase "Invalid Range"
         $ ledgerFailsBy @()
           ( \case
               LedgerSimError'SubmissionError
@@ -214,7 +214,7 @@ tests dummyScriptHash ledgerCfg =
               AssocMap.empty
               AssocMap.empty
               dummyTxId
-    , ledgerTestCase "Non existent input" $
+    , ledgerTestCase "Non-existent Input" $
         let nonexistentInputRef = TxOutRef dummyTxId' 1
          in ledgerFailsBy @()
               ( \case
@@ -259,7 +259,7 @@ tests dummyScriptHash ledgerCfg =
                 AssocMap.empty
                 AssocMap.empty
                 dummyTxId
-    , ledgerTestCase "Missing signature"
+    , ledgerTestCase "Missing Signature"
         $ ledgerFailsBy
           ( \case
               LedgerSimError'SubmissionError
@@ -332,7 +332,7 @@ tests dummyScriptHash ledgerCfg =
               AssocMap.empty
               AssocMap.empty
               dummyTxId
-    , ledgerTestCase "Unbalanced"
+    , ledgerTestCase "Unbalanced TX"
         $ ledgerFailsBy @()
           ( \case
               LedgerSimError'SubmissionError
@@ -570,7 +570,7 @@ tests dummyScriptHash ledgerCfg =
               AssocMap.empty
               (AssocMap.fromList [(datumHash, datum)])
               dummyTxId
-    , ledgerTestCase "Missing Datum in Script output"
+    , ledgerTestCase "Missing Datum In Script Output"
         $ ledgerFailsBy @()
           ( \case
               LedgerSimError'SubmissionError
@@ -607,7 +607,7 @@ tests dummyScriptHash ledgerCfg =
               AssocMap.empty
               AssocMap.empty
               dummyTxId
-    , ledgerTestCase "Not script input"
+    , ledgerTestCase "Not Script Input"
         $ ledgerFailsBy
           ( \case
               LedgerSimError'SubmissionError
@@ -675,7 +675,7 @@ tests dummyScriptHash ledgerCfg =
               (AssocMap.fromList [(Spending newUTxORef, Redeemer $ toBuiltinData ())])
               AssocMap.empty
               dummyTxId
-    , ledgerTestCase "Non normal mint"
+    , ledgerTestCase "Non-normal Mint"
         $ ledgerFailsBy @()
           ( \case
               LedgerSimError'SubmissionError
@@ -720,7 +720,7 @@ tests dummyScriptHash ledgerCfg =
               (AssocMap.fromList [(Minting cs, Redeemer (toBuiltinData @Integer 1234))])
               AssocMap.empty
               dummyTxId
-    , ledgerTestCase "Non normal output value"
+    , ledgerTestCase "Non-normal Output Value"
         $ ledgerFailsBy @()
           ( \case
               LedgerSimError'SubmissionError
@@ -768,7 +768,7 @@ tests dummyScriptHash ledgerCfg =
                 (AssocMap.fromList [(Minting cs, Redeemer (toBuiltinData @Integer 1234))])
                 AssocMap.empty
                 dummyTxId
-    , ledgerTestCase "Invalid currency symbol/token name/address" $
+    , ledgerTestCase "Invalid Currency Symbol/Token Name/Address" $
         let
           invalidCurrencySymbol = CurrencySymbol $ toBuiltin $ BS.replicate 1280 42
           invalidTokenName = TokenName $ toBuiltin $ BS.replicate 1281 42
