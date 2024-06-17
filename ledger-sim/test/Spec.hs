@@ -931,6 +931,10 @@ tests dummyScriptHash ledgerCfg =
                                       )
                                   )
                               )
+                        , InvalidTxInfoError'Stateful
+                            ( Stateful.InvalidTxInfoError'InvalidRedeemers
+                                (Stateful.InvalidRedeemers'ScriptRequiredForEvaluationNotAvailable _)
+                              )
                         ]
                     ) -> True
                 _ -> False

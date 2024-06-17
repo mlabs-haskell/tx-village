@@ -3,33 +3,41 @@ module Ledger.Sim.Validation.Stateful (
   InvalidInputsError (..),
   InvalidReferenceInputsError (..),
   InvalidValidRangeError (..),
+  InvalidRedeemersError (..),
   InvalidTxInfoError (..),
   validateTxInfo,
 ) where
 
 import Data.Functor.Contravariant (Contravariant (contramap))
 import Data.Map qualified as M
+import Data.Maybe (mapMaybe)
 import Ledger.Sim.Types.Config (LedgerConfig (lc'scriptStorage))
 import Ledger.Sim.Types.State (LedgerState (ls'currentTime, ls'utxos))
 import Ledger.Sim.Validation.Validator (
   Validator,
   contramapAndMapErr,
+  validateFoldable,
   validateIf,
   validateListAndAnnotateErrWithIdx,
   validateOptional,
  )
 import PlutusLedgerApi.V1.Interval qualified as IV
+import PlutusLedgerApi.V1.Value qualified as Value
 import PlutusLedgerApi.V2 (
+  Address (addressCredential),
+  Credential (ScriptCredential),
+  CurrencySymbol (unCurrencySymbol),
   POSIXTime,
   POSIXTimeRange,
-  ScriptHash,
+  ScriptHash (ScriptHash),
   TxInInfo (
     txInInfoOutRef,
     txInInfoResolved
   ),
-  TxInfo (txInfoInputs, txInfoReferenceInputs, txInfoValidRange),
-  TxOut (txOutReferenceScript),
+  TxInfo (txInfoInputs, txInfoMint, txInfoReferenceInputs, txInfoValidRange),
+  TxOut (txOutAddress, txOutReferenceScript),
   TxOutRef,
+  Value,
  )
 
 --------------------------------------------------------------------------------
@@ -88,10 +96,42 @@ validateValidRange state =
 
 --------------------------------------------------------------------------------
 
+newtype InvalidRedeemersError = InvalidRedeemers'ScriptRequiredForEvaluationNotAvailable ScriptHash
+  deriving stock (Show, Eq)
+
+validateRedeemers :: LedgerConfig ctx -> Validator InvalidRedeemersError ([TxInInfo], Value)
+validateRedeemers config =
+  contramap
+    ( \(inputs, mintValue) ->
+        let
+          validatorHashes =
+            mapMaybe
+              ( \txInInfo ->
+                  let txOut = txInInfoResolved txInInfo
+                   in case addressCredential $ txOutAddress txOut of
+                        ScriptCredential sh -> Just sh
+                        _ -> Nothing
+              )
+              inputs
+          mintingPolicyHashes =
+            fmap (ScriptHash . unCurrencySymbol) $
+              filter (/= Value.adaSymbol) $
+                Value.symbols mintValue
+         in
+          validatorHashes <> mintingPolicyHashes
+    )
+    $ validateFoldable
+    $ validateIf
+      (`M.member` lc'scriptStorage config)
+      InvalidRedeemers'ScriptRequiredForEvaluationNotAvailable
+
+--------------------------------------------------------------------------------
+
 data InvalidTxInfoError
   = InvalidTxInfoError'InvalidInputs InvalidInputsError
   | InvalidTxInfoError'InvalidReferenceInputs InvalidReferenceInputsError
   | InvalidTxInfoError'InvalidValidRange InvalidValidRangeError
+  | InvalidTxInfoError'InvalidRedeemers InvalidRedeemersError
   deriving stock (Show, Eq)
 
 validateTxInfo :: LedgerConfig cfg -> LedgerState st -> Validator InvalidTxInfoError TxInfo
@@ -100,4 +140,5 @@ validateTxInfo config state =
     [ contramapAndMapErr txInfoInputs InvalidTxInfoError'InvalidInputs $ validateInputs config state
     , contramapAndMapErr txInfoReferenceInputs InvalidTxInfoError'InvalidReferenceInputs $ validateReferenceInputs state
     , contramapAndMapErr txInfoValidRange InvalidTxInfoError'InvalidValidRange $ validateValidRange state
+    , contramapAndMapErr (liftA2 (,) txInfoInputs txInfoMint) InvalidTxInfoError'InvalidRedeemers $ validateRedeemers config
     ]
