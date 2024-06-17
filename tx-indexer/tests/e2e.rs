@@ -36,8 +36,10 @@ mod e2e_tests {
         },
         TxIndexer,
     };
+    use serial_test::serial;
 
     #[tokio::test]
+    #[serial]
     async fn e2e_mint() -> std::result::Result<(), oura::Error> {
         // Set up tracing logger (logs to stdout).
         let collector = tracing_subscriber::fmt()
