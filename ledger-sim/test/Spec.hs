@@ -10,6 +10,7 @@ import Data.Bifunctor (first)
 import Data.Binary qualified as B
 import Data.ByteArray qualified as BA
 import Data.ByteString (ByteString)
+import Data.ByteString qualified as BS
 import Data.ByteString.Base16 qualified as Base16
 import Data.ByteString.Char8 qualified as BS8
 import Data.ByteString.Lazy qualified as LBS
@@ -60,17 +61,19 @@ import PlutusLedgerApi.V1.Value qualified as Value
 import PlutusLedgerApi.V2 (
   Address (Address),
   BuiltinByteString,
-  Credential (PubKeyCredential),
+  Credential (PubKeyCredential, ScriptCredential),
   CurrencySymbol (CurrencySymbol),
   Datum (Datum),
-  OutputDatum (NoOutputDatum, OutputDatumHash),
+  OutputDatum (NoOutputDatum, OutputDatum, OutputDatumHash),
   POSIXTime,
   POSIXTimeRange,
   PubKeyHash (PubKeyHash),
   Redeemer (Redeemer),
-  ScriptHash (getScriptHash),
+  ScriptHash (ScriptHash, getScriptHash),
   ScriptPurpose (Minting, Spending),
+  StakingCredential (StakingHash),
   ToData (toBuiltinData),
+  TokenName (TokenName),
   TxId (TxId),
   TxInInfo (TxInInfo, txInInfoOutRef, txInInfoResolved),
   TxInfo (TxInfo),
@@ -738,32 +741,218 @@ tests dummyScriptHash ledgerCfg =
                   ) -> True
               _ -> False
           )
-        $ do
-          let
+        $ let
             cs = Value.CurrencySymbol $ getScriptHash dummyScriptHash
             mintVal =
               Value.assetClassValue
                 (Value.AssetClass (cs, fromString "A"))
                 1
-          currentTime <- getCurrentSlot
-          void . submitTx $
-            TxInfo
+           in
+            void . submitTx $
+              TxInfo
+                [dummyInput]
+                mempty
+                [ TxOut
+                    { txOutValue = mintVal
+                    , txOutReferenceScript = Nothing
+                    , txOutDatum = NoOutputDatum
+                    , txOutAddress = ownAddress
+                    }
+                ]
+                (Value.lovelaceValue 0)
+                (Value.lovelaceValue 0 <> mintVal)
+                mempty
+                AssocMap.empty
+                IV.always
+                [ownPubKeyHash]
+                (AssocMap.fromList [(Minting cs, Redeemer (toBuiltinData @Integer 1234))])
+                AssocMap.empty
+                dummyTxId
+    , ledgerTestCase "Invalid currency symbol/token name/address" $
+        let
+          invalidCurrencySymbol = CurrencySymbol $ toBuiltin $ BS.replicate 1280 42
+          invalidTokenName = TokenName $ toBuiltin $ BS.replicate 1281 42
+          invalidPubKeyHash = PubKeyHash $ toBuiltin $ BS.replicate 1282 42
+          invalidScriptHash = ScriptHash $ toBuiltin $ BS.replicate 1283 42
+          invalidAddress =
+            Address
+              (PubKeyCredential invalidPubKeyHash)
+              (Just $ StakingHash $ ScriptCredential invalidScriptHash)
+          mintValue =
+            Value.assetClassValue
+              (Value.AssetClass (invalidCurrencySymbol, invalidTokenName))
+              1
+          outputValue = Value.lovelaceValue 0 <> mintValue
+         in
+          ledgerFailsBy @()
+            ( \case
+                LedgerSimError'SubmissionError
+                  ( SubmissionError'ValidationFailure
+                      [ InvalidTxInfoError'Normality
+                          ( Normality.InvalidTxInfoError'InvalidOutputs
+                              ( Normality.InvalidOutputsError'InvalidTxOut
+                                  0
+                                  ( Normality.InvalidTxOutError'InvalidAddress
+                                      ( Normality.InvalidAddressError'InvalidCredential
+                                          ( Normality.InvalidCredentialError'InvalidPubKeyCredential
+                                              ( Normality.InvalidPubKeyHashError'UnexpectedLength
+                                                  _
+                                                  (Normality.InvalidLedgerBytesError'UnexpectedLength 28 1282)
+                                                )
+                                            )
+                                        )
+                                    )
+                                )
+                            )
+                        , InvalidTxInfoError'Normality
+                            ( Normality.InvalidTxInfoError'InvalidOutputs
+                                ( Normality.InvalidOutputsError'InvalidTxOut
+                                    0
+                                    ( Normality.InvalidTxOutError'InvalidAddress
+                                        ( Normality.InvalidAddressError'InvalidStakingCredential
+                                            ( Normality.InvalidStakingCredentialError'InvalidCredential
+                                                ( Normality.InvalidCredentialError'InvalidScriptCredential
+                                                    ( Normality.InvalidScriptHashError'UnexpectedLength
+                                                        _
+                                                        (Normality.InvalidLedgerBytesError'UnexpectedLength 28 1283)
+                                                      )
+                                                  )
+                                              )
+                                          )
+                                      )
+                                  )
+                              )
+                        , InvalidTxInfoError'Normality
+                            ( Normality.InvalidTxInfoError'InvalidOutputs
+                                ( Normality.InvalidOutputsError'InvalidTxOut
+                                    0
+                                    ( Normality.InvalidTxOutError'InvalidValue
+                                        ( Normality.InvalidValue
+                                            _
+                                            ( Normality.InvalidValueKind'InvalidMap
+                                                ( Normality.InvalidOrderedAssocMapError'InvalidKeyValuePair
+                                                    _
+                                                    _
+                                                    ( Normality.InvalidAssetError'InvalidCurrencySymbol
+                                                        ( Normality.InvalidCurrencySymbolError'UnexpectedLength
+                                                            _
+                                                            (Normality.InvalidLedgerBytesError'UnexpectedLength 28 1280)
+                                                          )
+                                                      )
+                                                  )
+                                              )
+                                          )
+                                      )
+                                  )
+                              )
+                        , InvalidTxInfoError'Normality
+                            ( Normality.InvalidTxInfoError'InvalidOutputs
+                                ( Normality.InvalidOutputsError'InvalidTxOut
+                                    0
+                                    ( Normality.InvalidTxOutError'InvalidValue
+                                        ( Normality.InvalidValue
+                                            _
+                                            ( Normality.InvalidValueKind'InvalidMap
+                                                ( Normality.InvalidOrderedAssocMapError'InvalidKeyValuePair
+                                                    _
+                                                    _
+                                                    ( Normality.InvalidAssetError'InvalidNativeToken
+                                                        ( Normality.InvalidOrderedAssocMapError'InvalidKeyValuePair
+                                                            _
+                                                            1
+                                                            ( Normality.InvalidNativeTokenError'InvalidTokenName
+                                                                ( Normality.InvalidTokenNameError'TooLong
+                                                                    _
+                                                                    (Normality.InvalidLedgerBytesError'TooLong 32 1281)
+                                                                  )
+                                                              )
+                                                          )
+                                                      )
+                                                  )
+                                              )
+                                          )
+                                      )
+                                  )
+                              )
+                        , InvalidTxInfoError'Normality
+                            ( Normality.InvalidTxInfoError'InvalidMint
+                                ( Normality.InvalidMintError'InvalidValue
+                                    ( Normality.InvalidValue
+                                        _
+                                        ( Normality.InvalidValueKind'InvalidMap
+                                            ( Normality.InvalidOrderedAssocMapError'InvalidKeyValuePair
+                                                _
+                                                _
+                                                ( Normality.InvalidAssetError'InvalidCurrencySymbol
+                                                    ( Normality.InvalidCurrencySymbolError'UnexpectedLength
+                                                        _
+                                                        (Normality.InvalidLedgerBytesError'UnexpectedLength 28 1280)
+                                                      )
+                                                  )
+                                              )
+                                          )
+                                      )
+                                  )
+                              )
+                        , InvalidTxInfoError'Normality
+                            ( Normality.InvalidTxInfoError'InvalidMint
+                                ( Normality.InvalidMintError'InvalidValue
+                                    ( Normality.InvalidValue
+                                        _
+                                        ( Normality.InvalidValueKind'InvalidMap
+                                            ( Normality.InvalidOrderedAssocMapError'InvalidKeyValuePair
+                                                _
+                                                _
+                                                ( Normality.InvalidAssetError'InvalidNativeToken
+                                                    ( Normality.InvalidOrderedAssocMapError'InvalidKeyValuePair
+                                                        _
+                                                        1
+                                                        ( Normality.InvalidNativeTokenError'InvalidTokenName
+                                                            ( Normality.InvalidTokenNameError'TooLong
+                                                                _
+                                                                (Normality.InvalidLedgerBytesError'TooLong 32 1281)
+                                                              )
+                                                          )
+                                                      )
+                                                  )
+                                              )
+                                          )
+                                      )
+                                  )
+                              )
+                        , InvalidTxInfoError'Normality
+                            ( Normality.InvalidTxInfoError'InvalidRedeemers
+                                ( Normality.InvalidRedeemersError'InvalidScriptPurpose
+                                    ( Normality.InvalidScriptPurposeError'Minting
+                                        ( Normality.InvalidCurrencySymbolError'UnexpectedLength
+                                            _
+                                            (Normality.InvalidLedgerBytesError'UnexpectedLength 28 1280)
+                                          )
+                                      )
+                                  )
+                              )
+                        ]
+                    ) -> True
+                _ -> False
+            )
+            $ void . submitTx
+            $ TxInfo
               [dummyInput]
               mempty
               [ TxOut
-                  { txOutValue = mintVal
+                  { txOutValue = outputValue
                   , txOutReferenceScript = Nothing
-                  , txOutDatum = NoOutputDatum
-                  , txOutAddress = ownAddress
+                  , txOutDatum = OutputDatum $ Datum $ toBuiltinData ()
+                  , txOutAddress = invalidAddress
                   }
               ]
               (Value.lovelaceValue 0)
-              (Value.lovelaceValue 0 <> mintVal)
+              (Value.lovelaceValue 0 <> mintValue)
               mempty
               AssocMap.empty
-              (intervalValidRange currentTime (currentTime + 1))
+              IV.always
               [ownPubKeyHash]
-              (AssocMap.fromList [(Minting cs, Redeemer (toBuiltinData @Integer 1234))])
+              (AssocMap.fromList [(Minting invalidCurrencySymbol, Redeemer (toBuiltinData @Integer 1234))])
               AssocMap.empty
               dummyTxId
     ]
