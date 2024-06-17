@@ -4,7 +4,6 @@ version = "0.1.0"
 edition = "2021"
 
 [dependencies]
-lbf-prelude = { path = ".extras/lbf-prelude-0.1.0" }
 cardano-serialization-lib = "11.5.0"
 plutus-ledger-api = { path = ".extras/plutus-ledger-api-0.1.0", features = [
   "lbf",
@@ -34,7 +33,7 @@ anyhow = { version = "1.0.79", features = ["backtrace"] }
 thiserror = "1.0.57"
 chrono = "0.4.35"
 futures = "0.3.30"
-nix = { version = "0.28.0", features = [ "signal" ] }
+nix = { version = "0.28.0", features = ["signal"] }
 num-traits = "0.2.18"
 assertables = "7.0.1"
 hex = "0.4.3"
@@ -46,3 +45,4 @@ serial_test = "3.0.0"
 lbf-tx-bakery-tests-config-api = { path = ".extras/lbf-tx-bakery-tests-config-api-0.1.0" }
 lbf-tx-bakery-tests-plutus-api = { path = ".extras/lbf-tx-bakery-tests-plutus-api-0.1.0" }
 lbr-prelude = { path = ".extras/lbr-prelude-0.1.0", features = ["derive"] }
+lbf-prelude = { path = ".extras/lbf-prelude-0.1.0" }
