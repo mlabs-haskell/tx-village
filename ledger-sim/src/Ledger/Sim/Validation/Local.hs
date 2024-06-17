@@ -136,9 +136,9 @@ validateOutputs =
 --------------------------------------------------------------------------------
 
 data InvalidRedeemersError
-  = BadRedeemers'ValidatorNotRun ScriptHash TxOutRef
-  | BadRedeemers'MintingPolicyNotRan CurrencySymbol
-  | BadRedeemers'UnexpectedExcessEntries [ScriptPurpose]
+  = InvalidRedeemers'ValidatorNotRun ScriptHash TxOutRef
+  | InvalidRedeemers'MintingPolicyNotRan CurrencySymbol
+  | InvalidRedeemers'UnexpectedExcessEntries [ScriptPurpose]
   deriving stock (Show, Eq)
 
 validateRedeemers ::
@@ -175,12 +175,12 @@ validateRedeemers txInfo = validateWith $ \redeemers ->
             validateFoldable $
               validateIf
                 (isPurposeInMap . Spending . snd)
-                (uncurry BadRedeemers'ValidatorNotRun)
+                (uncurry InvalidRedeemers'ValidatorNotRun)
         , contramap (const mintingPoliciesToRun) $
             validateFoldable $
-              validateIf (isPurposeInMap . Minting) BadRedeemers'MintingPolicyNotRan
+              validateIf (isPurposeInMap . Minting) InvalidRedeemers'MintingPolicyNotRan
         , contramap (const excessEntries) $
-            validateIf null BadRedeemers'UnexpectedExcessEntries
+            validateIf null InvalidRedeemers'UnexpectedExcessEntries
         ]
 
 --------------------------------------------------------------------------------
