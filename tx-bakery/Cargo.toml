@@ -2,10 +2,13 @@
 name = "tx-bakery"
 version = "0.1.0"
 edition = "2021"
+license = "Apache-2.0"
+description = "Cardano transaction builder"
+repository = "https://github.com/mlabs-haskell/tx-village"
 
 [dependencies]
 cardano-serialization-lib = "11.5.0"
-plutus-ledger-api = { path = ".extras/plutus-ledger-api-0.1.0", features = [
+plutus-ledger-api = { version = "0.2.0", path = ".extras/plutus-ledger-api-0.1.0", features = [
   "lbf",
   "chrono",
 ] }

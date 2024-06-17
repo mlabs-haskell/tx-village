@@ -2,6 +2,9 @@
 name = "tx-indexer"
 version = "0.1.0"
 edition = "2021"
+license = "Apache-2.0"
+description = "Cardano transaction indexer"
+repository = "https://github.com/mlabs-haskell/tx-village"
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
@@ -40,8 +43,8 @@ tracing-subscriber = "0.3"
 strum = "0.24"
 strum_macros = "0.24"
 frunk = "0.4.2"
-tx-bakery = { path = ".extras/tx-bakery-0.1.0" }
-plutus-ledger-api = { path = ".extras/plutus-ledger-api-0.1.0", features = [
+tx-bakery = { version = "0.1.0", path = ".extras/tx-bakery-0.1.0" }
+plutus-ledger-api = { version = "0.2.0", path = ".extras/plutus-ledger-api-0.1.0", features = [
   "chrono",
 ] }
 chrono = "0.4.38"
