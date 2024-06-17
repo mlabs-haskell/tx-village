@@ -311,15 +311,15 @@ validateStakingCredential =
 --------------------------------------------------------------------------------
 
 data InvalidAddressError
-  = InvalidAddressError'BadCredential InvalidCredentialError
-  | InvalidAddressError'BadStakingCredential InvalidStakingCredentialError
+  = InvalidAddressError'InvalidCredential InvalidCredentialError
+  | InvalidAddressError'InvalidStakingCredential InvalidStakingCredentialError
   deriving stock (Show, Eq)
 
 validateAddress :: Validator InvalidAddressError Address
 validateAddress =
   mconcat
-    [ contramapAndMapErr addressCredential InvalidAddressError'BadCredential validateCredential
-    , contramapAndMapErr addressStakingCredential InvalidAddressError'BadStakingCredential $
+    [ contramapAndMapErr addressCredential InvalidAddressError'InvalidCredential validateCredential
+    , contramapAndMapErr addressStakingCredential InvalidAddressError'InvalidStakingCredential $
         validateOptional validateStakingCredential
     ]
 
@@ -347,7 +347,7 @@ validateOrderedAssocMap validateEach =
 
 --------------------------------------------------------------------------------
 
-data InvalidValueError = BadValue Value InvalidValueKind
+data InvalidValueError = InvalidValue Value InvalidValueKind
   deriving stock (Show, Eq)
 
 data InvalidValueKind
@@ -389,7 +389,7 @@ validateValue ::
   ValuePurpose ->
   Validator InvalidValueError Value
 validateValue purpose =
-  mapErrWithSubject BadValue $
+  mapErrWithSubject InvalidValue $
     contramap getValue $
       mconcat
         [ mapErr InvalidValueKind'InvalidMap $
@@ -663,29 +663,29 @@ validateData =
 --------------------------------------------------------------------------------
 
 data InvalidTxInfoError
-  = InvalidTxInfoError'BadInputs InvalidInputsError
-  | InvalidTxInfoError'BadReferenceInputs InvalidReferenceInputsError
-  | InvalidTxInfoError'BadOutputs InvalidOutputsError
-  | InvalidTxInfoError'BadFee InvalidFeeError
-  | InvalidTxInfoError'BadMint InvalidMintError
-  | InvalidTxInfoError'BadValidRange InvalidValidRangeError
-  | InvalidTxInfoError'BadSignatories InvalidSignatoriesError
-  | InvalidTxInfoError'BadRedeemers InvalidRedeemersError
-  | InvalidTxInfoError'BadData InvalidDataError
-  | InvalidTxInfoError'BadId InvalidTxIdError
+  = InvalidTxInfoError'InvalidInputs InvalidInputsError
+  | InvalidTxInfoError'InvalidReferenceInputs InvalidReferenceInputsError
+  | InvalidTxInfoError'InvalidOutputs InvalidOutputsError
+  | InvalidTxInfoError'InvalidFee InvalidFeeError
+  | InvalidTxInfoError'InvalidMint InvalidMintError
+  | InvalidTxInfoError'InvalidValidRange InvalidValidRangeError
+  | InvalidTxInfoError'InvalidSignatories InvalidSignatoriesError
+  | InvalidTxInfoError'InvalidRedeemers InvalidRedeemersError
+  | InvalidTxInfoError'InvalidData InvalidDataError
+  | InvalidTxInfoError'InvalidId InvalidTxIdError
   deriving stock (Show, Eq)
 
 validateTxInfo :: Validator InvalidTxInfoError TxInfo
 validateTxInfo =
   mconcat
-    [ contramapAndMapErr txInfoInputs InvalidTxInfoError'BadInputs validateInputs
-    , contramapAndMapErr txInfoReferenceInputs InvalidTxInfoError'BadReferenceInputs validateReferenceInputs
-    , contramapAndMapErr txInfoOutputs InvalidTxInfoError'BadOutputs validateOutputs
-    , contramapAndMapErr txInfoFee InvalidTxInfoError'BadFee validateFee
-    , contramapAndMapErr txInfoMint InvalidTxInfoError'BadMint validateMint
-    , contramapAndMapErr txInfoSignatories InvalidTxInfoError'BadSignatories validateSignatories
-    , contramapAndMapErr txInfoValidRange InvalidTxInfoError'BadValidRange validateValidRange
-    , contramapAndMapErr txInfoRedeemers InvalidTxInfoError'BadRedeemers validateRedeemers
-    , contramapAndMapErr txInfoData InvalidTxInfoError'BadData validateData
-    , contramapAndMapErr txInfoId InvalidTxInfoError'BadId validateTxId
+    [ contramapAndMapErr txInfoInputs InvalidTxInfoError'InvalidInputs validateInputs
+    , contramapAndMapErr txInfoReferenceInputs InvalidTxInfoError'InvalidReferenceInputs validateReferenceInputs
+    , contramapAndMapErr txInfoOutputs InvalidTxInfoError'InvalidOutputs validateOutputs
+    , contramapAndMapErr txInfoFee InvalidTxInfoError'InvalidFee validateFee
+    , contramapAndMapErr txInfoMint InvalidTxInfoError'InvalidMint validateMint
+    , contramapAndMapErr txInfoSignatories InvalidTxInfoError'InvalidSignatories validateSignatories
+    , contramapAndMapErr txInfoValidRange InvalidTxInfoError'InvalidValidRange validateValidRange
+    , contramapAndMapErr txInfoRedeemers InvalidTxInfoError'InvalidRedeemers validateRedeemers
+    , contramapAndMapErr txInfoData InvalidTxInfoError'InvalidData validateData
+    , contramapAndMapErr txInfoId InvalidTxInfoError'InvalidId validateTxId
     ]

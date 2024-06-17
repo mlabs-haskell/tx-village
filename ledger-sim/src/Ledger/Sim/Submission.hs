@@ -78,6 +78,12 @@ data SubmissionEnv ctx = SubmissionEnv
 type Submission ctx st e =
   ReaderT (SubmissionEnv ctx) (StateT (LedgerState st) (Except SubmissionError))
 
+asksTxInfo :: (TxInfo -> a) -> Submission ctx st e a
+asksTxInfo f = asks $ f . submissionEnv'txInfo
+
+asksConfig :: (LedgerConfig ctx -> a) -> Submission ctx st e a
+asksConfig f = asks $ f . submissionEnv'config
+
 submit :: Submission ctx st e [EvaluationResult]
 submit = do
   validate
@@ -99,7 +105,7 @@ validate = do
 
 evaluate :: Submission ctx st e [EvaluationResult]
 evaluate = do
-  redeemers <- asks $ AssocMap.toList . txInfoRedeemers . submissionEnv'txInfo
+  redeemers <- asksTxInfo $ AssocMap.toList . txInfoRedeemers
   evaluationResults <- execWriterT $ traverse (uncurry evaluateRedeemer) redeemers
 
   case filter (isEvaluationFailure . evaluationResult'outcome) evaluationResults of
@@ -133,7 +139,7 @@ mustResolveMintingPolicy cs = mustFindScriptByHash $ ScriptHash $ unCurrencySymb
 
 mustResolveValidatorAndDatum :: TxOutRef -> Submission ctx st e (ScriptForEvaluation, Datum)
 mustResolveValidatorAndDatum txOutRef = do
-  inputs <- asks $ txInfoInputs . submissionEnv'txInfo
+  inputs <- asksTxInfo txInfoInputs
 
   txOut <- case L.find ((== txOutRef) . txInInfoOutRef) inputs of
     Just i -> pure $ txInInfoResolved i
@@ -154,7 +160,7 @@ mustResolveValidatorAndDatum txOutRef = do
 
 mustFindDatumByHash :: DatumHash -> Submission ctx st e Datum
 mustFindDatumByHash h = do
-  dat <- asks $ txInfoData . submissionEnv'txInfo
+  dat <- asksTxInfo txInfoData
 
   case AssocMap.lookup h dat of
     Just d -> pure d
@@ -181,7 +187,7 @@ evaluatePlutusScript ::
   Submission ctx st e EvaluationResult
 evaluatePlutusScript datum purpose redeemer script = do
   txInfo <- asks submissionEnv'txInfo
-  evalCtx <- asks $ lc'evaluationContext . submissionEnv'config
+  evalCtx <- asksConfig lc'evaluationContext
 
   let args =
         catMaybes

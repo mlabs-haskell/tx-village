@@ -117,9 +117,10 @@ data InvalidOutputError = InvalidOutputError'ScriptOutputNoDatum
 validateOutput :: TxInfo -> Validator InvalidOutputError TxOut
 validateOutput _ =
   validateIf
-    ( txOutDatum >>> \case
-        NoOutputDatum -> False
-        _ -> True
+    ( \txOut ->
+        case (addressCredential $ txOutAddress txOut, txOutDatum txOut) of
+          (ScriptCredential _, NoOutputDatum) -> False
+          _ -> True
     )
     $ const InvalidOutputError'ScriptOutputNoDatum
 

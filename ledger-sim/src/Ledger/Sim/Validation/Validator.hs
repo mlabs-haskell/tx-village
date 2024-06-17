@@ -27,7 +27,7 @@ import Data.List qualified as L
 import Data.Void (absurd)
 
 data Validity err = Valid | Invalid [err]
-  deriving stock (Eq, Functor)
+  deriving stock (Eq, Functor, Show)
 
 instance Semigroup (Validity err) where
   Valid <> Valid = Valid
@@ -117,7 +117,7 @@ mapErr ::
   (err1 -> err2) ->
   Validator err1 a ->
   Validator err2 a
-mapErr = mapErrWithSubject . const
+mapErr f v = Validator $ fmap f . runValidator v
 
 mapErrWithSubject ::
   (a -> err1 -> err2) ->

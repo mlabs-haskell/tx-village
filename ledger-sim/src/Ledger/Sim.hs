@@ -94,6 +94,7 @@ submitTx txInfo = do
       mapReaderT
         (mapStateT (withExcept LedgerSimError'SubmissionError))
         Submission.submit
+
   pure $ txInfoId txInfo
 
 getCurrentSlot :: LedgerSim ctx st e POSIXTime
