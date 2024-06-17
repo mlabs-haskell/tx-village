@@ -1,7 +1,5 @@
 #[cfg(test)]
 mod e2e_tests {
-    use std::{collections::BTreeMap, sync::mpsc};
-
     use num_bigint::BigInt;
     use plutus_ledger_api::{
         json::Json,
@@ -14,7 +12,7 @@ mod e2e_tests {
             value::{AssetClass, CurrencySymbol, TokenName, Value},
         },
     };
-    use sqlx::PgConnection;
+    use std::{collections::BTreeMap, sync::mpsc};
     use tracing::Level;
     use tx_bakery::{
         chain_query::ChainQuery,
@@ -28,13 +26,15 @@ mod e2e_tests {
         wallet::Wallet,
         ChangeStrategy, CollateralStrategy, TxBakery, TxWithCtx,
     };
-    use tx_indexer::indexer::{
-        callback::Handler,
-        config::IndexerConfig,
+    use tx_indexer::{
+        config::{NetworkConfig, NetworkName, NodeAddress, TxIndexerConfig},
         error::{ErrorPolicy, ErrorPolicyProvider},
         filter::Filter,
-        run_indexer,
-        types::{ChainEvent, ChainEventTime, NetworkName, NodeAddress, TransactionEventRecord},
+        handler::{
+            callback::EventHandler,
+            chain_event::{ChainEvent, TransactionEventRecord},
+        },
+        TxIndexer,
     };
 
     #[tokio::test]
@@ -63,7 +63,7 @@ mod e2e_tests {
         let ogmios = Ogmios::start(&ogmios_config).await.unwrap();
 
         let (observer_channel, rx) = mpsc::channel();
-        run_indexer(IndexerConfig::new(
+        TxIndexer::run(TxIndexerConfig::new(
             ObserveHandler { observer_channel },
             NodeAddress::UnixSocket(
                 plutip
@@ -72,7 +72,7 @@ mod e2e_tests {
                     .into_string()
                     .unwrap(),
             ),
-            NetworkName::MAINNET,
+            NetworkConfig::WellKnown(NetworkName::MAINNET),
             None,
             4,
             Filter {
@@ -82,7 +82,6 @@ mod e2e_tests {
                 .unwrap()],
             },
             Default::default(),
-            "postgresql://postgres@localhost:5555/txvillage".to_string(),
         ))
         .await
         .expect("Failed to spawn indexer");
@@ -114,26 +113,20 @@ mod e2e_tests {
         // Therefore, left: expected, right: actual
         assert_eq_vec_loose(
             &expected_info.outputs,
-            // We need to ignore ada since it doesn't appear in expected tx info but does in the actual transaction.
+            // We need to ignore ada since it doesn't appear in expected tx info but
+            // does in the actual transaction.
             &actual_tx
                 .outputs
-                .into_iter()
-                .map(
-                    |TransactionOutput {
-                         address,
-                         datum,
-                         reference_script,
-                         value,
-                     }| TransactionOutput {
-                        address,
-                        datum,
-                        reference_script,
-                        // Remove ada.
-                        value: value
-                            .filter(|cs, _, _| *cs != CurrencySymbol::Ada)
-                            .normalize(),
-                    },
-                )
+                .iter()
+                .map(|TxInInfo { output, .. }| {
+                    let mut output = output.clone();
+                    output.value = output
+                        .value
+                        .filter(|cs, _, _| *cs != CurrencySymbol::Ada)
+                        .normalize();
+
+                    output
+                })
                 .collect(),
         );
         assert_eq!(expected_info.mint, actual_tx.mint);
@@ -242,17 +235,14 @@ mod e2e_tests {
         observer_channel: mpsc::Sender<TransactionEventRecord>,
     }
 
-    impl Handler for ObserveHandler {
+    impl EventHandler for ObserveHandler {
         type Error = ObserveHandlerError;
 
-        async fn handle<'a>(
-            &self,
-            _: ChainEventTime,
-            ev: ChainEvent,
-            _pg_connection: &'a mut PgConnection,
-        ) -> Result<(), Self::Error> {
+        async fn handle(&self, ev: ChainEvent) -> Result<(), Self::Error> {
             match ev {
-                ChainEvent::TransactionEvent(dat) => self.observer_channel.send(dat).unwrap(),
+                ChainEvent::TransactionEvent { transaction, .. } => {
+                    self.observer_channel.send(transaction).unwrap()
+                }
                 _ => (),
             };
             Ok(())
