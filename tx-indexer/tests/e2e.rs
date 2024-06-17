@@ -239,13 +239,12 @@ mod e2e_tests {
         type Error = ObserveHandlerError;
 
         async fn handle(&self, ev: ChainEvent) -> Result<(), Self::Error> {
-            match ev {
-                ChainEvent::TransactionEvent { transaction, .. } => {
-                    self.observer_channel.send(transaction).unwrap()
-                }
-                _ => (),
-            };
-            Ok(())
+            if let ChainEvent::TransactionEvent { transaction, .. } = ev {
+                self.observer_channel.send(transaction).unwrap();
+                Ok(())
+            } else {
+                Ok(())
+            }
         }
     }
 }
