@@ -1,4 +1,4 @@
-{ inputs, ... }: {
+{ inputs, withSystem, ... }: {
   imports = [
     inputs.hci-effects.flakeModule # Adds hercules-ci and herculesCI options
   ];
@@ -17,5 +17,43 @@
     };
   };
 
-  herculesCI.ciSystems = [ "x86_64-linux" "x86_64-darwin" ];
+  herculesCI = herculesArgs: {
+    onPush.default = {
+      outputs.effects =
+        let
+          inherit (herculesArgs.config.repo) tag;
+          tagRegEx = "v([0-9])+(\.[0-9]+)*(-[a-zA-Z]+)*";
+        in
+        {
+          publish-tx-bakery =
+            withSystem "x86_64-linux"
+
+              ({ hci-effects, config, ... }:
+
+                hci-effects.runIf
+                  (tag != null && (builtins.match tagRegEx tag) != null)
+                  (hci-effects.cargoPublish
+                    {
+                      src = config.packages.tx-bakery-rust-src;
+                      secretName = "crates-io-token";
+                    })
+              );
+          publish-tx-indexer =
+            withSystem "x86_64-linux"
+
+              ({ hci-effects, config, ... }:
+
+                hci-effects.runIf
+                  (tag != null && (builtins.match tagRegEx tag) != null)
+                  (hci-effects.cargoPublish
+                    {
+                      src = config.packages.tx-indexer-rust-src;
+                      secretName = "crates-io-token";
+                    })
+              );
+        };
+    };
+
+    ciSystems = [ "x86_64-linux" "x86_64-darwin" ];
+  };
 }
