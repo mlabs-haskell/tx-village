@@ -1,12 +1,10 @@
+use super::errors::TransactionDbError;
 use sqlx::{
     types::chrono::{DateTime, Utc},
     FromRow, PgConnection, PgExecutor, Postgres,
 };
-use tracing::{event, span, Instrument, Level};
-
 use strum_macros::Display;
-
-use super::errors::TransactionDbError;
+use tracing::{event, span, Instrument, Level};
 
 #[derive(Debug, FromRow, PartialEq, Eq)]
 pub struct TransactionDbModel {

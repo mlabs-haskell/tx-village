@@ -3,7 +3,8 @@ use oura::filters::selection::{Config, Predicate};
 use plutus_ledger_api::v2::{script::MintingPolicyHash, value::CurrencySymbol};
 use tx_bakery::utils::pla_to_csl::TryFromPLAWithDef;
 
-/// Interesting transaction components to look for when filtering transactions relevant to the protocol.
+/// Interesting transaction components to look for when filtering transactions
+/// relevant to the protocol.
 /// Set curr_symbols to empty vectors to handle any transaction event indiscriminately.
 pub struct Filter {
     pub curr_symbols: Vec<CurrencySymbol>,

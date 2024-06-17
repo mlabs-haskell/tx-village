@@ -1,20 +1,14 @@
 use anyhow::Result;
-use aux::ParseCurrencySymbol;
 use clap::Parser;
 use std::{default::Default, fmt::Debug};
-use thiserror::Error;
 use tracing::Level;
-use tx_indexer::indexer::{
-    callback::Handler,
-    config::IndexerConfig,
-    error::{ErrorPolicy, ErrorPolicyProvider},
+use tx_indexer::{
+    aux::ParseCurrencySymbol,
+    config::{NetworkConfig, NetworkName, NodeAddress, TxIndexerConfig},
     filter::Filter,
-    run_indexer,
-    types::{ChainEvent, NetworkConfig, NetworkName, NodeAddress},
+    handler::example::dummy::DummyHandler,
+    TxIndexer,
 };
-
-mod aux;
-mod handler;
 
 #[derive(Debug, Parser)]
 struct IndexStartArgs {
@@ -110,46 +104,29 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
                 since_block_hash,
                 curr_symbols,
             }) => {
-                let indexer = match (network, network_magic) {
-                    (_, Some(x)) => {
-                        run_indexer(IndexerConfig::new(
-                            DummyHandler,
-                            NodeAddress::UnixSocket(socket_path),
-                            NetworkConfig {
-                                magic: x,
-                                node_config_path: node_config_path.unwrap(),
-                            },
-                            since_slot.zip(since_block_hash),
-                            4,
-                            Filter {
-                                curr_symbols: curr_symbols
-                                    .into_iter()
-                                    .map(|ParseCurrencySymbol(cur_sym)| cur_sym)
-                                    .collect(),
-                            },
-                            Default::default(),
-                        ))
-                        .await
-                    }
-                    (Some(x), _) => {
-                        run_indexer(IndexerConfig::new(
-                            DummyHandler,
-                            NodeAddress::UnixSocket(socket_path),
-                            x,
-                            since_slot.zip(since_block_hash),
-                            4,
-                            Filter {
-                                curr_symbols: curr_symbols
-                                    .into_iter()
-                                    .map(|ParseCurrencySymbol(cur_sym)| cur_sym)
-                                    .collect(),
-                            },
-                            Default::default(),
-                        ))
-                        .await
-                    }
-                    _ => panic!("absurd: Clap did not parse any network magic arg"),
-                }?;
+                let network_config = network_magic
+                    .map(|magic| NetworkConfig::ConfigPath {
+                        magic,
+                        node_config_path: node_config_path.unwrap(),
+                    })
+                    .or(network.map(NetworkConfig::WellKnown))
+                    .unwrap();
+
+                let indexer = TxIndexer::run(TxIndexerConfig::new(
+                    DummyHandler,
+                    NodeAddress::UnixSocket(socket_path),
+                    network_config,
+                    since_slot.zip(since_block_hash),
+                    4,
+                    Filter {
+                        curr_symbols: curr_symbols
+                            .into_iter()
+                            .map(|ParseCurrencySymbol(cur_sym)| cur_sym)
+                            .collect(),
+                    },
+                    Default::default(),
+                ))
+                .await?;
                 indexer
                     .sink_handle
                     .join()
@@ -166,35 +143,5 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
                 Ok(())
             }
         },
-    }
-}
-
-#[derive(Debug)]
-struct Error();
-
-impl ErrorPolicyProvider for Error {
-    fn get_error_policy(&self) -> ErrorPolicy<Self> {
-        ErrorPolicy::Skip
-    }
-}
-
-#[derive(Error, Debug)]
-pub(crate) enum DummyHandlerError {}
-
-impl ErrorPolicyProvider for DummyHandlerError {
-    fn get_error_policy(&self) -> ErrorPolicy<Self> {
-        ErrorPolicy::Skip
-    }
-}
-
-// TODO(chase): Enhance dummy callback
-#[derive(Clone)]
-struct DummyHandler;
-
-impl Handler for DummyHandler {
-    type Error = DummyHandlerError;
-
-    async fn handle(&self, _event: ChainEvent) -> Result<(), Self::Error> {
-        Ok(())
     }
 }
