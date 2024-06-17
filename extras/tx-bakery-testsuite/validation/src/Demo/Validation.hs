@@ -10,13 +10,13 @@ import Plutarch.Prelude (PEq ((#==)), pconstant, pfromData, pif, pletC, pnot, ps
 -- | `eqValidator dat rdmr ctx` checks whether the Datum `dat` is (not)equal to the Datum supplied in Redeemer.
 eqValidator :: ClosedTerm V2.PValidator
 eqValidator = plam $ \datum redeemer _ctx -> ptrace "[Mint]" $ unTermCont $ do
-    eqDatum <- pletC $ pfromData $ pfromPlutusDataPTryFrom @EqDatum # datum
-    ptraceC $ "[Mint] Datum is correct " <> pshow eqDatum
-    eqRedeemer <- pletC $ pfromData $ pfromPlutusDataPTryFrom @EqRedeemer # redeemer
-    ptraceC $ "[Mint] Redeemer is correct " <> pshow eqRedeemer
+  eqDatum <- pletC $ pfromData $ pfromPlutusDataPTryFrom @EqDatum # datum
+  ptraceC $ "[Mint] Datum is correct " <> pshow eqDatum
+  eqRedeemer <- pletC $ pfromData $ pfromPlutusDataPTryFrom @EqRedeemer # redeemer
+  ptraceC $ "[Mint] Redeemer is correct " <> pshow eqRedeemer
 
-    validates <- pletC $ pmatch eqRedeemer $ \case
-        EqRedeemer'IsEqual dat -> eqDatum #== pfromData dat
-        EqRedeemer'IsNotEqual dat -> pnot # (eqDatum #== pfromData dat)
+  validates <- pletC $ pmatch eqRedeemer $ \case
+    EqRedeemer'IsEqual dat -> eqDatum #== pfromData dat
+    EqRedeemer'IsNotEqual dat -> pnot # (eqDatum #== pfromData dat)
 
-    pure $ pif validates (popaque (pconstant ())) (ptrace "[Mint] Validation failed" perror)
+  pure $ pif validates (popaque (pconstant ())) (ptrace "[Mint] Validation failed" perror)
