@@ -1,7 +1,10 @@
 { inputs, ... }: {
   perSystem = { system, config, inputs', pkgs, ... }:
     let
-      commands = import ./commands.nix { inherit pkgs; };
+      commands = import ./commands.nix {
+        inherit pkgs;
+        extraDDLs = [ ./db/tx-indexer.sql ];
+      };
       rustFlake =
         inputs.flake-lang.lib.${system}.rustFlake {
           src = ./.;

@@ -1,14 +1,17 @@
 use anyhow::Result;
 use clap::Parser;
+use sqlx::PgPool;
 use std::{default::Default, fmt::Debug};
 use tracing::Level;
+use tx_db::handler::TxIndexerHandler;
 use tx_indexer::{
     aux::ParseCurrencySymbol,
     config::{NetworkConfig, NetworkName, NodeAddress, TxIndexerConfig},
     filter::Filter,
-    handler::example::dummy::DummyHandler,
     TxIndexer,
 };
+
+mod tx_db;
 
 #[derive(Debug, Parser)]
 struct IndexStartArgs {
@@ -52,6 +55,10 @@ struct IndexStartArgs {
     /// Filter for transactions minting this currency symbol (multiple allowed)
     #[arg(short('c'), long = "curr_symbol")]
     curr_symbols: Vec<ParseCurrencySymbol>,
+
+    /// PostgreSQL database URL
+    #[arg(long)]
+    postgres_url: String,
 }
 
 #[derive(clap::Subcommand, Debug)]
@@ -103,6 +110,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
                 since_slot,
                 since_block_hash,
                 curr_symbols,
+                postgres_url,
             }) => {
                 let network_config = network_magic
                     .map(|magic| NetworkConfig::ConfigPath {
@@ -112,8 +120,12 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
                     .or(network.map(NetworkConfig::WellKnown))
                     .unwrap();
 
+                let pg_pool = PgPool::connect(&postgres_url).await?;
+
+                let handler = TxIndexerHandler::new(pg_pool);
+
                 let indexer = TxIndexer::run(TxIndexerConfig::new(
-                    DummyHandler,
+                    handler,
                     NodeAddress::UnixSocket(socket_path),
                     network_config,
                     since_slot.zip(since_block_hash),

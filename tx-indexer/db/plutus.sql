@@ -3,15 +3,15 @@ CREATE SCHEMA Plutus;
 SET search_path TO Plutus;
 
 CREATE DOMAIN Hash28 AS
-   BYTEA NOT NULL CHECK (LENGTH(value) = 28);
+   BYTEA CHECK (LENGTH(value) = 28);
 
 CREATE DOMAIN Hash32 AS
-   BYTEA NOT NULL CHECK (LENGTH(value) = 32);
+   BYTEA CHECK (LENGTH(value) = 32);
 
 CREATE DOMAIN CurrencySymbol AS Hash28;
 
 CREATE DOMAIN TokenName As
-    BYTEA NOT NULL CHECK (LENGTH(value) <= 32);
+    BYTEA CHECK (LENGTH(value) <= 32);
 
 CREATE DOMAIN TxId AS Hash32;
 
@@ -20,6 +20,8 @@ CREATE DOMAIN PubKeyHash AS Hash28;
 CREATE DOMAIN ScriptHash AS Hash28;
 
 CREATE DOMAIN DatumHash AS Hash28;
+
+CREATE DOMAIN Slot AS BIGINT;
 
 CREATE TYPE Credential_ AS (
     pub_key_hash PubKeyHash,

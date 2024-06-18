@@ -1,5 +1,5 @@
 { pkgs
-, extraDdls ? [ ]
+, extraDDLs ? [ ]
 , pgUser ? "tx_indexer"
 , pgPort ? "5555"
 , pgDir ? "$PWD/.pg"
@@ -25,7 +25,7 @@ let
         log_min_error_statement = error
       '';
 
-  ddls = [ ./db/plutus.ddl ] ++ extraDdls;
+  ddls = [ ./db/plutus.sql ] ++ extraDDLs;
 
   init-db = pkgs.writeShellApplication {
     name = "init-db";
@@ -43,7 +43,7 @@ let
       start-db
       echo "CREATE DATABASE ${pgUser}" | psql -p "${pgPort}" -U "${pgUser}" postgres
 
-    '' + pkgs.lib.concatStrings (map (ddl: "pg < ${ddl}") ddls);
+    '' + pkgs.lib.concatMapStringsSep "\n" (ddl: "pg < ${ddl}") ddls;
   };
 
   start-db = pkgs.writeShellApplication {
@@ -72,8 +72,6 @@ let
       psql -p ${pgPort} -U ${pgUser}
     '';
   };
-
-
 
 in
 { inherit init-db start-db stop-db pg; }
