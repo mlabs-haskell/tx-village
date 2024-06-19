@@ -1,4 +1,4 @@
-use super::{error::TxIndexerError, table::transaction::TransactionTable};
+use super::{error::TxIndexerError, table::utxos::UtxosTable};
 use sqlx::{Acquire, Connection, PgPool};
 use tracing::{event, span, Instrument, Level};
 use tx_indexer::handler::{callback::EventHandler, chain_event::ChainEvent};
@@ -29,9 +29,10 @@ impl EventHandler for TxIndexerHandler {
                     let tx_block = time.block_number;
                     let span = span!(Level::DEBUG, "HandlingTransactionEvent", ?transaction.hash);
                     async move {
-                        let tx_model = TransactionTable::new(transaction.hash, tx_block);
+                        for utxo in transaction.outputs {
+                            UtxosTable::new(utxo, tx_block)?.store(conn).await?;
+                        }
 
-                        tx_model.store(conn).await?;
                         Ok(())
                     }
                     .instrument(span)
@@ -41,7 +42,7 @@ impl EventHandler for TxIndexerHandler {
                     conn.transaction(|txn| {
                         Box::pin(async move {
                             let rollback_result =
-                                TransactionTable::rollback_after_block(txn, block_slot).await?;
+                                UtxosTable::rollback_after_block(txn, block_slot).await?;
 
                             event!(
                                 Level::WARN,

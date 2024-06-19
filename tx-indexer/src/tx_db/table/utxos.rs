@@ -1,15 +1,20 @@
-use plutus_ledger_api::v2::transaction::TransactionHash;
+use plutus_ledger_api::v2::transaction::{TransactionInput, TxInInfo};
 use sqlx::{FromRow, PgConnection};
 use strum_macros::Display;
 use tracing::{event, span, Instrument, Level};
-use tx_indexer::database::plutus::{SlotDB, TransactionHashDB};
+use tx_indexer::database::plutus::{
+    AddressDB, DBTypeConversionError, OutputDatumDB, SlotDB, TransactionInputDB, ValueDB,
+};
 
 use crate::tx_db::error::TxIndexerError;
 
 #[derive(Debug, FromRow, PartialEq, Eq)]
-pub struct TransactionTable {
-    pub transaction_id: TransactionHashDB,
-    /// The block a transaction appeared on.
+pub struct UtxosTable {
+    pub utxo_ref: TransactionInputDB,
+    pub value: ValueDB,
+    pub address: AddressDB,
+    pub datum: OutputDatumDB,
+
     pub created_at: SlotDB,
     pub deleted_at: Option<SlotDB>,
 }
@@ -23,26 +28,33 @@ where
     pub deleted: Vec<T>,
 }
 
-impl TransactionTable {
-    pub fn new(transaction_id: TransactionHash, created_at: u64) -> Self {
-        Self {
-            transaction_id: transaction_id.into(),
+impl UtxosTable {
+    pub fn new(utxo: TxInInfo, created_at: u64) -> Result<Self, DBTypeConversionError> {
+        Ok(Self {
+            utxo_ref: utxo.reference.try_into()?,
+            value: utxo.output.value.try_into()?,
+            address: utxo.output.address.try_into()?,
+            datum: utxo.output.datum.try_into()?,
+
             created_at: created_at.into(),
             deleted_at: None,
-        }
+        })
     }
 
     pub async fn store(self, conn: &mut PgConnection) -> Result<(), TxIndexerError> {
-        let tx_id = TransactionHash::from(self.transaction_id.clone());
-        let span = span!(Level::INFO, "SavingTx", ?tx_id);
+        let utxo_ref = TransactionInput::from(self.utxo_ref.clone());
+        let span = span!(Level::INFO, "StoringUTxO", ?utxo_ref);
         async move {
             sqlx::query(
                 r#"
-                INSERT INTO transactions (transaction_id, created_at)
-                VALUES ($1, $2)
+                INSERT INTO utxos (utxo_ref, value, address, datum, created_at)
+                VALUES ($1, $2, $3, $4, $5)
                 "#,
             )
-            .bind(self.transaction_id)
+            .bind(self.utxo_ref)
+            .bind(self.value)
+            .bind(self.address)
+            .bind(self.datum)
             .bind(self.created_at)
             .execute(conn)
             .await
@@ -60,13 +72,13 @@ impl TransactionTable {
     pub async fn rollback_after_block(
         conn: &mut PgConnection,
         transaction_block: u64,
-    ) -> Result<RollbackResult<TransactionTable>, TxIndexerError> {
+    ) -> Result<RollbackResult<UtxosTable>, TxIndexerError> {
         let span = span!(Level::INFO, "Rollback", %transaction_block);
         async move {
             let deleted = sqlx::query_as::<_, Self>(
                 r#"
                 SELECT *
-                FROM transactions
+                FROM utxos
                 WHERE created_at > $1
                 "#,
             )
@@ -81,7 +93,7 @@ impl TransactionTable {
             let recovered = sqlx::query_as::<_, Self>(
                 r#"
                 SELECT *
-                FROM transactions
+                FROM utxos
                 WHERE deleted_at > $1
                 "#,
             )
@@ -95,7 +107,7 @@ impl TransactionTable {
 
             sqlx::query(
                 r#"
-                UPDATE transactions
+                UPDATE utxos
                 SET deleted_at = NULL
                 WHERE deleted_at > $1;
                 "#,
@@ -110,7 +122,7 @@ impl TransactionTable {
 
             sqlx::query(
                 r#"
-                DELETE FROM transactions
+                DELETE FROM utxos
                 WHERE created_at > $1;
                 "#,
             )
