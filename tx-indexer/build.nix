@@ -32,7 +32,7 @@
 
           testTools = with inputs'; [
             plutip.packages."plutip-core:exe:local-cluster"
-            inputs'.ogmios.packages."ogmios:exe:ogmios"
+            ogmios.packages."ogmios:exe:ogmios"
           ];
         };
     in

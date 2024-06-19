@@ -27,7 +27,7 @@ impl TxIndexer {
         let span = span!(Level::INFO, "Run TxIndexer");
         let _enter = span.enter();
 
-        let chain = conf.network.to_chain_info();
+        let chain = conf.network.to_chain_info()?;
 
         let progress_tracker = match conf.since_slot {
             Some((since_slot, _)) => Some(ProgressTracker::new(since_slot, &chain)?),
@@ -85,4 +85,3 @@ impl TxIndexer {
         })
     }
 }
-

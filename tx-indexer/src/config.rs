@@ -2,6 +2,7 @@ use crate::{
     filter::Filter,
     handler::{callback::EventHandler, retry::RetryPolicy},
 };
+use anyhow::anyhow;
 use core::str::FromStr;
 use oura::{sources::MagicArg, utils::ChainWellKnownInfo};
 use std::error::Error;
@@ -57,7 +58,7 @@ pub enum NodeAddress {
     /// Path to Unix node.socket
     UnixSocket(String),
     /// Hostname and port number for TCP connection to remote node
-    TcpAddress(String, u64),
+    TcpAddress(String, u16),
 }
 
 /// Typed network magic restricted to specific networks fully supported by Oura.
@@ -111,8 +112,8 @@ impl NetworkConfig {
         })
     }
 
-    pub fn to_chain_info(&self) -> ChainWellKnownInfo {
-        match self {
+    pub fn to_chain_info(&self) -> Result<ChainWellKnownInfo, anyhow::Error> {
+        Ok(match self {
             NetworkConfig::WellKnown(network_name) => match network_name {
                 NetworkName::PREPROD => ChainWellKnownInfo::preprod(),
                 NetworkName::PREVIEW => ChainWellKnownInfo::preview(),
@@ -122,11 +123,11 @@ impl NetworkConfig {
                 node_config_path, ..
             } => {
                 let file = File::open(node_config_path.clone())
-                    .expect("Chain Info not found at given path");
+                    .map_err(|err| anyhow!("Chain Info not found at given path: {}", err))?;
                 let reader = BufReader::new(file);
                 serde_json::from_reader(reader).expect("Invalid JSON format for ChainWellKnownInfo")
             }
-        }
+        })
     }
 }
 

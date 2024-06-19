@@ -131,10 +131,10 @@ impl FromOura<oura::TransactionRecord> for TransactionEventRecord {
                 .map(|oura::TxInputRecord { tx_id, index }| {
                     Ok(TransactionInput {
                         transaction_id: TransactionHash::from_oura(tx_id)?,
-                        index: BigInt::from_oura(index)?,
+                        index: BigInt::from(index),
                     })
                 })
-                .collect::<Result<_, _>>()?,
+                .collect::<Result<_, OuraParseError>>()?,
             outputs: tx
                 .outputs
                 .unwrap()
@@ -166,14 +166,14 @@ impl FromOura<oura::TransactionRecord> for TransactionEventRecord {
                             },
                             // NOTE(chase): There is currently no way to know about reference scripts with Oura.
                             reference_script: None,
-                            value: Value::ada_value(&BigInt::from_oura(amount)?)
+                            value: Value::ada_value(&BigInt::from(amount))
                                 + Value::from_oura(assets.unwrap_or_default())?,
                         };
 
                         Ok(TxInInfo { reference, output })
                     },
                 )
-                .collect::<Result<_, _>>()?,
+                .collect::<Result<_, OuraParseError>>()?,
             mint: tx.mint.map_or(Ok(Value::new()), Value::from_oura)?,
             plutus_data: tx
                 .plutus_data
@@ -190,7 +190,7 @@ impl FromOura<oura::TransactionRecord> for TransactionEventRecord {
                         ))
                     },
                 )
-                .collect::<Result<_, _>>()?,
+                .collect::<Result<_, OuraParseError>>()?,
         })
     }
 }
