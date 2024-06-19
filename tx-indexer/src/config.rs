@@ -1,14 +1,20 @@
-use super::{
-    callback::Handler,
+use crate::{
     filter::Filter,
-    retry::RetryPolicy,
-    types::{IsNetworkConfig, NodeAddress},
+    handler::{callback::EventHandler, retry::RetryPolicy},
 };
+use anyhow::anyhow;
+use core::str::FromStr;
+use oura::{sources::MagicArg, utils::ChainWellKnownInfo};
+use std::error::Error;
+use std::fmt;
+use std::fs::File;
+use std::io::BufReader;
+use strum_macros::Display;
 
-pub struct IndexerConfig<H: Handler, T: IsNetworkConfig> {
+pub struct TxIndexerConfig<H: EventHandler> {
     pub handler: H,
     pub node_address: NodeAddress,
-    pub network_config: T,
+    pub network: NetworkConfig,
     /// Slot number and hash as hex string (optional).
     /// If not provided, sync will begin from the tip of the chain.
     pub since_slot: Option<(u64, String)>,
@@ -23,12 +29,12 @@ pub struct IndexerConfig<H: Handler, T: IsNetworkConfig> {
     pub retry_policy: RetryPolicy,
 }
 
-impl<H: Handler, T: IsNetworkConfig> IndexerConfig<H, T> {
+impl<H: EventHandler> TxIndexerConfig<H> {
     #[allow(clippy::too_many_arguments)]
     pub fn new(
         handler: H,
         node_address: NodeAddress,
-        network_config: T,
+        network: NetworkConfig,
         since_slot: Option<(u64, String)>,
         safe_block_depth: usize,
         event_filter: Filter,
@@ -37,12 +43,91 @@ impl<H: Handler, T: IsNetworkConfig> IndexerConfig<H, T> {
         Self {
             handler,
             node_address,
-            network_config,
+            network,
             since_slot,
             safe_block_depth,
             event_filter,
             retry_policy,
         }
+    }
+}
+
+/// Simple description on how to connect to a local or remote node.
+/// Used to build Oura source config.
+pub enum NodeAddress {
+    /// Path to Unix node.socket
+    UnixSocket(String),
+    /// Hostname and port number for TCP connection to remote node
+    TcpAddress(String, u16),
+}
+
+/// Typed network magic restricted to specific networks fully supported by Oura.
+#[derive(Clone, Debug, Display)]
+pub enum NetworkName {
+    PREPROD,
+    PREVIEW,
+    MAINNET,
+}
+
+#[derive(Clone, Debug)]
+pub enum NetworkConfig {
+    ConfigPath {
+        node_config_path: String,
+        magic: u64,
+    },
+    WellKnown(NetworkName),
+}
+
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub struct NetworkNameParseErr;
+
+impl fmt::Display for NetworkNameParseErr {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        "provided string was not `preprod` or `preview` or `mainnet`".fmt(f)
+    }
+}
+impl Error for NetworkNameParseErr {}
+
+impl FromStr for NetworkName {
+    type Err = NetworkNameParseErr;
+    fn from_str(s: &str) -> Result<NetworkName, Self::Err> {
+        match &s.to_lowercase()[..] {
+            "preprod" => Ok(NetworkName::PREPROD),
+            "preview" => Ok(NetworkName::PREVIEW),
+            "mainnet" => Ok(NetworkName::MAINNET),
+            _ => Err(NetworkNameParseErr),
+        }
+    }
+}
+
+impl NetworkConfig {
+    pub fn to_magic_arg(&self) -> MagicArg {
+        MagicArg(match self {
+            NetworkConfig::WellKnown(network_name) => match network_name {
+                NetworkName::PREPROD => pallas::network::miniprotocols::PRE_PRODUCTION_MAGIC,
+                NetworkName::PREVIEW => pallas::network::miniprotocols::PREVIEW_MAGIC,
+                NetworkName::MAINNET => pallas::network::miniprotocols::MAINNET_MAGIC,
+            },
+            NetworkConfig::ConfigPath { magic, .. } => *magic,
+        })
+    }
+
+    pub fn to_chain_info(&self) -> Result<ChainWellKnownInfo, anyhow::Error> {
+        Ok(match self {
+            NetworkConfig::WellKnown(network_name) => match network_name {
+                NetworkName::PREPROD => ChainWellKnownInfo::preprod(),
+                NetworkName::PREVIEW => ChainWellKnownInfo::preview(),
+                NetworkName::MAINNET => ChainWellKnownInfo::mainnet(),
+            },
+            NetworkConfig::ConfigPath {
+                node_config_path, ..
+            } => {
+                let file = File::open(node_config_path.clone())
+                    .map_err(|err| anyhow!("Chain Info not found at given path: {}", err))?;
+                let reader = BufReader::new(file);
+                serde_json::from_reader(reader).expect("Invalid JSON format for ChainWellKnownInfo")
+            }
+        })
     }
 }
 

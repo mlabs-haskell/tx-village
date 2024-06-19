@@ -1,15 +1,18 @@
+use crate::{
+    database::{errors::TransactionDbError, TransactionSql},
+    error::{ErrorPolicy, ErrorPolicyProvider},
+};
 use oura::model as oura;
-
 use sqlx::PgConnection;
 use strum_macros::Display;
+use thiserror::Error;
 use tracing::{event, span, Instrument, Level};
 
-use tx_indexer::{
-    database::{errors::TransactionDbError, TransactionSql},
-    indexer::error::{ErrorPolicy, ErrorPolicyProvider},
-};
-
-pub struct Error(TransactionDbError);
+#[derive(Error, Debug)]
+pub enum Error {
+    #[error(transparent)]
+    DbError(#[from] TransactionDbError),
+}
 
 // TODO (chase): Use this eventually.
 #[allow(dead_code)]
@@ -26,7 +29,7 @@ pub async fn on_chain_event(conn: &mut PgConnection, ev: oura::Event) -> Result<
                         .await
                         .map_err(|err| {
                             event!(Level::ERROR, label=%Event::TransactionError, ?err);
-                            Error(err)
+                            Error::DbError(err)
                         })
                 }
                 .instrument(span)
@@ -43,7 +46,7 @@ pub async fn on_chain_event(conn: &mut PgConnection, ev: oura::Event) -> Result<
                     .await
                     .map_err(|err| {
                         event!(Level::ERROR, label=%Event::RollbackError, ?err);
-                        Error(err)
+                        Error::DbError(err)
                     })
             }
             _ => {

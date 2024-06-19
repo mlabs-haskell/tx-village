@@ -86,7 +86,10 @@
 
           devShellHook = config.settings.shell.hook;
 
-          testTools = with inputs'; [ plutip.packages."plutip-core:exe:local-cluster" ];
+          testTools = with inputs'; [
+            plutip.packages."plutip-core:exe:local-cluster"
+            ogmios.packages."ogmios:exe:ogmios"
+          ];
         };
     in
     {

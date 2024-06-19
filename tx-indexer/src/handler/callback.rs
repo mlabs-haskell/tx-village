@@ -1,7 +1,10 @@
-use super::{
+use crate::{
     error::ErrorPolicyProvider,
-    retry::{perform_with_retry, ProgressTracker, RetryPolicy},
-    types::ChainEvent,
+    handler::{
+        chain_event::ChainEvent,
+        retry::{perform_with_retry, RetryPolicy},
+    },
+    progress_tracker::ProgressTracker,
 };
 use oura::{
     pipelining::{BootstrapResult, SinkProvider, StageReceiver},
@@ -12,7 +15,7 @@ use strum_macros::Display;
 use tokio::runtime::Runtime;
 use tracing::{event, span, Instrument, Level};
 
-pub trait Handler
+pub trait EventHandler
 where
     Self: Clone + Send + 'static,
 {
@@ -23,14 +26,14 @@ where
 
 /// This is a custom made sink for Oura. Based on a callback function.
 /// The idea is similar to a webhook, but instead of calling a web endpoint - we call a function directly.
-pub(crate) struct Callback<H: Handler> {
+pub(crate) struct Callback<H: EventHandler> {
     pub(crate) handler: H,
     pub(crate) retry_policy: RetryPolicy,
     pub(crate) utils: Arc<Utils>,
     pub(crate) progress_tracker: Option<ProgressTracker>,
 }
 
-impl<H: Handler> Callback<H> {
+impl<H: EventHandler> Callback<H> {
     pub fn new(
         handler: H,
         retry_policy: RetryPolicy,
@@ -46,7 +49,7 @@ impl<H: Handler> Callback<H> {
     }
 }
 
-impl<H: Handler> SinkProvider for Callback<H> {
+impl<H: EventHandler> SinkProvider for Callback<H> {
     fn bootstrap(&self, input: StageReceiver) -> BootstrapResult {
         let span = span!(Level::DEBUG, "Callback::bootstrap");
         let _enter = span.enter();
@@ -83,7 +86,7 @@ impl<H: Handler> SinkProvider for Callback<H> {
 }
 
 // Handle a sequence of events transmitted at once.
-async fn handle_event<'a, H: Handler>(
+async fn handle_event<'a, H: EventHandler>(
     handler: H,
     input: StageReceiver,
     retry_policy: &RetryPolicy,
