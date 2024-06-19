@@ -12,6 +12,7 @@ mod e2e_tests {
             value::{AssetClass, CurrencySymbol, TokenName, Value},
         },
     };
+    use serial_test::serial;
     use std::{collections::BTreeMap, sync::mpsc};
     use tracing::Level;
     use tx_bakery::{
@@ -38,6 +39,7 @@ mod e2e_tests {
     };
 
     #[tokio::test]
+    #[serial]
     async fn e2e_mint() -> std::result::Result<(), oura::Error> {
         // Set up tracing logger (logs to stdout).
         let collector = tracing_subscriber::fmt()
