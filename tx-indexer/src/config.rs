@@ -57,7 +57,7 @@ pub enum NodeAddress {
     /// Path to Unix node.socket
     UnixSocket(String),
     /// Hostname and port number for TCP connection to remote node
-    TcpAddress(String, u64),
+    TcpAddress(String, u16),
 }
 
 /// Typed network magic restricted to specific networks fully supported by Oura.
