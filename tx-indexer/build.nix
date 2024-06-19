@@ -5,6 +5,18 @@
         inherit pkgs;
         extraDDLs = [ ./db/utxo-indexer.sql ];
       };
+
+      # Using the latest alpha of sqlx from GitHub where this is fixed: https://github.com/launchbadge/sqlx/issues/1031
+      sqlx =
+        pkgs.stdenv.mkDerivation
+          {
+            src = inputs.sqlx.outPath;
+            name = "sqlx-0.8.0";
+            unpackPhase = ''
+              mkdir $out
+              cp -r $src/* $out
+            '';
+          };
       rustFlake =
         inputs.flake-lang.lib.${system}.rustFlake {
           src = ./.;
@@ -17,6 +29,8 @@
             inputs'.lbf.packages.lbf-plutus-rust
             inputs'.lbf.packages.lbr-prelude-rust-src
             inputs'.lbf.packages.lbr-prelude-derive-rust-src
+
+            sqlx
 
             config.packages.tx-bakery-rust-src
           ];

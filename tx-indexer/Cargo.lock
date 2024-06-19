@@ -3270,7 +3270,6 @@ dependencies = [
 [[package]]
 name = "sqlx"
 version = "0.8.0-alpha.0"
-source = "git+https://github.com/launchbadge/sqlx.git#402022df87ae159fb4c0125dbfc936c5fd71fac0"
 dependencies = [
  "sqlx-core",
  "sqlx-macros",
@@ -3282,7 +3281,6 @@ dependencies = [
 [[package]]
 name = "sqlx-core"
 version = "0.8.0-alpha.0"
-source = "git+https://github.com/launchbadge/sqlx.git#402022df87ae159fb4c0125dbfc936c5fd71fac0"
 dependencies = [
  "ahash",
  "atoi",
@@ -3325,7 +3323,6 @@ dependencies = [
 [[package]]
 name = "sqlx-macros"
 version = "0.8.0-alpha.0"
-source = "git+https://github.com/launchbadge/sqlx.git#402022df87ae159fb4c0125dbfc936c5fd71fac0"
 dependencies = [
  "proc-macro2",
  "quote",
@@ -3337,7 +3334,6 @@ dependencies = [
 [[package]]
 name = "sqlx-macros-core"
 version = "0.8.0-alpha.0"
-source = "git+https://github.com/launchbadge/sqlx.git#402022df87ae159fb4c0125dbfc936c5fd71fac0"
 dependencies = [
  "dotenvy",
  "either",
@@ -3362,7 +3358,6 @@ dependencies = [
 [[package]]
 name = "sqlx-mysql"
 version = "0.8.0-alpha.0"
-source = "git+https://github.com/launchbadge/sqlx.git#402022df87ae159fb4c0125dbfc936c5fd71fac0"
 dependencies = [
  "atoi",
  "base64 0.22.1",
@@ -3405,7 +3400,6 @@ dependencies = [
 [[package]]
 name = "sqlx-postgres"
 version = "0.8.0-alpha.0"
-source = "git+https://github.com/launchbadge/sqlx.git#402022df87ae159fb4c0125dbfc936c5fd71fac0"
 dependencies = [
  "atoi",
  "base64 0.22.1",
@@ -3444,7 +3438,6 @@ dependencies = [
 [[package]]
 name = "sqlx-sqlite"
 version = "0.8.0-alpha.0"
-source = "git+https://github.com/launchbadge/sqlx.git#402022df87ae159fb4c0125dbfc936c5fd71fac0"
 dependencies = [
  "atoi",
  "chrono",

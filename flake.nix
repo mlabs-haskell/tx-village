@@ -33,6 +33,13 @@
       url = "github:mlabs-haskell/plutus-ledger-api-rust?ref=v0";
       inputs.nixpkgs.follows = "nixpkgs";
     };
+
+    # Using the latest alpha of sqlx from GitHub where this is fixed: https://github.com/launchbadge/sqlx/issues/1031
+    sqlx = {
+      url = "github:launchbadge/sqlx";
+      flake = false;
+    };
+
   };
   outputs = inputs@{ flake-parts, ... }:
     flake-parts.lib.mkFlake { inherit inputs; } {
