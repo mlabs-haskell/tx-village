@@ -1,3 +1,4 @@
+use crate::utxo_db::error::UtxoIndexerError;
 use plutus_ledger_api::v2::transaction::{TransactionInput, TxInInfo};
 use sqlx::{FromRow, PgConnection};
 use strum_macros::Display;
@@ -5,8 +6,6 @@ use tracing::{event, span, Instrument, Level};
 use tx_indexer::database::plutus::{
     AddressDB, DBTypeConversionError, OutputDatumDB, SlotDB, TransactionInputDB, ValueDB,
 };
-
-use crate::tx_db::error::TxIndexerError;
 
 #[derive(Debug, FromRow, PartialEq, Eq)]
 pub struct UtxosTable {
@@ -41,7 +40,7 @@ impl UtxosTable {
         })
     }
 
-    pub async fn store(self, conn: &mut PgConnection) -> Result<(), TxIndexerError> {
+    pub async fn store(self, conn: &mut PgConnection) -> Result<(), UtxoIndexerError> {
         let utxo_ref = TransactionInput::from(self.utxo_ref.clone());
         let span = span!(Level::INFO, "StoringUTxO", ?utxo_ref);
         async move {
@@ -60,7 +59,7 @@ impl UtxosTable {
             .await
             .map_err(|err| {
                 event!(Level::ERROR, label=%Event::SqlxError, ?err);
-                TxIndexerError::DbError(err)
+                UtxoIndexerError::DbError(err)
             })?;
 
             Ok(())
@@ -72,7 +71,7 @@ impl UtxosTable {
     pub async fn rollback_after_block(
         conn: &mut PgConnection,
         transaction_block: u64,
-    ) -> Result<RollbackResult<UtxosTable>, TxIndexerError> {
+    ) -> Result<RollbackResult<UtxosTable>, UtxoIndexerError> {
         let span = span!(Level::INFO, "Rollback", %transaction_block);
         async move {
             let deleted = sqlx::query_as::<_, Self>(
@@ -87,7 +86,7 @@ impl UtxosTable {
             .await
             .map_err(|err| {
                 event!(Level::ERROR, label=%Event::SqlxError, ?err);
-                TxIndexerError::DbError(err)
+                UtxoIndexerError::DbError(err)
             })?;
 
             let recovered = sqlx::query_as::<_, Self>(
@@ -102,7 +101,7 @@ impl UtxosTable {
             .await
             .map_err(|err| {
                 event!(Level::ERROR, label=%Event::SqlxError, ?err);
-                TxIndexerError::DbError(err)
+                UtxoIndexerError::DbError(err)
             })?;
 
             sqlx::query(
@@ -117,7 +116,7 @@ impl UtxosTable {
             .await
             .map_err(|err| {
                 event!(Level::ERROR, label=%Event::SqlxError, ?err);
-                TxIndexerError::DbError(err)
+                UtxoIndexerError::DbError(err)
             })?;
 
             sqlx::query(
@@ -131,7 +130,7 @@ impl UtxosTable {
             .await
             .map_err(|err| {
                 event!(Level::ERROR, label=%Event::SqlxError, ?err);
-                TxIndexerError::DbError(err)
+                UtxoIndexerError::DbError(err)
             })?;
 
             Ok(RollbackResult { deleted, recovered })

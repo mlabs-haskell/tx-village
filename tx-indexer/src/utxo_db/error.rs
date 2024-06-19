@@ -5,7 +5,7 @@ use tx_indexer::{
 };
 
 #[derive(Error, Debug)]
-pub enum TxIndexerError {
+pub enum UtxoIndexerError {
     #[error(transparent)]
     DbError(#[from] sqlx::error::Error),
 
@@ -13,7 +13,7 @@ pub enum TxIndexerError {
     DBTypeConversionError(#[from] DBTypeConversionError),
 }
 
-impl ErrorPolicyProvider for TxIndexerError {
+impl ErrorPolicyProvider for UtxoIndexerError {
     fn get_error_policy(&self) -> ErrorPolicy<Self> {
         ErrorPolicy::Skip
     }

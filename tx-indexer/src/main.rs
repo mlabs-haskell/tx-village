@@ -3,15 +3,15 @@ use clap::Parser;
 use sqlx::PgPool;
 use std::{default::Default, fmt::Debug};
 use tracing::Level;
-use tx_db::handler::TxIndexerHandler;
 use tx_indexer::{
     aux::ParseCurrencySymbol,
     config::{NetworkConfig, NetworkName, NodeAddress, TxIndexerConfig},
     filter::Filter,
     TxIndexer,
 };
+use utxo_db::handler::UtxoIndexerHandler;
 
-mod tx_db;
+mod utxo_db;
 
 #[derive(Debug, Parser)]
 struct IndexStartArgs {
@@ -122,7 +122,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
 
                 let pg_pool = PgPool::connect(&postgres_url).await?;
 
-                let handler = TxIndexerHandler::new(pg_pool);
+                let handler = UtxoIndexerHandler::new(pg_pool);
 
                 let indexer = TxIndexer::run(TxIndexerConfig::new(
                     handler,

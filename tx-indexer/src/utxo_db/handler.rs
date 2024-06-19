@@ -1,24 +1,24 @@
-use super::{error::TxIndexerError, table::utxos::UtxosTable};
+use super::{error::UtxoIndexerError, table::utxos::UtxosTable};
 use sqlx::{Acquire, Connection, PgPool};
 use tracing::{event, span, Instrument, Level};
 use tx_indexer::handler::{callback::EventHandler, chain_event::ChainEvent};
 
 #[derive(Clone)]
-pub struct TxIndexerHandler {
+pub struct UtxoIndexerHandler {
     pg_pool: PgPool,
 }
 
-impl TxIndexerHandler {
+impl UtxoIndexerHandler {
     pub fn new(pg_pool: PgPool) -> Self {
-        TxIndexerHandler { pg_pool }
+        UtxoIndexerHandler { pg_pool }
     }
 }
 
-impl EventHandler for TxIndexerHandler {
-    type Error = TxIndexerError;
+impl EventHandler for UtxoIndexerHandler {
+    type Error = UtxoIndexerError;
 
     async fn handle(&self, event: ChainEvent) -> Result<(), Self::Error> {
-        let span = span!(Level::INFO, "HandlingEvent", event=?event);
+        let span = span!(Level::DEBUG, "HandlingEvent", event=?event);
         async move {
             let mut conn = self.pg_pool.acquire().await.unwrap();
             let conn = conn.acquire().await.unwrap();
@@ -33,6 +33,7 @@ impl EventHandler for TxIndexerHandler {
                             UtxosTable::new(utxo, tx_block)?.store(conn).await?;
                         }
 
+                        event!(Level::INFO, name = "UTxO Stored");
                         Ok(())
                     }
                     .instrument(span)
