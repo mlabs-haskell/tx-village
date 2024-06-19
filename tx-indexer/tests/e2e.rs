@@ -62,9 +62,9 @@ mod e2e_tests {
             .unwrap();
         let ogmios = Ogmios::start(&ogmios_config).await.unwrap();
 
-        let (observer_channel, rx) = mpsc::channel();
+        let (observer_sender, observer_receiver) = mpsc::channel();
         TxIndexer::run(TxIndexerConfig::new(
-            ObserveHandler { observer_channel },
+            ObserveHandler { observer_sender },
             NodeAddress::UnixSocket(
                 plutip
                     .get_node_socket()
@@ -88,7 +88,7 @@ mod e2e_tests {
 
         let (tx_hash, tx_info) = test_mint(&plutip, &ogmios).await;
 
-        let tx_rec = rx.recv().unwrap();
+        let tx_rec = observer_receiver.recv().unwrap();
         assert_eq_tx(tx_hash, tx_info, tx_rec);
 
         Ok(())
@@ -232,7 +232,7 @@ mod e2e_tests {
 
     #[derive(Clone)]
     struct ObserveHandler {
-        observer_channel: mpsc::Sender<TransactionEventRecord>,
+        observer_sender: mpsc::Sender<TransactionEventRecord>,
     }
 
     impl EventHandler for ObserveHandler {
@@ -240,7 +240,7 @@ mod e2e_tests {
 
         async fn handle(&self, ev: ChainEvent) -> Result<(), Self::Error> {
             if let ChainEvent::TransactionEvent { transaction, .. } = ev {
-                self.observer_channel.send(transaction).unwrap();
+                self.observer_sender.send(transaction).unwrap();
                 Ok(())
             } else {
                 Ok(())
