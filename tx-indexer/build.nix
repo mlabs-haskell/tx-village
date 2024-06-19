@@ -3,7 +3,7 @@
     let
       commands = import ./commands.nix {
         inherit pkgs;
-        extraDDLs = [ ./db/tx-indexer.sql ];
+        extraDDLs = [ ./db/utxo-indexer.sql ];
       };
       rustFlake =
         inputs.flake-lang.lib.${system}.rustFlake {
