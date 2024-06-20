@@ -1,0 +1,2 @@
+[workspace]
+members = ["tx-bakery", "tx-indexer"]

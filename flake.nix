@@ -41,6 +41,7 @@
         ./settings.nix
         ./pre-commit.nix
         ./hercules-ci.nix
+        ./rust-workspace.nix
 
         # Libraries
         ./tx-bakery/build.nix
