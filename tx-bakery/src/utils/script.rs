@@ -54,7 +54,7 @@ impl ScriptOrRef {
         }
     }
 
-    pub fn get_script_hash(self) -> ScriptHash {
+    pub fn get_script_hash(&self) -> ScriptHash {
         match self {
             ScriptOrRef::RefScript(_, script) => script.hash().to_pla(),
             ScriptOrRef::PlutusScript(script) => script.hash().to_pla(),
@@ -69,18 +69,18 @@ impl ScriptOrRef {
     }
 
     pub fn as_validator(self) -> (ValidatorHash, ScriptOrRef) {
-        let script = self.clone().get_script();
-
-        let validator_hash = ValidatorHash(script.hash().to_pla());
-
-        (validator_hash, self)
+        let (sh, s) = self.with_script_hash();
+        (ValidatorHash(sh), s)
     }
 
     pub fn as_minting_policy(self) -> (MintingPolicyHash, ScriptOrRef) {
-        let script = self.clone().get_script();
+        let (sh, s) = self.with_script_hash();
+        (MintingPolicyHash(sh), s)
+    }
 
-        let minting_policy_hash = MintingPolicyHash(script.hash().to_pla());
+    pub fn with_script_hash(self) -> (ScriptHash, ScriptOrRef) {
+        let script_hash = self.get_script_hash();
 
-        (minting_policy_hash, self)
+        (script_hash, self)
     }
 }
