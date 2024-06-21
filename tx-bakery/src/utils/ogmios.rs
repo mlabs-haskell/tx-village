@@ -25,7 +25,7 @@ use std::time;
 use tokio::process::{Child, Command};
 
 mod api;
-mod error;
+pub mod error;
 
 /// Ogmios client for interacting with the blockchain
 pub struct Ogmios {
