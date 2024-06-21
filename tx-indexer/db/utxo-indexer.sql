@@ -1,5 +1,5 @@
 CREATE TABLE utxos (
-  utxo_ref Plutus.TxOutRef NOT NULL,
+  utxo_ref Plutus.TransactionInput NOT NULL,
   value Plutus.Value NOT NULL,
   address Plutus.Address NOT NULL,
   datum Plutus.OutputDatum NOT NULL,

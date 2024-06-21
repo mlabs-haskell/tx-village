@@ -1,19 +1,6 @@
 use cardano_serialization_lib as csl;
 use num_bigint::BigInt;
-use plutus_ledger_api::{
-    plutus_data::PlutusData,
-    v2::{
-        address::{
-            Address, CertificateIndex, ChainPointer, Credential, Slot, StakingCredential,
-            TransactionIndex,
-        },
-        crypto::{Ed25519PubKeyHash, LedgerBytes},
-        datum::{Datum, DatumHash, OutputDatum},
-        script::{MintingPolicyHash, ScriptHash, ValidatorHash},
-        transaction::{TransactionHash, TransactionInput, TransactionOutput, TxInInfo},
-        value::{CurrencySymbol, TokenName, Value},
-    },
-};
+use plutus_ledger_api as pla;
 use thiserror::Error;
 use tx_bakery::utils::{
     csl_to_pla::{TryFromCSLError, TryToPLA},
@@ -38,26 +25,28 @@ pub enum DBTypeConversionError {
 
 #[derive(sqlx::Type, Clone, Debug, PartialEq, Eq)]
 #[sqlx(type_name = "Plutus.CurrencySymbol")]
-pub struct CurrencySymbolDB(pub Vec<u8>);
+pub struct CurrencySymbol(pub Vec<u8>);
 
-impl From<CurrencySymbol> for CurrencySymbolDB {
-    fn from(item: CurrencySymbol) -> Self {
+impl From<pla::v2::value::CurrencySymbol> for CurrencySymbol {
+    fn from(item: pla::v2::value::CurrencySymbol) -> Self {
         match item {
-            CurrencySymbol::Ada => CurrencySymbolDB(Vec::with_capacity(0)),
-            CurrencySymbol::NativeToken(MintingPolicyHash(ScriptHash(LedgerBytes(bytes)))) => {
-                CurrencySymbolDB(bytes)
-            }
+            pla::v2::value::CurrencySymbol::Ada => CurrencySymbol(Vec::with_capacity(0)),
+            pla::v2::value::CurrencySymbol::NativeToken(pla::v2::script::MintingPolicyHash(
+                pla::v2::script::ScriptHash(pla::v2::crypto::LedgerBytes(bytes)),
+            )) => CurrencySymbol(bytes),
         }
     }
 }
 
-impl From<CurrencySymbolDB> for CurrencySymbol {
-    fn from(item: CurrencySymbolDB) -> Self {
-        let CurrencySymbolDB(bytes) = item;
+impl From<CurrencySymbol> for pla::v2::value::CurrencySymbol {
+    fn from(item: CurrencySymbol) -> Self {
+        let CurrencySymbol(bytes) = item;
         if bytes.is_empty() {
-            CurrencySymbol::Ada
+            pla::v2::value::CurrencySymbol::Ada
         } else {
-            CurrencySymbol::NativeToken(MintingPolicyHash(ScriptHash(LedgerBytes(bytes))))
+            pla::v2::value::CurrencySymbol::NativeToken(pla::v2::script::MintingPolicyHash(
+                pla::v2::script::ScriptHash(pla::v2::crypto::LedgerBytes(bytes)),
+            ))
         }
     }
 }
@@ -68,57 +57,57 @@ impl From<CurrencySymbolDB> for CurrencySymbol {
 
 #[derive(sqlx::Type, Clone, Debug, PartialEq, Eq)]
 #[sqlx(type_name = "Plutus.TokenName")]
-pub struct TokenNameDB(pub Vec<u8>);
+pub struct TokenName(pub Vec<u8>);
 
-impl From<TokenName> for TokenNameDB {
+impl From<pla::v2::value::TokenName> for TokenName {
+    fn from(item: pla::v2::value::TokenName) -> Self {
+        TokenName(item.0 .0)
+    }
+}
+
+impl From<TokenName> for pla::v2::value::TokenName {
     fn from(item: TokenName) -> Self {
-        TokenNameDB(item.0 .0)
-    }
-}
-
-impl From<TokenNameDB> for TokenName {
-    fn from(item: TokenNameDB) -> Self {
-        TokenName(LedgerBytes(item.0))
+        pla::v2::value::TokenName(pla::v2::crypto::LedgerBytes(item.0))
     }
 }
 
 //////////////////////
-/// TxId
+/// TransactionHash
 //////////////////////
 
 #[derive(sqlx::Type, Clone, Debug, PartialEq, Eq)]
-#[sqlx(type_name = "Plutus.TxId")]
-pub struct TransactionHashDB(pub Vec<u8>);
+#[sqlx(type_name = "Plutus.TransactionHash")]
+pub struct TransactionHash(pub Vec<u8>);
 
-impl From<TransactionHash> for TransactionHashDB {
+impl From<pla::v2::transaction::TransactionHash> for TransactionHash {
+    fn from(item: pla::v2::transaction::TransactionHash) -> Self {
+        TransactionHash(item.0 .0)
+    }
+}
+
+impl From<TransactionHash> for pla::v2::transaction::TransactionHash {
     fn from(item: TransactionHash) -> Self {
-        TransactionHashDB(item.0 .0)
-    }
-}
-
-impl From<TransactionHashDB> for TransactionHash {
-    fn from(item: TransactionHashDB) -> Self {
-        TransactionHash(LedgerBytes(item.0))
+        pla::v2::transaction::TransactionHash(pla::v2::crypto::LedgerBytes(item.0))
     }
 }
 
 //////////////////////
-/// PubKeyHash
+/// Ed25519PubKeyHash
 //////////////////////
 
 #[derive(sqlx::Type, Clone, Debug, PartialEq, Eq)]
-#[sqlx(type_name = "Plutus.PubKeyHash")]
-pub struct Ed25519PubKeyHashDB(pub Vec<u8>);
+#[sqlx(type_name = "Plutus.Ed25519PubKeyHash")]
+pub struct Ed25519PubKeyHash(pub Vec<u8>);
 
-impl From<Ed25519PubKeyHash> for Ed25519PubKeyHashDB {
-    fn from(item: Ed25519PubKeyHash) -> Self {
-        Ed25519PubKeyHashDB(item.0 .0)
+impl From<pla::v2::crypto::Ed25519PubKeyHash> for Ed25519PubKeyHash {
+    fn from(item: pla::v2::crypto::Ed25519PubKeyHash) -> Self {
+        Ed25519PubKeyHash(item.0 .0)
     }
 }
 
-impl From<Ed25519PubKeyHashDB> for Ed25519PubKeyHash {
-    fn from(item: Ed25519PubKeyHashDB) -> Self {
-        Ed25519PubKeyHash(LedgerBytes(item.0))
+impl From<Ed25519PubKeyHash> for pla::v2::crypto::Ed25519PubKeyHash {
+    fn from(item: Ed25519PubKeyHash) -> Self {
+        pla::v2::crypto::Ed25519PubKeyHash(pla::v2::crypto::LedgerBytes(item.0))
     }
 }
 
@@ -128,17 +117,17 @@ impl From<Ed25519PubKeyHashDB> for Ed25519PubKeyHash {
 
 #[derive(sqlx::Type, Clone, Debug, PartialEq, Eq)]
 #[sqlx(type_name = "Plutus.ScriptHash")]
-pub struct ScriptHashDB(pub Vec<u8>);
+pub struct ScriptHash(pub Vec<u8>);
 
-impl From<ScriptHash> for ScriptHashDB {
-    fn from(item: ScriptHash) -> Self {
-        ScriptHashDB(item.0 .0)
+impl From<pla::v2::script::ScriptHash> for ScriptHash {
+    fn from(item: pla::v2::script::ScriptHash) -> Self {
+        ScriptHash(item.0 .0)
     }
 }
 
-impl From<ScriptHashDB> for ScriptHash {
-    fn from(item: ScriptHashDB) -> Self {
-        ScriptHash(LedgerBytes(item.0))
+impl From<ScriptHash> for pla::v2::script::ScriptHash {
+    fn from(item: ScriptHash) -> Self {
+        pla::v2::script::ScriptHash(pla::v2::crypto::LedgerBytes(item.0))
     }
 }
 
@@ -148,17 +137,17 @@ impl From<ScriptHashDB> for ScriptHash {
 
 #[derive(sqlx::Type, Clone, Debug, PartialEq, Eq)]
 #[sqlx(type_name = "Plutus.DatumHash")]
-pub struct DatumHashDB(pub Vec<u8>);
+pub struct DatumHash(pub Vec<u8>);
 
-impl From<DatumHash> for DatumHashDB {
-    fn from(item: DatumHash) -> Self {
-        DatumHashDB(item.0 .0)
+impl From<pla::v2::datum::DatumHash> for DatumHash {
+    fn from(item: pla::v2::datum::DatumHash) -> Self {
+        DatumHash(item.0 .0)
     }
 }
 
-impl From<DatumHashDB> for DatumHash {
-    fn from(item: DatumHashDB) -> Self {
-        DatumHash(LedgerBytes(item.0))
+impl From<DatumHash> for pla::v2::datum::DatumHash {
+    fn from(item: DatumHash) -> Self {
+        pla::v2::datum::DatumHash(pla::v2::crypto::LedgerBytes(item.0))
     }
 }
 
@@ -168,16 +157,16 @@ impl From<DatumHashDB> for DatumHash {
 
 #[derive(sqlx::Type, Clone, Debug, PartialEq, Eq, PartialOrd, Ord)]
 #[sqlx(type_name = "Plutus.Slot")]
-pub struct SlotDB(pub i64);
+pub struct Slot(pub i64);
 
-impl From<u64> for SlotDB {
+impl From<u64> for Slot {
     fn from(item: u64) -> Self {
-        SlotDB(item as i64)
+        Slot(item as i64)
     }
 }
 
-impl From<&SlotDB> for u64 {
-    fn from(item: &SlotDB) -> Self {
+impl From<&Slot> for u64 {
+    fn from(item: &Slot) -> Self {
         item.0 as u64
     }
 }
@@ -200,13 +189,13 @@ pub enum PlutusDataEncodingError {
 
 #[derive(sqlx::Type, Clone, Debug, PartialEq, Eq)]
 #[sqlx(type_name = "Plutus.PlutusData")]
-pub struct PlutusDataDB(pub serde_json::Value);
+pub struct PlutusData(pub serde_json::Value);
 
-impl TryFrom<PlutusData> for PlutusDataDB {
+impl TryFrom<pla::plutus_data::PlutusData> for PlutusData {
     type Error = DBTypeConversionError;
 
-    fn try_from(item: PlutusData) -> Result<Self, Self::Error> {
-        Ok(PlutusDataDB(
+    fn try_from(item: pla::plutus_data::PlutusData) -> Result<Self, Self::Error> {
+        Ok(PlutusData(
             csl::plutus::decode_plutus_datum_to_json_value(
                 &item
                     .try_to_csl()
@@ -218,10 +207,10 @@ impl TryFrom<PlutusData> for PlutusDataDB {
     }
 }
 
-impl TryFrom<PlutusDataDB> for PlutusData {
+impl TryFrom<PlutusData> for pla::plutus_data::PlutusData {
     type Error = DBTypeConversionError;
 
-    fn try_from(item: PlutusDataDB) -> Result<Self, Self::Error> {
+    fn try_from(item: PlutusData) -> Result<Self, Self::Error> {
         Ok(csl::plutus::encode_json_value_to_plutus_datum(
             item.0,
             csl::plutus::PlutusDatumSchema::DetailedSchema,
@@ -238,39 +227,41 @@ impl TryFrom<PlutusDataDB> for PlutusData {
 
 #[derive(sqlx::Type, Clone, Debug, PartialEq, Eq)]
 #[sqlx(type_name = "Plutus.Credential")]
-pub struct CredentialDB {
-    pub_key_hash: Option<Ed25519PubKeyHashDB>,
-    script_hash: Option<ScriptHashDB>,
+pub struct Credential {
+    pub_key_hash: Option<Ed25519PubKeyHash>,
+    script_hash: Option<ScriptHash>,
 }
 
-impl From<Credential> for CredentialDB {
-    fn from(item: Credential) -> Self {
+impl From<pla::v2::address::Credential> for Credential {
+    fn from(item: pla::v2::address::Credential) -> Self {
         match item {
-            Credential::PubKey(pkh) => CredentialDB {
+            pla::v2::address::Credential::PubKey(pkh) => Credential {
                 pub_key_hash: Some(pkh.into()),
                 script_hash: None,
             },
-            Credential::Script(ValidatorHash(sh)) => CredentialDB {
-                pub_key_hash: None,
-                script_hash: Some(sh.into()),
-            },
+            pla::v2::address::Credential::Script(pla::v2::script::ValidatorHash(sh)) => {
+                Credential {
+                    pub_key_hash: None,
+                    script_hash: Some(sh.into()),
+                }
+            }
         }
     }
 }
 
-impl TryFrom<CredentialDB> for Credential {
+impl TryFrom<Credential> for pla::v2::address::Credential {
     type Error = DBTypeConversionError;
 
-    fn try_from(item: CredentialDB) -> Result<Self, Self::Error> {
+    fn try_from(item: Credential) -> Result<Self, Self::Error> {
         Ok(match item {
-            CredentialDB {
+            Credential {
                 pub_key_hash: Some(pkh_db),
                 ..
-            } => Credential::PubKey(pkh_db.into()),
-            CredentialDB {
+            } => pla::v2::address::Credential::PubKey(pkh_db.into()),
+            Credential {
                 script_hash: Some(sh_db),
                 ..
-            } => Credential::Script(ValidatorHash(sh_db.into())),
+            } => pla::v2::address::Credential::Script(pla::v2::script::ValidatorHash(sh_db.into())),
             _ => Err(DBTypeConversionError::InvariantBroken(
                 "DB Credential must have either 'pub_key_hash' or 'script_hash'".to_string(),
             ))?,
@@ -279,22 +270,22 @@ impl TryFrom<CredentialDB> for Credential {
 }
 
 //////////////////////
-/// StakingPtr
+/// ChainPointer
 //////////////////////
 
 #[derive(sqlx::Type, Clone, Debug, PartialEq, Eq)]
-#[sqlx(type_name = "Plutus.StakingPtr")]
-pub struct ChainPointerDB {
+#[sqlx(type_name = "Plutus.ChainPointer")]
+pub struct ChainPointer {
     slot_num: i64,
     tx_idx: i64,
     cert_idx: i64,
 }
 
-impl TryFrom<ChainPointer> for ChainPointerDB {
+impl TryFrom<pla::v2::address::ChainPointer> for ChainPointer {
     type Error = DBTypeConversionError;
 
-    fn try_from(item: ChainPointer) -> Result<Self, Self::Error> {
-        Ok(ChainPointerDB {
+    fn try_from(item: pla::v2::address::ChainPointer) -> Result<Self, Self::Error> {
+        Ok(ChainPointer {
             slot_num: item
                 .slot_number
                 .0
@@ -314,12 +305,12 @@ impl TryFrom<ChainPointer> for ChainPointerDB {
     }
 }
 
-impl From<ChainPointerDB> for ChainPointer {
-    fn from(item: ChainPointerDB) -> Self {
-        ChainPointer {
-            slot_number: Slot(BigInt::from(item.slot_num)),
-            transaction_index: TransactionIndex(BigInt::from(item.tx_idx)),
-            certificate_index: CertificateIndex(BigInt::from(item.cert_idx)),
+impl From<ChainPointer> for pla::v2::address::ChainPointer {
+    fn from(item: ChainPointer) -> Self {
+        pla::v2::address::ChainPointer {
+            slot_number: pla::v2::address::Slot(BigInt::from(item.slot_num)),
+            transaction_index: pla::v2::address::TransactionIndex(BigInt::from(item.tx_idx)),
+            certificate_index: pla::v2::address::CertificateIndex(BigInt::from(item.cert_idx)),
         }
     }
 }
@@ -330,21 +321,21 @@ impl From<ChainPointerDB> for ChainPointer {
 
 #[derive(sqlx::Type, Clone, Debug, PartialEq, Eq)]
 #[sqlx(type_name = "Plutus.StakingCredential")]
-pub struct StakingCredentialDB {
-    staking_hash: Option<CredentialDB>,
-    staking_ptr: Option<ChainPointerDB>,
+pub struct StakingCredential {
+    staking_hash: Option<Credential>,
+    staking_ptr: Option<ChainPointer>,
 }
 
-impl TryFrom<StakingCredential> for StakingCredentialDB {
+impl TryFrom<pla::v2::address::StakingCredential> for StakingCredential {
     type Error = DBTypeConversionError;
 
-    fn try_from(item: StakingCredential) -> Result<Self, Self::Error> {
+    fn try_from(item: pla::v2::address::StakingCredential) -> Result<Self, Self::Error> {
         Ok(match item {
-            StakingCredential::Hash(cred) => StakingCredentialDB {
+            pla::v2::address::StakingCredential::Hash(cred) => StakingCredential {
                 staking_hash: Some(cred.into()),
                 staking_ptr: None,
             },
-            StakingCredential::Pointer(ptr) => StakingCredentialDB {
+            pla::v2::address::StakingCredential::Pointer(ptr) => StakingCredential {
                 staking_hash: None,
                 staking_ptr: Some(ptr.try_into()?),
             },
@@ -352,19 +343,19 @@ impl TryFrom<StakingCredential> for StakingCredentialDB {
     }
 }
 
-impl TryFrom<StakingCredentialDB> for StakingCredential {
+impl TryFrom<StakingCredential> for pla::v2::address::StakingCredential {
     type Error = DBTypeConversionError;
 
-    fn try_from(item: StakingCredentialDB) -> Result<Self, Self::Error> {
+    fn try_from(item: StakingCredential) -> Result<Self, Self::Error> {
         Ok(match item {
-            StakingCredentialDB {
+            StakingCredential {
                 staking_hash: Some(cred),
                 ..
-            } => StakingCredential::Hash(cred.try_into()?),
-            StakingCredentialDB {
+            } => pla::v2::address::StakingCredential::Hash(cred.try_into()?),
+            StakingCredential {
                 staking_ptr: Some(ptr),
                 ..
-            } => StakingCredential::Pointer(ptr.into()),
+            } => pla::v2::address::StakingCredential::Pointer(ptr.into()),
 
             _ => Err(DBTypeConversionError::InvariantBroken(
                 "DB StakingCredential must have either 'staking_hash' or 'staking_ptr'".to_string(),
@@ -379,34 +370,34 @@ impl TryFrom<StakingCredentialDB> for StakingCredential {
 
 #[derive(sqlx::Type, Clone, Debug, PartialEq, Eq)]
 #[sqlx(type_name = "Plutus.Address")]
-pub struct AddressDB {
-    credential: CredentialDB,
-    staking_credential: Option<StakingCredentialDB>,
+pub struct Address {
+    credential: Credential,
+    staking_credential: Option<StakingCredential>,
 }
 
-impl TryFrom<Address> for AddressDB {
+impl TryFrom<pla::v2::address::Address> for Address {
     type Error = DBTypeConversionError;
 
-    fn try_from(item: Address) -> Result<Self, Self::Error> {
-        Ok(AddressDB {
+    fn try_from(item: pla::v2::address::Address) -> Result<Self, Self::Error> {
+        Ok(Address {
             credential: item.credential.into(),
             staking_credential: item
                 .staking_credential
-                .map(StakingCredentialDB::try_from)
+                .map(StakingCredential::try_from)
                 .transpose()?,
         })
     }
 }
 
-impl TryFrom<AddressDB> for Address {
+impl TryFrom<Address> for pla::v2::address::Address {
     type Error = DBTypeConversionError;
 
-    fn try_from(item: AddressDB) -> Result<Self, Self::Error> {
-        Ok(Address {
+    fn try_from(item: Address) -> Result<Self, Self::Error> {
+        Ok(pla::v2::address::Address {
             credential: item.credential.try_into()?,
             staking_credential: item
                 .staking_credential
-                .map(StakingCredential::try_from)
+                .map(pla::v2::address::StakingCredential::try_from)
                 .transpose()?,
         })
     }
@@ -418,17 +409,29 @@ impl TryFrom<AddressDB> for Address {
 
 #[derive(sqlx::Type, Clone, Debug, PartialEq, Eq)]
 #[sqlx(type_name = "Plutus.AssetQuantity")]
-pub struct AssetQuantityDB {
-    currency_symbol: CurrencySymbolDB,
-    token_name: TokenNameDB,
+pub struct AssetQuantity {
+    currency_symbol: CurrencySymbol,
+    token_name: TokenName,
     amount: i64,
 }
 
-impl TryFrom<(CurrencySymbol, TokenName, BigInt)> for AssetQuantityDB {
+impl
+    TryFrom<(
+        pla::v2::value::CurrencySymbol,
+        pla::v2::value::TokenName,
+        BigInt,
+    )> for AssetQuantity
+{
     type Error = DBTypeConversionError;
 
-    fn try_from(item: (CurrencySymbol, TokenName, BigInt)) -> Result<Self, Self::Error> {
-        Ok(AssetQuantityDB {
+    fn try_from(
+        item: (
+            pla::v2::value::CurrencySymbol,
+            pla::v2::value::TokenName,
+            BigInt,
+        ),
+    ) -> Result<Self, Self::Error> {
+        Ok(AssetQuantity {
             currency_symbol: item.0.into(),
             token_name: item.1.into(),
             amount: item
@@ -439,8 +442,14 @@ impl TryFrom<(CurrencySymbol, TokenName, BigInt)> for AssetQuantityDB {
     }
 }
 
-impl From<AssetQuantityDB> for (CurrencySymbol, TokenName, BigInt) {
-    fn from(item: AssetQuantityDB) -> Self {
+impl From<AssetQuantity>
+    for (
+        pla::v2::value::CurrencySymbol,
+        pla::v2::value::TokenName,
+        BigInt,
+    )
+{
+    fn from(item: AssetQuantity) -> Self {
         (
             item.currency_symbol.into(),
             item.token_name.into(),
@@ -455,12 +464,12 @@ impl From<AssetQuantityDB> for (CurrencySymbol, TokenName, BigInt) {
 
 #[derive(sqlx::Type, Clone, Debug, PartialEq, Eq)]
 #[sqlx(type_name = "Plutus.Value")]
-pub struct ValueDB(pub Vec<AssetQuantityDB>);
+pub struct Value(pub Vec<AssetQuantity>);
 
-impl TryFrom<Value> for ValueDB {
+impl TryFrom<pla::v2::value::Value> for Value {
     type Error = DBTypeConversionError;
 
-    fn try_from(item: Value) -> Result<Self, Self::Error> {
+    fn try_from(item: pla::v2::value::Value) -> Result<Self, Self::Error> {
         let assets = item
             .0
             .iter()
@@ -468,22 +477,22 @@ impl TryFrom<Value> for ValueDB {
                 assets
                     .iter()
                     .map(|(tn, amount)| {
-                        AssetQuantityDB::try_from((cs.to_owned(), tn.to_owned(), amount.to_owned()))
+                        AssetQuantity::try_from((cs.to_owned(), tn.to_owned(), amount.to_owned()))
                     })
                     .collect::<Vec<_>>()
             })
-            .collect::<Result<Vec<AssetQuantityDB>, DBTypeConversionError>>()?;
+            .collect::<Result<Vec<AssetQuantity>, DBTypeConversionError>>()?;
 
-        Ok(ValueDB(assets))
+        Ok(Value(assets))
     }
 }
 
-impl From<ValueDB> for Value {
-    fn from(item: ValueDB) -> Self {
+impl From<Value> for pla::v2::value::Value {
+    fn from(item: Value) -> Self {
         item.0.into_iter().fold(
-            Value::new(),
+            pla::v2::value::Value::new(),
             |value,
-             AssetQuantityDB {
+             AssetQuantity {
                  currency_symbol,
                  token_name,
                  amount,
@@ -495,21 +504,21 @@ impl From<ValueDB> for Value {
 }
 
 //////////////////////
-/// TxOutRef
+/// TransactionInput
 //////////////////////
 
 #[derive(sqlx::Type, Clone, Debug, PartialEq, Eq)]
-#[sqlx(type_name = "Plutus.TxOutRef")]
-pub struct TransactionInputDB {
-    tx_id: TransactionHashDB,
+#[sqlx(type_name = "Plutus.TransactionInput")]
+pub struct TransactionInput {
+    tx_id: TransactionHash,
     tx_idx: i64,
 }
 
-impl TryFrom<TransactionInput> for TransactionInputDB {
+impl TryFrom<pla::v2::transaction::TransactionInput> for TransactionInput {
     type Error = DBTypeConversionError;
 
-    fn try_from(item: TransactionInput) -> Result<Self, Self::Error> {
-        Ok(TransactionInputDB {
+    fn try_from(item: pla::v2::transaction::TransactionInput) -> Result<Self, Self::Error> {
+        Ok(TransactionInput {
             tx_id: item.transaction_id.into(),
             tx_idx: item
                 .index
@@ -519,9 +528,9 @@ impl TryFrom<TransactionInput> for TransactionInputDB {
     }
 }
 
-impl From<TransactionInputDB> for TransactionInput {
-    fn from(item: TransactionInputDB) -> Self {
-        TransactionInput {
+impl From<TransactionInput> for pla::v2::transaction::TransactionInput {
+    fn from(item: TransactionInput) -> Self {
+        pla::v2::transaction::TransactionInput {
             transaction_id: item.tx_id.into(),
             index: item.tx_idx.into(),
         }
@@ -534,85 +543,87 @@ impl From<TransactionInputDB> for TransactionInput {
 
 #[derive(sqlx::Type, Clone, Debug, PartialEq, Eq)]
 #[sqlx(type_name = "Plutus.OutputDatum")]
-pub struct OutputDatumDB {
-    datum_hash: Option<DatumHashDB>,
-    inline_datum: Option<PlutusDataDB>,
+pub struct OutputDatum {
+    datum_hash: Option<DatumHash>,
+    inline_datum: Option<PlutusData>,
 }
 
-impl TryFrom<OutputDatum> for OutputDatumDB {
+impl TryFrom<pla::v2::datum::OutputDatum> for OutputDatum {
+    type Error = DBTypeConversionError;
+
+    fn try_from(item: pla::v2::datum::OutputDatum) -> Result<Self, Self::Error> {
+        Ok(match item {
+            pla::v2::datum::OutputDatum::DatumHash(dh) => OutputDatum {
+                datum_hash: Some(dh.into()),
+                inline_datum: None,
+            },
+            pla::v2::datum::OutputDatum::InlineDatum(pla::v2::datum::Datum(datum)) => OutputDatum {
+                datum_hash: None,
+                inline_datum: Some(datum.try_into()?),
+            },
+            pla::v2::datum::OutputDatum::None => OutputDatum {
+                datum_hash: None,
+                inline_datum: None,
+            },
+        })
+    }
+}
+
+impl TryFrom<OutputDatum> for pla::v2::datum::OutputDatum {
     type Error = DBTypeConversionError;
 
     fn try_from(item: OutputDatum) -> Result<Self, Self::Error> {
         Ok(match item {
-            OutputDatum::DatumHash(dh) => OutputDatumDB {
-                datum_hash: Some(dh.into()),
-                inline_datum: None,
-            },
-            OutputDatum::InlineDatum(Datum(datum)) => OutputDatumDB {
-                datum_hash: None,
-                inline_datum: Some(datum.try_into()?),
-            },
-            OutputDatum::None => OutputDatumDB {
-                datum_hash: None,
-                inline_datum: None,
-            },
-        })
-    }
-}
-
-impl TryFrom<OutputDatumDB> for OutputDatum {
-    type Error = DBTypeConversionError;
-
-    fn try_from(item: OutputDatumDB) -> Result<Self, Self::Error> {
-        Ok(match item {
-            OutputDatumDB {
+            OutputDatum {
                 datum_hash: Some(dh_db),
                 ..
-            } => OutputDatum::DatumHash(dh_db.into()),
-            OutputDatumDB {
+            } => pla::v2::datum::OutputDatum::DatumHash(dh_db.into()),
+            OutputDatum {
                 inline_datum: Some(datum_db),
                 ..
-            } => OutputDatum::InlineDatum(Datum(datum_db.try_into()?)),
-            _ => OutputDatum::None,
+            } => pla::v2::datum::OutputDatum::InlineDatum(pla::v2::datum::Datum(
+                datum_db.try_into()?,
+            )),
+            _ => pla::v2::datum::OutputDatum::None,
         })
     }
 }
 
 //////////////////////
-/// TxOut
+/// TransactionOutput
 //////////////////////
 
 #[derive(sqlx::Type, Clone, Debug, PartialEq, Eq)]
-#[sqlx(type_name = "Plutus.TxOut")]
-pub struct TransactionOutputDB {
-    address: AddressDB,
-    assets: ValueDB,
-    datum: OutputDatumDB,
-    reference_script: Option<ScriptHashDB>,
+#[sqlx(type_name = "Plutus.TransactionOutput")]
+pub struct TransactionOutput {
+    address: Address,
+    assets: Value,
+    datum: OutputDatum,
+    reference_script: Option<ScriptHash>,
 }
 
-impl TryFrom<TransactionOutput> for TransactionOutputDB {
+impl TryFrom<pla::v2::transaction::TransactionOutput> for TransactionOutput {
     type Error = DBTypeConversionError;
 
-    fn try_from(item: TransactionOutput) -> Result<Self, Self::Error> {
-        Ok(TransactionOutputDB {
+    fn try_from(item: pla::v2::transaction::TransactionOutput) -> Result<Self, Self::Error> {
+        Ok(TransactionOutput {
             address: item.address.try_into()?,
             assets: item.value.try_into()?,
             datum: item.datum.try_into()?,
-            reference_script: item.reference_script.map(ScriptHashDB::from),
+            reference_script: item.reference_script.map(ScriptHash::from),
         })
     }
 }
 
-impl TryFrom<TransactionOutputDB> for TransactionOutput {
+impl TryFrom<TransactionOutput> for pla::v2::transaction::TransactionOutput {
     type Error = DBTypeConversionError;
 
-    fn try_from(item: TransactionOutputDB) -> Result<Self, Self::Error> {
-        Ok(TransactionOutput {
+    fn try_from(item: TransactionOutput) -> Result<Self, Self::Error> {
+        Ok(pla::v2::transaction::TransactionOutput {
             address: item.address.try_into()?,
             value: item.assets.into(),
             datum: item.datum.try_into()?,
-            reference_script: item.reference_script.map(ScriptHash::from),
+            reference_script: item.reference_script.map(pla::v2::script::ScriptHash::from),
         })
     }
 }
@@ -622,28 +633,28 @@ impl TryFrom<TransactionOutputDB> for TransactionOutput {
 //////////////////////
 
 #[derive(sqlx::Type, Clone, Debug, PartialEq, Eq)]
-#[sqlx(type_name = "Plutus.TxOut")]
-pub struct TxInInfoDB {
-    reference: TransactionInputDB,
-    output: TransactionOutputDB,
+#[sqlx(type_name = "Plutus.TxInInfo")]
+pub struct TxInInfo {
+    reference: TransactionInput,
+    output: TransactionOutput,
 }
 
-impl TryFrom<TxInInfo> for TxInInfoDB {
+impl TryFrom<pla::v2::transaction::TxInInfo> for TxInInfo {
     type Error = DBTypeConversionError;
 
-    fn try_from(item: TxInInfo) -> Result<Self, Self::Error> {
-        Ok(TxInInfoDB {
+    fn try_from(item: pla::v2::transaction::TxInInfo) -> Result<Self, Self::Error> {
+        Ok(TxInInfo {
             reference: item.reference.try_into()?,
             output: item.output.try_into()?,
         })
     }
 }
 
-impl TryFrom<TxInInfoDB> for TxInInfo {
+impl TryFrom<TxInInfo> for pla::v2::transaction::TxInInfo {
     type Error = DBTypeConversionError;
 
-    fn try_from(item: TxInInfoDB) -> Result<Self, Self::Error> {
-        Ok(TxInInfo {
+    fn try_from(item: TxInInfo) -> Result<Self, Self::Error> {
+        Ok(pla::v2::transaction::TxInInfo {
             reference: item.reference.into(),
             output: item.output.try_into()?,
         })

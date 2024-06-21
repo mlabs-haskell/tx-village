@@ -3,19 +3,17 @@ use plutus_ledger_api::v2::transaction::{TransactionInput, TxInInfo};
 use sqlx::{FromRow, PgConnection};
 use strum_macros::Display;
 use tracing::{event, span, Instrument, Level};
-use tx_indexer::database::plutus::{
-    AddressDB, DBTypeConversionError, OutputDatumDB, SlotDB, TransactionInputDB, ValueDB,
-};
+use tx_indexer::database::plutus as db;
 
 #[derive(Debug, FromRow, PartialEq, Eq)]
 pub struct UtxosTable {
-    pub utxo_ref: TransactionInputDB,
-    pub value: ValueDB,
-    pub address: AddressDB,
-    pub datum: OutputDatumDB,
+    pub utxo_ref: db::TransactionInput,
+    pub value: db::Value,
+    pub address: db::Address,
+    pub datum: db::OutputDatum,
 
-    pub created_at: SlotDB,
-    pub deleted_at: Option<SlotDB>,
+    pub created_at: db::Slot,
+    pub deleted_at: Option<db::Slot>,
 }
 
 #[derive(Debug)]
@@ -28,7 +26,7 @@ where
 }
 
 impl UtxosTable {
-    pub fn new(utxo: TxInInfo, created_at: u64) -> Result<Self, DBTypeConversionError> {
+    pub fn new(utxo: TxInInfo, created_at: u64) -> Result<Self, db::DBTypeConversionError> {
         Ok(Self {
             utxo_ref: utxo.reference.try_into()?,
             value: utxo.output.value.try_into()?,
@@ -81,7 +79,7 @@ impl UtxosTable {
                 WHERE created_at > $1
                 "#,
             )
-            .bind(SlotDB::from(transaction_block))
+            .bind(db::Slot::from(transaction_block))
             .fetch_all(&mut *conn)
             .await
             .map_err(|err| {
@@ -96,7 +94,7 @@ impl UtxosTable {
                 WHERE deleted_at > $1
                 "#,
             )
-            .bind(SlotDB::from(transaction_block))
+            .bind(db::Slot::from(transaction_block))
             .fetch_all(&mut *conn)
             .await
             .map_err(|err| {
@@ -111,7 +109,7 @@ impl UtxosTable {
                 WHERE deleted_at > $1;
                 "#,
             )
-            .bind(SlotDB::from(transaction_block))
+            .bind(db::Slot::from(transaction_block))
             .execute(&mut *conn)
             .await
             .map_err(|err| {
@@ -125,7 +123,7 @@ impl UtxosTable {
                 WHERE created_at > $1;
                 "#,
             )
-            .bind(SlotDB::from(transaction_block))
+            .bind(db::Slot::from(transaction_block))
             .execute(&mut *conn)
             .await
             .map_err(|err| {

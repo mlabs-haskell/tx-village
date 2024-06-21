@@ -14,9 +14,9 @@ CREATE DOMAIN CurrencySymbol AS
 CREATE DOMAIN TokenName As
     BYTEA CHECK (LENGTH(value) <= 32);
 
-CREATE DOMAIN TxId AS Hash32;
+CREATE DOMAIN TransactionHash AS Hash32;
 
-CREATE DOMAIN PubKeyHash AS Hash28;
+CREATE DOMAIN Ed25519PubKeyHash AS Hash28;
 
 CREATE DOMAIN ScriptHash AS Hash28;
 
@@ -27,7 +27,7 @@ CREATE DOMAIN Slot AS BIGINT;
 CREATE DOMAIN PlutusData AS JSONB;
 
 CREATE TYPE Credential_ AS (
-    pub_key_hash PubKeyHash,
+    pub_key_hash Ed25519PubKeyHash,
     script_hash ScriptHash
 );
 
@@ -37,13 +37,13 @@ CREATE DOMAIN Credential AS Credential_
         ((NOT (value).pub_key_hash IS NULL AND (value).script_hash IS NULL))
     ));
 
-CREATE TYPE StakingPtr_ AS (
+CREATE TYPE ChainPointer_ AS (
     slot_num INTEGER,
     tx_idx INTEGER,
     cert_idx INTEGER
 );
 
-CREATE DOMAIN StakingPtr AS StakingPtr_ 
+CREATE DOMAIN ChainPointer AS ChainPointer_ 
     CHECK ((value) IS NULL OR (
         NOT (value).slot_num IS NULL AND
         NOT (value).tx_idx IS NULL AND
@@ -52,7 +52,7 @@ CREATE DOMAIN StakingPtr AS StakingPtr_
 
 CREATE TYPE StakingCredential_ AS (
     staking_hash Credential,
-    staking_ptr StakingPtr
+    staking_ptr ChainPointer
 );
 
 CREATE DOMAIN StakingCredential AS StakingCredential_
@@ -86,12 +86,12 @@ CREATE DOMAIN AssetQuantity AS AssetQuantity_
 
 CREATE DOMAIN Value AS AssetQuantity[];
 
-CREATE TYPE TxOutRef_ AS (
-    tx_id TxId,
+CREATE TYPE TransactionInput_ AS (
+    tx_id TransactionHash,
     tx_idx BIGINT
 );
 
-CREATE DOMAIN TxOutRef AS TxOutRef_
+CREATE DOMAIN TransactionInput AS TransactionInput_
     CHECK ((value) IS NULL OR (
         NOT (value).tx_id IS NULL AND
         NOT (value).tx_idx IS NULL
@@ -102,22 +102,22 @@ CREATE TYPE OutputDatum AS (
     inline_datum PlutusData
 );
 
-CREATE TYPE TxOut_ AS (
+CREATE TYPE TransactionOutput_ AS (
     address Address,
     assets Value,
     datum OutputDatum,
     reference_script ScriptHash
 );
 
-CREATE DOMAIN TxOut AS TxOut_
+CREATE DOMAIN TransactionOutput AS TransactionOutput_
     CHECK ((value) IS NULL OR (
         NOT (value).address IS NULL AND
         NOT (value).assets IS NULL
     ));
 
 CREATE TYPE TxInInfo_ AS (
-    reference TxOutRef,
-    output TxOut
+    reference TransactionInput,
+    output TransactionOutput
 );
 
 CREATE DOMAIN TxInInfo AS TxInInfo_
