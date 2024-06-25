@@ -2,7 +2,7 @@
 , extraDDLs ? [ ]
 , pgUser ? "tx_indexer"
 , pgPort ? "5555"
-, pgDir ? "$PWD/.pg"
+, pgDir ? "./.pg"
 , postgresql ? pkgs.postgresql_16
 , extraPostgresConf ? ""
 }:
