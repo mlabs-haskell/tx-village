@@ -13,6 +13,7 @@ module Ledger.Sim (
   askLedgerCtx,
   throwLedgerError,
   genTxId,
+  getTxId,
 ) where
 
 import Data.ByteArray (convert)
@@ -136,3 +137,6 @@ genTxId =
     . LBS.toStrict
     . serialise
     . getPOSIXTime
+
+getTxId :: LedgerSim ctx st e TxId
+getTxId = gets $ genTxId . ls'currentTime
