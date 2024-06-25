@@ -12,7 +12,7 @@ use plutus_ledger_api::{
         crypto::Ed25519PubKeyHash,
         datum::{Datum, DatumHash, OutputDatum},
         redeemer::Redeemer,
-        script::{MintingPolicyHash, ScriptHash, ValidatorHash},
+        script::{MintingPolicyHash, ScriptHash},
         transaction::{POSIXTimeRange, TransactionHash, TransactionInput, TransactionOutput},
         value::{CurrencySymbol, TokenName, Value},
     },
@@ -233,8 +233,7 @@ impl TryFromPLA<Vec<TransactionInput>> for csl::TransactionInputs {
 }
 
 pub struct TransactionOutputExtraInfo<'a> {
-    pub minting_policies: &'a BTreeMap<MintingPolicyHash, crate::utils::script::ScriptOrRef>,
-    pub validators: &'a BTreeMap<ValidatorHash, crate::utils::script::ScriptOrRef>,
+    pub scripts: &'a BTreeMap<ScriptHash, crate::utils::script::ScriptOrRef>,
     pub network_id: u8,
     pub data_cost: &'a csl::DataCost,
 }
@@ -260,13 +259,8 @@ impl TryFromPLA<TransactionOutput> for csl::TransactionOutput {
             .clone()
             .map(|script_hash| -> Result<_, TryFromPLAError> {
                 let script_or_ref = extra_info
-                    .minting_policies
-                    .get(&MintingPolicyHash(script_hash.clone()))
-                    .or_else(|| {
-                        extra_info
-                            .validators
-                            .get(&ValidatorHash(script_hash.clone()))
-                    })
+                    .scripts
+                    .get(&script_hash)
                     .ok_or(TryFromPLAError::MissingScript(script_hash))?;
                 Ok(match script_or_ref {
                     crate::utils::script::ScriptOrRef::RefScript(_, script) => {

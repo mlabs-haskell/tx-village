@@ -189,8 +189,7 @@ mod e2e_tests {
             })
             .build();
 
-        let validators = BTreeMap::new();
-        let minting_policies = BTreeMap::from([minting_policy.clone()]);
+        let scripts = BTreeMap::from([minting_policy.1.clone().with_script_hash()]);
 
         let collateral_utxo = own_utxos
             .iter()
@@ -205,13 +204,7 @@ mod e2e_tests {
         let tx_bakery = TxBakery::init(ogmios).await.unwrap();
 
         let change_strategy = ChangeStrategy::Address(wallet.get_change_addr());
-        let tx = TxWithCtx::new(
-            &tx_info,
-            &validators,
-            &minting_policies,
-            &collateral,
-            &change_strategy,
-        );
+        let tx = TxWithCtx::new(&tx_info, &scripts, &collateral, &change_strategy);
 
         let tx_hash = tx_bakery
             .bake_and_deliver(ogmios, &wallet, tx)

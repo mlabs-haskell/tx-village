@@ -5,7 +5,8 @@ use plutus_ledger_api::v2::address::{Address, Credential};
 use plutus_ledger_api::v2::crypto::LedgerBytes;
 use plutus_ledger_api::v2::datum::{Datum, OutputDatum};
 use plutus_ledger_api::v2::redeemer::Redeemer;
-use plutus_ledger_api::v2::script::{MintingPolicyHash, ValidatorHash};
+use plutus_ledger_api::v2::script::MintingPolicyHash;
+use plutus_ledger_api::v2::script::ValidatorHash;
 use plutus_ledger_api::v2::transaction::{
     TransactionHash, TransactionInfo, TransactionInput, TransactionOutput, TxInInfo,
 };
@@ -24,8 +25,6 @@ mod csl;
 
 /// Transaction that stores a EqDatum value at the Eq Validator.
 mod lock_eq_datum {
-    use tx_bakery::ChangeStrategy;
-
     use super::*;
 
     pub fn mk_tx_info(
@@ -54,7 +53,7 @@ mod lock_eq_datum {
         wallet: &impl Wallet,
         chain_query: &impl ChainQuery,
         submitter: &impl Submitter,
-        eq_validator: &(ValidatorHash, ScriptOrRef),
+        eq_validator: (ValidatorHash, ScriptOrRef),
         example_eq_datum: &EqDatum,
     ) -> Result<TransactionHash> {
         let utxos = chain_query
@@ -68,16 +67,14 @@ mod lock_eq_datum {
 
         let tx_info = mk_tx_info(&eq_validator_addr, example_eq_datum, &utxos);
 
-        let validators = BTreeMap::new();
-        let minting_policies = BTreeMap::new();
+        let scripts = BTreeMap::new();
 
         let tx_bakery = TxBakery::init(chain_query).await?;
         let change_strategy = ChangeStrategy::Address(wallet.get_change_addr());
 
         let tx = TxWithCtx::new(
             &tx_info,
-            &validators,
-            &minting_policies,
+            &scripts,
             &CollateralStrategy::None,
             &change_strategy,
         );
@@ -121,7 +118,7 @@ mod claim_eq_datum {
         wallet: &impl Wallet,
         chain_query: &impl ChainQuery,
         submitter: &impl Submitter,
-        eq_validator: &(ValidatorHash, ScriptOrRef),
+        eq_validator: (ValidatorHash, ScriptOrRef),
         eq_redeemer: &EqRedeemer,
         datum: &EqDatum,
     ) -> Result<TransactionHash> {
@@ -148,8 +145,7 @@ mod claim_eq_datum {
 
         let tx_info = mk_tx_info(&wallet.get_change_addr(), &utxos, tx_in, &eq_redeemer);
 
-        let validators = BTreeMap::from([eq_validator.clone()]);
-        let minting_policies = BTreeMap::new();
+        let scripts = BTreeMap::from([eq_validator.1.with_script_hash()]);
 
         let collateral_utxo = utxos
             .iter()
@@ -164,13 +160,7 @@ mod claim_eq_datum {
         let tx_bakery = TxBakery::init(chain_query).await?;
 
         let change_strategy = ChangeStrategy::Address(wallet.get_change_addr());
-        let tx = TxWithCtx::new(
-            &tx_info,
-            &validators,
-            &minting_policies,
-            &collateral,
-            &change_strategy,
-        );
+        let tx = TxWithCtx::new(&tx_info, &scripts, &collateral, &change_strategy);
 
         tx_bakery.bake_and_deliver(submitter, wallet, tx).await
     }
@@ -217,7 +207,7 @@ mod mint_with_secret {
         wallet: &impl Wallet,
         chain_query: &impl ChainQuery,
         submitter: &impl Submitter,
-        minting_policy: &(MintingPolicyHash, ScriptOrRef),
+        minting_policy: (MintingPolicyHash, ScriptOrRef),
     ) -> Result<TransactionHash> {
         let utxos = chain_query
             .query_utxos_by_addr(&wallet.get_change_addr())
@@ -234,8 +224,7 @@ mod mint_with_secret {
             &utxos,
         );
 
-        let validators = BTreeMap::new();
-        let minting_policies = BTreeMap::from([minting_policy.clone()]);
+        let scripts = BTreeMap::from([minting_policy.1.with_script_hash()]);
 
         let collateral_utxo = utxos
             .iter()
@@ -250,13 +239,7 @@ mod mint_with_secret {
         let tx_bakery = TxBakery::init(chain_query).await?;
 
         let change_strategy = ChangeStrategy::Address(wallet.get_change_addr());
-        let tx = TxWithCtx::new(
-            &tx_info,
-            &validators,
-            &minting_policies,
-            &collateral,
-            &change_strategy,
-        );
+        let tx = TxWithCtx::new(&tx_info, &scripts, &collateral, &change_strategy);
 
         tx_bakery.bake_and_deliver(submitter, wallet, tx).await
     }
@@ -291,7 +274,7 @@ mod burn_with_secret {
         wallet: &impl Wallet,
         chain_query: &impl ChainQuery,
         submitter: &impl Submitter,
-        minting_policy: &(MintingPolicyHash, ScriptOrRef),
+        minting_policy: (MintingPolicyHash, ScriptOrRef),
     ) -> Result<TransactionHash> {
         let utxos = chain_query
             .query_utxos_by_addr(&wallet.get_change_addr())
@@ -309,8 +292,7 @@ mod burn_with_secret {
 
         let tx_info = mk_tx_info(&cur_sym, &token_name, tx_in, 1234);
 
-        let validators = BTreeMap::new();
-        let minting_policies = BTreeMap::from([minting_policy.clone()]);
+        let scripts = BTreeMap::from([minting_policy.1.with_script_hash()]);
 
         let collateral_utxo = utxos
             .iter()
@@ -325,13 +307,7 @@ mod burn_with_secret {
         let tx_bakery = TxBakery::init(chain_query).await?;
 
         let change_strategy = ChangeStrategy::Address(wallet.get_change_addr());
-        let tx = TxWithCtx::new(
-            &tx_info,
-            &validators,
-            &minting_policies,
-            &collateral,
-            &change_strategy,
-        );
+        let tx = TxWithCtx::new(&tx_info, &scripts, &collateral, &change_strategy);
 
         tx_bakery.bake_and_deliver(submitter, wallet, tx).await
     }
@@ -382,8 +358,8 @@ mod mint_with_ref_input {
         chain_query: &impl ChainQuery,
         submitter: &impl Submitter,
         datum: &EqDatum,
-        minting_policy: &(MintingPolicyHash, ScriptOrRef),
-        eq_validator: &(ValidatorHash, ScriptOrRef),
+        minting_policy: (MintingPolicyHash, ScriptOrRef),
+        eq_validator: (ValidatorHash, ScriptOrRef),
     ) -> Result<TransactionHash> {
         let eq_validator_addr = Address {
             credential: Credential::Script(eq_validator.0.clone()),
@@ -418,8 +394,7 @@ mod mint_with_ref_input {
             &utxos,
         );
 
-        let validators = BTreeMap::new();
-        let minting_policies = BTreeMap::from([minting_policy.clone()]);
+        let scripts = BTreeMap::from([minting_policy.1.with_script_hash()]);
 
         let collateral_utxo = utxos
             .iter()
@@ -434,13 +409,7 @@ mod mint_with_ref_input {
         let tx_bakery = TxBakery::init(chain_query).await?;
 
         let change_strategy = ChangeStrategy::Address(wallet.get_change_addr());
-        let tx = TxWithCtx::new(
-            &tx_info,
-            &validators,
-            &minting_policies,
-            &collateral,
-            &change_strategy,
-        );
+        let tx = TxWithCtx::new(&tx_info, &scripts, &collateral, &change_strategy);
 
         tx_bakery.bake_and_deliver(submitter, wallet, tx).await
     }
@@ -473,7 +442,7 @@ mod zero_ada_mint {
         wallet: &impl Wallet,
         chain_query: &impl ChainQuery,
         submitter: &impl Submitter,
-        minting_policy: &(MintingPolicyHash, ScriptOrRef),
+        minting_policy: (MintingPolicyHash, ScriptOrRef),
     ) -> Result<TransactionHash> {
         let utxos = chain_query
             .query_utxos_by_addr(&wallet.get_change_addr())
@@ -490,8 +459,7 @@ mod zero_ada_mint {
             &utxos,
         );
 
-        let validators = BTreeMap::new();
-        let minting_policies = BTreeMap::from([minting_policy.clone()]);
+        let scripts = BTreeMap::from([minting_policy.1.with_script_hash()]);
 
         let collateral_utxo = utxos
             .iter()
@@ -506,13 +474,7 @@ mod zero_ada_mint {
         let tx_bakery = TxBakery::init(chain_query).await?;
 
         let change_strategy = ChangeStrategy::Address(wallet.get_change_addr());
-        let tx = TxWithCtx::new(
-            &tx_info,
-            &validators,
-            &minting_policies,
-            &collateral,
-            &change_strategy,
-        );
+        let tx = TxWithCtx::new(&tx_info, &scripts, &collateral, &change_strategy);
 
         tx_bakery.bake_and_deliver(submitter, wallet, tx).await
     }
@@ -533,15 +495,13 @@ mod store_ref_script {
             .find(|(_tx_in, tx_out)| tx_out.value.get_ada_amount() >= BigInt::from(5_000_000))
             .expect("Cannot find spendable input UTxO.");
 
-        let MintingPolicyHash(script_hash) = minting_policy_hash;
-
         TxScaffold::new()
             .add_pub_key_input(fee_input.0.clone(), fee_input.1.into())
             .add_output(TransactionOutput {
                 address: change_addr.clone(),
                 value: Value::new(),
                 datum: OutputDatum::None,
-                reference_script: Some(script_hash.clone()),
+                reference_script: Some(minting_policy_hash.0.clone()),
             })
             .build()
     }
@@ -549,7 +509,7 @@ mod store_ref_script {
         wallet: &impl Wallet,
         chain_query: &impl ChainQuery,
         submitter: &impl Submitter,
-        minting_policy: &(MintingPolicyHash, ScriptOrRef),
+        minting_policy: (MintingPolicyHash, ScriptOrRef),
     ) -> Result<TransactionHash> {
         let utxos = chain_query
             .query_utxos_by_addr(&wallet.get_change_addr())
@@ -557,8 +517,7 @@ mod store_ref_script {
 
         let tx_info = mk_tx_info(&wallet.get_change_addr(), &minting_policy.0, &utxos);
 
-        let validators = BTreeMap::new();
-        let minting_policies = BTreeMap::from([minting_policy.clone()]);
+        let scripts = BTreeMap::from([minting_policy.1.with_script_hash()]);
 
         let collateral = CollateralStrategy::None;
 
@@ -566,13 +525,7 @@ mod store_ref_script {
 
         let change_strategy = ChangeStrategy::Address(wallet.get_change_addr());
 
-        let tx = TxWithCtx::new(
-            &tx_info,
-            &validators,
-            &minting_policies,
-            &collateral,
-            &change_strategy,
-        );
+        let tx = TxWithCtx::new(&tx_info, &scripts, &collateral, &change_strategy);
 
         tx_bakery.bake_and_deliver(submitter, wallet, tx).await
     }
@@ -648,8 +601,7 @@ mod use_ref_script {
             &utxos,
         );
 
-        let validators = BTreeMap::new();
-        let minting_policies = BTreeMap::from([(minting_policy_hash.clone(), ref_script)]);
+        let scripts = BTreeMap::from([(minting_policy_hash.0.clone(), ref_script)]);
 
         let collateral_utxo = utxos
             .iter()
@@ -665,13 +617,7 @@ mod use_ref_script {
 
         let change_strategy = ChangeStrategy::Address(wallet.get_change_addr());
 
-        let tx = TxWithCtx::new(
-            &tx_info,
-            &validators,
-            &minting_policies,
-            &collateral,
-            &change_strategy,
-        );
+        let tx = TxWithCtx::new(&tx_info, &scripts, &collateral, &change_strategy);
 
         let tx = tx_bakery.bake_signed_tx(submitter, wallet, tx).await?;
         let witness_scripts = tx.witness_set().plutus_scripts().unwrap();
@@ -709,8 +655,7 @@ mod with_metadata {
 
         let tx_info = mk_tx_info(&utxos);
 
-        let validators = BTreeMap::new();
-        let minting_policies = BTreeMap::new();
+        let scripts = BTreeMap::new();
 
         let tx_bakery = TxBakery::init(chain_query).await?;
 
@@ -721,8 +666,7 @@ mod with_metadata {
 
         let tx = TxWithCtx::new(
             &tx_info,
-            &validators,
-            &minting_policies,
+            &scripts,
             &CollateralStrategy::None,
             &change_strategy,
         )
@@ -770,8 +714,7 @@ mod with_last_output_change {
 
         let tx_info = mk_tx_info(wallet.get_change_addr(), &utxos, example_eq_datum);
 
-        let validators = BTreeMap::new();
-        let minting_policies = BTreeMap::new();
+        let scripts = BTreeMap::new();
 
         let tx_bakery = TxBakery::init(chain_query).await?;
 
@@ -779,8 +722,7 @@ mod with_last_output_change {
 
         let tx = TxWithCtx::new(
             &tx_info,
-            &validators,
-            &minting_policies,
+            &scripts,
             &CollateralStrategy::None,
             &change_strategy,
         );
@@ -870,7 +812,7 @@ mod tests {
             &wallet,
             &ogmios,
             &ogmios,
-            &eq_validator,
+            eq_validator.clone(),
             &example_eq_datum_a,
         )
         .await?;
@@ -905,7 +847,7 @@ mod tests {
             &wallet,
             &ogmios,
             &ogmios,
-            &eq_validator,
+            eq_validator,
             &EqRedeemer::IsEqual(example_eq_datum_a.clone()),
             &example_eq_datum_a,
         )
@@ -927,12 +869,13 @@ mod tests {
         let wallet = plutip.get_own_wallet().await.unwrap();
 
         let tx_hash_mint =
-            mint_with_secret::build_and_submit(&wallet, &ogmios, &ogmios, &minting_policy).await?;
+            mint_with_secret::build_and_submit(&wallet, &ogmios, &ogmios, minting_policy.clone())
+                .await?;
 
         ogmios.await_tx_confirm(&tx_hash_mint).await?;
 
         let tx_hash_burn =
-            burn_with_secret::build_and_submit(&wallet, &ogmios, &ogmios, &minting_policy).await?;
+            burn_with_secret::build_and_submit(&wallet, &ogmios, &ogmios, minting_policy).await?;
 
         ogmios.await_tx_confirm(&tx_hash_burn).await?;
 
@@ -958,7 +901,7 @@ mod tests {
             &wallet,
             &ogmios,
             &ogmios,
-            &eq_validator,
+            eq_validator.clone(),
             &example_eq_datum_a,
         )
         .await?;
@@ -970,8 +913,8 @@ mod tests {
             &ogmios,
             &ogmios,
             &example_eq_datum_a,
-            &ref_input_minting_policy,
-            &eq_validator,
+            ref_input_minting_policy,
+            eq_validator,
         )
         .await?;
 
@@ -991,7 +934,7 @@ mod tests {
         let wallet = plutip.get_own_wallet().await.unwrap();
 
         let tx_hash_mint =
-            zero_ada_mint::build_and_submit(&wallet, &ogmios, &ogmios, &minting_policy).await?;
+            zero_ada_mint::build_and_submit(&wallet, &ogmios, &ogmios, minting_policy).await?;
 
         ogmios.await_tx_confirm(&tx_hash_mint).await?;
         Ok(())
@@ -1009,7 +952,8 @@ mod tests {
         let wallet = plutip.get_own_wallet().await.unwrap();
 
         let tx_hash_store_script =
-            store_ref_script::build_and_submit(&wallet, &ogmios, &ogmios, &minting_policy).await?;
+            store_ref_script::build_and_submit(&wallet, &ogmios, &ogmios, minting_policy.clone())
+                .await?;
 
         ogmios.await_tx_confirm(&tx_hash_store_script).await?;
 

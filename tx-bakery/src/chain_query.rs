@@ -9,6 +9,7 @@ use plutus_ledger_api::v2::value::Value;
 use serde::Deserialize;
 use std::collections::BTreeMap;
 use std::future::Future;
+use std::str::FromStr;
 use thiserror::Error;
 
 /// A chain query client responsible for all read actions from the blockchain (no write)
@@ -50,6 +51,18 @@ impl Network {
         match self {
             Network::Testnet => 0b0000,
             Network::Mainnet => 0b0001,
+        }
+    }
+}
+
+impl FromStr for Network {
+    type Err = String;
+
+    fn from_str(str: &str) -> Result<Network, Self::Err> {
+        match str {
+            "mainnet" => Ok(Network::Mainnet),
+            "testnet" => Ok(Network::Testnet),
+            _ => Err(format!("Invalid network variant: {}", str)),
         }
     }
 }
