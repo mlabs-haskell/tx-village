@@ -23,7 +23,7 @@ use plutus_ledger_api::v2::address::{Address, Credential};
 use plutus_ledger_api::v2::crypto::PaymentPubKeyHash;
 use plutus_ledger_api::v2::datum::{Datum, DatumHash, OutputDatum};
 use plutus_ledger_api::v2::redeemer::Redeemer;
-use plutus_ledger_api::v2::script::{MintingPolicyHash, ValidatorHash};
+use plutus_ledger_api::v2::script::{MintingPolicyHash, ScriptHash, ValidatorHash};
 use plutus_ledger_api::v2::transaction::{
     ScriptPurpose, TransactionHash, TransactionInfo, TransactionInput, TransactionOutput, TxInInfo,
 };
@@ -60,8 +60,7 @@ pub struct TxBakery {
 #[derive(Clone, Debug)]
 pub struct TxWithCtx<'a> {
     pub tx_info: &'a TransactionInfo,
-    pub validators: &'a BTreeMap<ValidatorHash, ScriptOrRef>,
-    pub minting_policies: &'a BTreeMap<MintingPolicyHash, ScriptOrRef>,
+    pub scripts: &'a BTreeMap<ScriptHash, ScriptOrRef>,
     pub collateral_strategy: &'a CollateralStrategy,
     pub change_strategy: &'a ChangeStrategy,
     pub metadata: Option<&'a TransactionMetadata>,
@@ -82,15 +81,13 @@ pub enum ChangeStrategy {
 impl<'a> TxWithCtx<'a> {
     pub fn new(
         tx_info: &'a TransactionInfo,
-        validators: &'a BTreeMap<ValidatorHash, ScriptOrRef>,
-        minting_policies: &'a BTreeMap<MintingPolicyHash, ScriptOrRef>,
+        scripts: &'a BTreeMap<ScriptHash, ScriptOrRef>,
         collateral_strategy: &'a CollateralStrategy,
         change_strategy: &'a ChangeStrategy,
     ) -> Self {
         TxWithCtx {
             tx_info,
-            validators,
-            minting_policies,
+            scripts,
             collateral_strategy,
             change_strategy,
             metadata: None,
@@ -194,7 +191,7 @@ impl TxBakery {
         inputs: &Vec<TxInInfo>,
         input_redeemers: &BTreeMap<TransactionInput, Redeemer>,
         input_datums: &BTreeMap<DatumHash, Datum>,
-        scripts: &BTreeMap<ValidatorHash, ScriptOrRef>,
+        scripts: &BTreeMap<ScriptHash, ScriptOrRef>,
         ex_units_map: Option<
             &BTreeMap<(csl::plutus::RedeemerTag, csl::utils::BigNum), csl::plutus::ExUnits>,
         >,
@@ -217,15 +214,15 @@ impl TxBakery {
                         Ok(())
                     }
                     Some(redeemer) => {
-                        let validator_hash = match &output.address.credential {
-                            Credential::Script(validator_hash) => Ok(validator_hash),
+                        let script_hash = match &output.address.credential {
+                            Credential::Script(ValidatorHash(script_hash)) => Ok(script_hash),
                             _ => Err(Error::Internal(anyhow!(
                                 "A public key transaction input should not have a redeemer."
                             ))),
                         }?;
                         let script_or_ref = scripts
-                            .get(&validator_hash)
-                            .ok_or(Error::MissingValidatorScript(validator_hash.clone()))?;
+                            .get(script_hash)
+                            .ok_or(Error::MissingScript(script_hash.clone()))?;
 
                         let csl_redeemer = redeemer.try_to_csl_with((
                             &csl::plutus::RedeemerTag::new_spend(),
@@ -243,7 +240,7 @@ impl TxBakery {
                             ScriptOrRef::PlutusScript(script) => PlutusScriptSource::new(&script),
                             ScriptOrRef::RefScript(tx_in, script) => {
                                 PlutusScriptSource::new_ref_input_with_lang_ver(
-                                    &validator_hash.0.try_to_csl()?,
+                                    &script_hash.try_to_csl()?,
                                     &tx_in.try_to_csl()?,
                                     &script.language_version(),
                                 )
@@ -308,8 +305,7 @@ impl TxBakery {
         &self,
         outputs: &Vec<TransactionOutput>,
         change_strategy: &ChangeStrategy,
-        minting_policies: &BTreeMap<MintingPolicyHash, ScriptOrRef>,
-        validators: &BTreeMap<ValidatorHash, ScriptOrRef>,
+        scripts: &BTreeMap<ScriptHash, ScriptOrRef>,
     ) -> Result<Vec<csl::TransactionOutput>> {
         let normal_outputs = match change_strategy {
             ChangeStrategy::Address(_) => outputs.as_slice(),
@@ -319,8 +315,7 @@ impl TxBakery {
             .iter()
             .map(|output| {
                 output.try_to_csl_with(TransactionOutputExtraInfo {
-                    minting_policies,
-                    validators,
+                    scripts,
                     network_id: self.network_id,
                     data_cost: &self.data_cost,
                 })
@@ -330,8 +325,8 @@ impl TxBakery {
 
     fn mk_mints(
         tx_mint: &Value,
-        mint_redeemers: &BTreeMap<MintingPolicyHash, Redeemer>,
-        scripts: &BTreeMap<MintingPolicyHash, ScriptOrRef>,
+        mint_redeemers: &BTreeMap<ScriptHash, Redeemer>,
+        scripts: &BTreeMap<ScriptHash, ScriptOrRef>,
         ex_units_map: Option<
             &BTreeMap<(csl::plutus::RedeemerTag, csl::utils::BigNum), csl::plutus::ExUnits>,
         >,
@@ -341,22 +336,22 @@ impl TxBakery {
             .0
             .iter()
             .filter_map(|(cur_sym, assets)| match cur_sym {
-                CurrencySymbol::NativeToken(minting_policy_hash) => {
-                    Some((minting_policy_hash, assets))
+                CurrencySymbol::NativeToken(MintingPolicyHash(script_hash)) => {
+                    Some((script_hash, assets))
                 }
                 CurrencySymbol::Ada => None,
             })
             .enumerate()
-            .map(|(idx, (minting_policy_hash, assets))| {
+            .map(|(idx, (script_hash, assets))| {
                 assets
                     .iter()
                     .map(|(token_name, amount)| {
-                        let script_or_ref = scripts.get(&minting_policy_hash).ok_or(
-                            Error::MissingMintingPolicyScript(minting_policy_hash.clone()),
-                        )?;
+                        let script_or_ref = scripts
+                            .get(script_hash)
+                            .ok_or(Error::MissingScript(script_hash.clone()))?;
                         let redeemer = mint_redeemers
-                            .get(&minting_policy_hash)
-                            .ok_or(Error::MissingMintRedeemer(minting_policy_hash.clone()))?;
+                            .get(script_hash)
+                            .ok_or(Error::MissingMintRedeemer(script_hash.clone()))?;
 
                         let csl_redeemer = redeemer
                             .try_to_csl_with((&csl::plutus::RedeemerTag::new_mint(), idx as u64))?;
@@ -372,7 +367,7 @@ impl TxBakery {
                             ScriptOrRef::PlutusScript(script) => PlutusScriptSource::new(&script),
                             ScriptOrRef::RefScript(tx_in, script) => {
                                 PlutusScriptSource::new_ref_input_with_lang_ver(
-                                    &minting_policy_hash.0.try_to_csl()?,
+                                    &script_hash.try_to_csl()?,
                                     &tx_in.try_to_csl()?,
                                     &script.language_version(),
                                 )
@@ -442,8 +437,10 @@ impl TxBakery {
                     ScriptPurpose::Spending(tx_in) => {
                         input_reds.insert(tx_in.clone(), red.clone());
                     }
-                    ScriptPurpose::Minting(CurrencySymbol::NativeToken(mint_pol_hash)) => {
-                        mint_reds.insert(mint_pol_hash.clone(), red.clone());
+                    ScriptPurpose::Minting(CurrencySymbol::NativeToken(MintingPolicyHash(
+                        script_hash,
+                    ))) => {
+                        mint_reds.insert(script_hash.clone(), red.clone());
                     }
 
                     _ => {}
@@ -465,7 +462,7 @@ impl TxBakery {
             &tx.tx_info.inputs,
             &input_redeemers,
             &input_datums,
-            &tx.validators,
+            &tx.scripts,
             tx.ex_units_map,
         )?);
 
@@ -486,7 +483,7 @@ impl TxBakery {
         tx_builder.set_mint_builder(&TxBakery::mk_mints(
             &tx.tx_info.mint,
             &mint_redeemers,
-            &tx.minting_policies,
+            &tx.scripts,
             tx.ex_units_map,
         )?);
 
@@ -528,19 +525,14 @@ impl TxBakery {
             CollateralStrategy::None => {}
         };
 
-        self.mk_outputs(
-            &tx.tx_info.outputs,
-            tx.change_strategy,
-            tx.minting_policies,
-            tx.validators,
-        )?
-        .iter()
-        .map(|tx_out| {
-            tx_builder
-                .add_output(&tx_out)
-                .map_err(|source| Error::TransactionBuildError(anyhow!(source)))
-        })
-        .collect::<Result<_>>()?;
+        self.mk_outputs(&tx.tx_info.outputs, tx.change_strategy, tx.scripts)?
+            .iter()
+            .map(|tx_out| {
+                tx_builder
+                    .add_output(&tx_out)
+                    .map_err(|source| Error::TransactionBuildError(anyhow!(source)))
+            })
+            .collect::<Result<_>>()?;
 
         let (validity_start, ttl) = time_range_into_slots(
             &self.era_summaries,
@@ -634,10 +626,9 @@ impl TxBakery {
     /// Collect witness scripts (validators and mintig policies)
     fn witness_scripts(
         tx_info: &TransactionInfo,
-        validators: &BTreeMap<ValidatorHash, ScriptOrRef>,
-        minting_policies: &BTreeMap<MintingPolicyHash, ScriptOrRef>,
+        scripts: &BTreeMap<ScriptHash, ScriptOrRef>,
     ) -> Result<Vec<csl::plutus::PlutusScript>> {
-        let validator_hashes = tx_info
+        Ok(tx_info
             .inputs
             .iter()
             .filter_map(
@@ -647,39 +638,23 @@ impl TxBakery {
                  }| {
                     match &output.address {
                         Address {
-                            credential: Credential::Script(vh),
+                            credential: Credential::Script(ValidatorHash(script_hash)),
                             staking_credential: _,
-                        } => Some(vh),
+                        } => Some(script_hash),
                         _ => None,
                     }
                 },
             )
-            .collect::<Vec<&ValidatorHash>>();
-
-        let minting_policy_hashes = tx_info
-            .mint
-            .0
-            .iter()
-            .filter_map(|(cs, _)| match cs {
-                CurrencySymbol::NativeToken(mph) => Some(mph),
+            .chain(tx_info.mint.0.iter().filter_map(|(cs, _)| match cs {
+                CurrencySymbol::NativeToken(MintingPolicyHash(script_hash)) => Some(script_hash),
                 _ => None,
-            })
-            .collect::<Vec<&MintingPolicyHash>>();
-
-        Ok(validator_hashes
-            .iter()
-            .map(|vh| {
-                validators
-                    .get(vh)
-                    .cloned()
-                    .ok_or(Error::MissingValidatorScript((*vh).clone()))
-            })
-            .chain(minting_policy_hashes.iter().map(|mph| {
-                minting_policies
-                    .get(mph)
-                    .cloned()
-                    .ok_or(Error::MissingMintingPolicyScript((*mph).clone()))
             }))
+            .map(|script_hash| {
+                scripts
+                    .get(script_hash)
+                    .cloned()
+                    .ok_or(Error::MissingScript((*script_hash).clone()))
+            })
             .collect::<Result<Vec<_>>>()?
             .into_iter()
             .filter_map(|script_or_ref| match script_or_ref {
@@ -793,8 +768,7 @@ impl TxBakery {
         tx: TxWithCtx<'_>,
     ) -> Result<csl::Transaction> {
         let (datums, redeemers) = TxBakery::extract_witnesses(&tx.tx_info)?;
-        let plutus_scripts =
-            TxBakery::witness_scripts(&tx.tx_info, &tx.validators, &tx.minting_policies)?;
+        let plutus_scripts = TxBakery::witness_scripts(&tx.tx_info, &tx.scripts)?;
 
         let aux_data: Result<Option<csl::metadata::AuxiliaryData>> = tx
             .metadata
