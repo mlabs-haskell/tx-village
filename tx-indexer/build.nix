@@ -35,12 +35,7 @@
             config.packages.tx-bakery-rust-src
           ];
 
-          devShellTools = with commands;[
-            init-db
-            start-db
-            stop-db
-            pg
-          ];
+          inherit (commands) devShellTools;
 
           devShellHook = config.settings.shell.hook;
 

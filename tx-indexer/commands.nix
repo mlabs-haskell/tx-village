@@ -4,6 +4,7 @@
 , pgPort ? "5555"
 , pgDir ? "$PWD/.pg"
 , postgresql ? pkgs.postgresql_16
+, extraPostgresConf ? ""
 }:
 let
   postgresConf =
@@ -23,6 +24,8 @@ let
         log_filename = 'postgresql-%Y-%m-%d_%H%M%S.log'
         logging_collector = on
         log_min_error_statement = error
+
+        ${extraPostgresConf}
       '';
 
   ddls = [ ./db/plutus.sql ] ++ extraDDLs;
@@ -74,5 +77,8 @@ let
   };
 
 in
-{ inherit init-db start-db stop-db pg; }
+{
+  inherit postgresConf;
+  devShellTools = [ init-db start-db stop-db pg ];
+}
 
