@@ -35,25 +35,34 @@ library
   import:          common-language
   exposed-modules:
     Ledger.Sim
+    Ledger.Sim.Submission
     Ledger.Sim.Test
     Ledger.Sim.Types.Config
     Ledger.Sim.Types.CostModel
+    Ledger.Sim.Types.State
     Ledger.Sim.Utils.Hashing
+    Ledger.Sim.Validation
+    Ledger.Sim.Validation.Local
+    Ledger.Sim.Validation.Normality
+    Ledger.Sim.Validation.Stateful
+    Ledger.Sim.Validation.Validator
 
   hs-source-dirs:  src
   build-depends:
     , aeson
     , base
     , bytestring
+    , composition-prelude
     , containers
+    , contravariant
     , cryptonite
     , memory
+    , mtl
     , plutus-ledger-api
     , plutus-tx
     , serialise
     , tasty
     , tasty-hunit
-    , transformers
 
 test-suite ledger-sim-test
   import:         common-language
@@ -62,13 +71,16 @@ test-suite ledger-sim-test
   build-depends:
     , base
     , base16-bytestring
+    , binary
     , bytestring
     , containers
+    , cryptonite
     , ledger-sim
+    , memory
+    , mtl
     , plutus-ledger-api
     , plutus-tx
     , tasty
-    , transformers
 
   hs-source-dirs: test
   ghc-options:    -threaded -rtsopts -with-rtsopts=-N
