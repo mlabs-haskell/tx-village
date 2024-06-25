@@ -1,66 +1,22 @@
 { inputs, ... }: {
   perSystem = { system, config, inputs', pkgs, ... }:
     let
-      postgresConf =
-        pkgs.writeText "postgresql.conf"
-          ''
-            # Add Custom Settings
-            log_min_messages = warning
-            log_min_error_statement = error
-            log_min_duration_statement = 100  # ms
-            log_connections = on
-            log_disconnections = on
-            log_duration = on
-            #log_line_prefix = '[] '
-            log_timezone = 'UTC'
-            log_statement = 'all'
-            log_directory = 'pg_log'
-            log_filename = 'postgresql-%Y-%m-%d_%H%M%S.log'
-            logging_collector = on
-            log_min_error_statement = error
-          '';
-
-
-      init-db = pkgs.writeShellApplication {
-        name = "init-db";
-        runtimeInputs = [ pkgs.postgresql_16 ];
-        runtimeEnv = {
-          LC_CTYPE = "en_US.UTF-8";
-          LC_ALL = "en_US.UTF-8";
-          LANG = "en_US.UTF-8";
-        };
-        text = ''
-          export PGDATA="$PWD/.pg"
-          [ ! -d "$PGDATA" ] && pg_ctl initdb -o "-U postgres" && cat "${postgresConf}" >> "$PGDATA/postgresql.conf"
-        '';
+      commands = import ./commands.nix {
+        inherit pkgs;
+        extraDDLs = [ ./db/utxo-indexer.sql ];
       };
 
-      start-db = pkgs.writeShellApplication {
-        name = "start-db";
-        runtimeInputs = [ pkgs.postgresql_16 ];
-        text = ''
-          export PGDATA="$PWD/.pg"
-          pg_ctl -o "-p 5555 -k $PGDATA" start
-        '';
-      };
-
-      stop-db = pkgs.writeShellApplication {
-        name = "stop-db";
-        runtimeInputs = [ pkgs.postgresql_16 ];
-        text = ''
-          export PGDATA="$PWD/.pg"
-          pg_ctl stop && exit
-        '';
-      };
-
-      pg = pkgs.writeShellApplication {
-        name = "pg";
-        runtimeInputs = [ pkgs.postgresql_16 ];
-        text = ''
-          export PGHOST="$PWD/.pg"
-          psql -p 5555 -U postgres
-        '';
-      };
+      # Using the latest alpha of sqlx from GitHub where this is fixed: https://github.com/launchbadge/sqlx/issues/1031
+      sqlx =
+        pkgs.stdenv.mkDerivation
+          {
+            src = inputs.sqlx.outPath;
+            name = "sqlx-0.8.0";
+            unpackPhase = ''
+              mkdir $out
+              cp -r $src/* $out
+            '';
+          };
       rustFlake =
         inputs.flake-lang.lib.${system}.rustFlake {
           src = ./.;
@@ -74,15 +30,12 @@
             inputs'.lbf.packages.lbr-prelude-rust-src
             inputs'.lbf.packages.lbr-prelude-derive-rust-src
 
+            sqlx
+
             config.packages.tx-bakery-rust-src
           ];
 
-          devShellTools = [
-            init-db
-            start-db
-            stop-db
-            pg
-          ];
+          inherit (commands) devShellTools;
 
           devShellHook = config.settings.shell.hook;
 

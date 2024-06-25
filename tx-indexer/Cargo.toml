@@ -19,15 +19,8 @@ cardano-serialization-lib = "11.4"
 bigdecimal = "0.3"
 num-traits = "0.2"
 num-derive = "0.3"
-# errors, config
-anyhow = "1.0.68"
-log = "0.4.17"
-cbor_event = "2.4.0"
-uplc = "0.0.29"
-clap = { version = "4.3.10", features = ["derive"] }
-oura = "1.8.5"
-pallas = "0.18.2"
-sqlx = { version = "0.7", features = [
+# Using the latest alpha of sqlx from GitHub where this is fixed: https://github.com/launchbadge/sqlx/issues/1031
+sqlx = { path = ".extras/sqlx-0.8.0", version = "0.8.0-alpha", features = [
   "postgres",
   "chrono",
   "macros",
@@ -36,6 +29,14 @@ sqlx = { version = "0.7", features = [
   "runtime-tokio",
   "tls-rustls",
 ] }
+# errors, config
+anyhow = "1.0.68"
+log = "0.4.17"
+cbor_event = "2.4.0"
+uplc = "0.0.29"
+clap = { version = "4.3.10", features = ["derive"] }
+oura = "1.8.5"
+pallas = "0.18.2"
 async-trait = "0.1.74"
 tokio = { version = "1.24.2", features = ["full"] }
 tracing = "0.1"
@@ -46,6 +47,7 @@ frunk = "0.4.2"
 tx-bakery = { version = "0.1.0", path = ".extras/tx-bakery-0.1.0" }
 plutus-ledger-api = { version = "0.2.0", path = ".extras/plutus-ledger-api-0.1.0", features = [
   "chrono",
+  "serde",
 ] }
 chrono = "0.4.38"
 

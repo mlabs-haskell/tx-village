@@ -79,7 +79,7 @@ impl FromOura<String> for TokenName {
 impl FromOura<serde_json::Value> for Datum {
     fn from_oura(value: serde_json::Value) -> Result<Self, OuraParseError> {
         let csl_plutus_data = csl::plutus::encode_json_value_to_plutus_datum(
-            value.clone(),
+            value,
             csl::plutus::PlutusDatumSchema::DetailedSchema,
         )
         .with_context(|| "Parsing Datum from Oura")?;
@@ -95,7 +95,12 @@ impl FromOura<serde_json::Value> for Datum {
 impl FromOura<String> for Address {
     fn from_oura(value: String) -> Result<Self, OuraParseError> {
         let csl_addr = csl::address::Address::from_bech32(&value)
+            .or_else(|_| {
+                csl::address::ByronAddress::from_base58(&value)
+                    .map(|byron_addr| byron_addr.to_address())
+            })
             .with_context(|| "Parsing Address from Oura")?;
+
         Ok(csl_addr
             .try_to_pla()
             .with_context(|| "Parsing Address from Oura")?)

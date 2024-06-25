@@ -58,65 +58,70 @@ pub(crate) async fn perform_with_retry<H: EventHandler>(
     let span = span!(Level::DEBUG, "perform_with_retry");
     let _enter = span.enter();
 
-    // TODO(chase): Should we handle Oura to PLA parse failure?
-    if let Some(event) = parse_oura_event(oura_event, progress_tracker).unwrap() {
-        // The retry logic is based on:
-        // https://github.com/txpipe/oura/blob/27fb7e876471b713841d96e292ede40101b151d7/src/utils/retry.rs
-        let mut retry = 0;
+    match parse_oura_event(oura_event, progress_tracker) {
+        Ok(Some(event)) => {
+            // The retry logic is based on:
+            // https://github.com/txpipe/oura/blob/27fb7e876471b713841d96e292ede40101b151d7/src/utils/retry.rs
+            let mut retry = 0;
 
-        loop {
-            // TODO(szg251): Handle errors properly
-            let span = span!(Level::DEBUG, "TryingOperation", retry_count = retry);
-            let res = async {
-          let result = handler.handle(event.clone())
-            .instrument(span!(Level::DEBUG, "UserDefinedHandler")).await;
+            loop {
+                // TODO(szg251): Handle errors properly
+                let span = span!(Level::DEBUG, "TryingOperation", retry_count = retry);
+                let res = async {
+                    let result = handler.handle(event.clone())
+                        .instrument(span!(Level::DEBUG, "UserDefinedHandler")).await;
 
-          match result {
-            Ok(_) => {
-              event!(Level::DEBUG, label=%EventOutcome::Success);
-              Some(Ok(()))
+                    match result {
+                        Ok(_) => {
+                            event!(Level::DEBUG, label=%EventOutcome::Success);
+                            Some(Ok(()))
+                        }
+                        Err(err) => match err.get_error_policy() {
+                            ErrorPolicy::Exit => {
+                                event!(Level::ERROR, label=%EventOutcome::FailureExit);
+                                Some(Err(err))
+                            }
+                            ErrorPolicy::Skip => {
+                                event!(Level::WARN, label=%EventOutcome::FailureSkip, err=?err);
+                                Some(Ok(()))
+                            }
+                            ErrorPolicy::Call(err_f) => span!(Level::WARN, "OperationFailureCall").in_scope(|| {
+                                err_f(err);
+                                Some(Ok(()))
+                            }),
+                            ErrorPolicy::Retry if retry < policy.max_retries => {
+                                event!(Level::WARN, label=%EventOutcome::FailureRetry, err=?err);
+
+                                retry += 1;
+
+                                let backoff = compute_backoff_delay(policy, retry);
+
+                                event!(Level::DEBUG, label=%EventOutcome::RetryBackoff, backoff_secs=backoff.as_secs());
+
+                                std::thread::sleep(backoff);
+
+                                None
+                            }
+                            _ => {
+                                event!(Level::DEBUG, label=%EventOutcome::RetriesExhausted);
+                                Some(Err(err))
+                            }
+                        },
+                    }
+                }
+                .instrument(span)
+                .await;
+
+                if let Some(res) = res {
+                    break res;
+                }
             }
-            Err(err) => match err.get_error_policy() {
-              ErrorPolicy::Exit => {
-                event!(Level::ERROR, label=%EventOutcome::FailureExit);
-                Some(Err(err))
-              }
-              ErrorPolicy::Skip => {
-                event!(Level::WARN, label=%EventOutcome::FailureSkip, err=?err);
-                Some(Ok(()))
-              }
-              ErrorPolicy::Call(err_f) => span!(Level::WARN, "OperationFailureCall").in_scope(|| {
-                err_f(err);
-                Some(Ok(()))
-              }),
-              ErrorPolicy::Retry if retry < policy.max_retries => {
-                event!(Level::WARN, label=%EventOutcome::FailureRetry, err=?err);
-
-                retry += 1;
-
-                let backoff = compute_backoff_delay(policy, retry);
-
-                event!(Level::DEBUG, label=%EventOutcome::RetryBackoff, backoff_secs=backoff.as_secs());
-
-                std::thread::sleep(backoff);
-
-                None
-              }
-              _ => {
-                event!(Level::DEBUG, label=%EventOutcome::RetriesExhausted);
-                Some(Err(err))
-              }
-            },
-          }
         }
-        .instrument(span)
-        .await;
+        Ok(None) => Ok(()),
+        Err(err) => {
+            event!(Level::ERROR, err = ?err);
 
-            if let Some(res) = res {
-                break res;
-            }
+            Ok(())
         }
-    } else {
-        Ok(())
     }
 }
