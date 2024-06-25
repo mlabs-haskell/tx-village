@@ -3,7 +3,7 @@
 
   inputs = {
     # LambdaBuffers as source of truth for many inputs
-    lbf.url = "github:mlabs-haskell/lambda-buffers?ref=szg251/tx-info";
+    lbf.url = "github:mlabs-haskell/lambda-buffers";
 
     # Flake monorepo toolkit
     flake-lang.follows = "lbf/flake-lang";
@@ -27,12 +27,6 @@
 
     # Light-weight wrapper around cardano-node
     ogmios.url = "github:mlabs-haskell/ogmios-nixos";
-
-    # Plutus Ledger API types and utilities for Rust
-    plutus-ledger-api-rust = {
-      url = "github:mlabs-haskell/plutus-ledger-api-rust?ref=v0";
-      inputs.nixpkgs.follows = "nixpkgs";
-    };
 
     # Using the latest alpha of sqlx from GitHub where this is fixed: https://github.com/launchbadge/sqlx/issues/1031
     sqlx = {
