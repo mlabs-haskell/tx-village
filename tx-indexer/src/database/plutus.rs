@@ -256,11 +256,11 @@ impl TryFrom<Credential> for pla::v2::address::Credential {
         Ok(match item {
             Credential {
                 pub_key_hash: Some(pkh_db),
-                ..
+                script_hash: None,
             } => pla::v2::address::Credential::PubKey(pkh_db.into()),
             Credential {
+                pub_key_hash: None,
                 script_hash: Some(sh_db),
-                ..
             } => pla::v2::address::Credential::Script(pla::v2::script::ValidatorHash(sh_db.into())),
             _ => Err(DBTypeConversionError::InvariantBroken(
                 "DB Credential must have either 'pub_key_hash' or 'script_hash'".to_string(),
@@ -350,11 +350,11 @@ impl TryFrom<StakingCredential> for pla::v2::address::StakingCredential {
         Ok(match item {
             StakingCredential {
                 staking_hash: Some(cred),
-                ..
+                staking_ptr: None,
             } => pla::v2::address::StakingCredential::Hash(cred.try_into()?),
             StakingCredential {
+                staking_hash: None,
                 staking_ptr: Some(ptr),
-                ..
             } => pla::v2::address::StakingCredential::Pointer(ptr.into()),
 
             _ => Err(DBTypeConversionError::InvariantBroken(
