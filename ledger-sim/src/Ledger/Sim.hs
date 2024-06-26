@@ -14,6 +14,7 @@ module Ledger.Sim (
   throwLedgerError,
   genTxId,
   getTxId,
+  setLedgerState,
 ) where
 
 import Data.ByteArray (convert)
@@ -108,6 +109,13 @@ getsLedgerState f = gets $ f . ls'userState
 -- | Get the user state from the ledger.
 getLedgerState :: LedgerSim ctx st e st
 getLedgerState = getsLedgerState id
+
+-- | Set the user state
+setLedgerState :: st -> LedgerSim ctx st e ()
+setLedgerState st = modify' $ \s ->
+  s
+    { ls'userState = st
+    }
 
 -- | Get a specific component of the user state from the ledger, using given projection function.
 asksLedgerCtx :: (ctx -> a) -> LedgerSim ctx st e a
