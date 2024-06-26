@@ -523,6 +523,7 @@ validateInputList =
 
 data InvalidInputsError
   = InvalidInputsError'InvalidInputList InvalidInputListError
+  | InvalidInputsError'NoPubKeyInput
   | InvalidInputsError'NoInput
   deriving stock (Show, Eq)
 
@@ -531,6 +532,14 @@ validateInputs =
   mconcat
     [ mapErr InvalidInputsError'InvalidInputList validateInputList
     , validateIf (not . null) $ const InvalidInputsError'NoInput
+    , validateIf
+        ( any
+            ( \txInInfo -> case addressCredential $ txOutAddress $ txInInfoResolved txInInfo of
+                PubKeyCredential _ -> True
+                _ -> False
+            )
+        )
+        $ const InvalidInputsError'NoPubKeyInput
     ]
 
 --------------------------------------------------------------------------------
