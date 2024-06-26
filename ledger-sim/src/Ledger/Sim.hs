@@ -54,8 +54,8 @@ type LedgerSim ctx st e =
     )
 
 data LedgerSimError e
-  = LedgerSimError'SubmissionError SubmissionError
-  | LedgerSimError'ApplicationError e
+  = LedgerSimError'Submission SubmissionError
+  | LedgerSimError'Application e
   deriving stock (Show, Eq)
 
 runLedgerSim :: LedgerConfig ctx -> LedgerState st -> LedgerSim ctx st e a -> Either (LedgerSimError e) a
@@ -93,7 +93,7 @@ submitTx txInfo = do
   void $
     withReaderT (SubmissionEnv txInfo) $
       mapReaderT
-        (mapStateT (withExcept LedgerSimError'SubmissionError))
+        (mapStateT (withExcept LedgerSimError'Submission))
         Submission.submit
 
   pure $ txInfoId txInfo
@@ -119,7 +119,7 @@ askLedgerCtx = asksLedgerCtx id
 
 -- | Throw custom application error.
 throwLedgerError :: e -> LedgerSim ctx st e a
-throwLedgerError = throwError . LedgerSimError'ApplicationError
+throwLedgerError = throwError . LedgerSimError'Application
 
 incrementSlot :: LedgerSim ctx st e ()
 incrementSlot =

@@ -19,13 +19,13 @@ import Data.Functor (void)
 import Data.Map.Strict qualified as M
 import Data.String (fromString)
 import Ledger.Sim (
-  LedgerSimError (LedgerSimError'SubmissionError),
+  LedgerSimError (LedgerSimError'Submission),
   getCurrentSlot,
   lookupUTxO,
   submitTx,
   throwLedgerError,
  )
-import Ledger.Sim.Submission (SubmissionError (SubmissionError'ValidationFailure))
+import Ledger.Sim.Submission (SubmissionError (SubmissionError'Validation))
 import Ledger.Sim.Test (
   ledgerFailsBy,
   ledgerSucceeds,
@@ -182,8 +182,8 @@ tests dummyScriptHash ledgerCfg =
     , ledgerTestCase "Invalid Range"
         $ ledgerFailsBy @()
           ( \case
-              LedgerSimError'SubmissionError
-                ( SubmissionError'ValidationFailure
+              LedgerSimError'Submission
+                ( SubmissionError'Validation
                     [ InvalidTxInfoError'Stateful
                         ( Stateful.InvalidTxInfoError'InvalidValidRange
                             (Stateful.InvalidValidRangeError'CurrentTimeOutOfRange _)
@@ -218,8 +218,8 @@ tests dummyScriptHash ledgerCfg =
         let nonexistentInputRef = TxOutRef dummyTxId' 1
          in ledgerFailsBy @()
               ( \case
-                  LedgerSimError'SubmissionError
-                    ( SubmissionError'ValidationFailure
+                  LedgerSimError'Submission
+                    ( SubmissionError'Validation
                         [ InvalidTxInfoError'Stateful
                             ( Stateful.InvalidTxInfoError'InvalidInputs
                                 ( Stateful.InvalidInputsError'InvalidInput
@@ -262,8 +262,8 @@ tests dummyScriptHash ledgerCfg =
     , ledgerTestCase "Missing Signature"
         $ ledgerFailsBy
           ( \case
-              LedgerSimError'SubmissionError
-                ( SubmissionError'ValidationFailure
+              LedgerSimError'Submission
+                ( SubmissionError'Validation
                     [ InvalidTxInfoError'Normality
                         ( Normality.InvalidTxInfoError'InvalidSignatories
                             Normality.InvalidSignatoriesError'NoSignature
@@ -335,8 +335,8 @@ tests dummyScriptHash ledgerCfg =
     , ledgerTestCase "Unbalanced TX"
         $ ledgerFailsBy @()
           ( \case
-              LedgerSimError'SubmissionError
-                ( SubmissionError'ValidationFailure
+              LedgerSimError'Submission
+                ( SubmissionError'Validation
                     [ InvalidTxInfoError'Local
                         (Local.InvalidTxInfoError'NotBalanced _) -- TODO(chfanghr): Assert delta
                       ]
@@ -372,11 +372,11 @@ tests dummyScriptHash ledgerCfg =
         let ref = TxOutRef dummyTxId' 1
          in ledgerFailsBy @()
               ( \case
-                  LedgerSimError'SubmissionError
-                    ( SubmissionError'ValidationFailure
+                  LedgerSimError'Submission
+                    ( SubmissionError'Validation
                         [ InvalidTxInfoError'Local
                             ( Local.InvalidTxInfoError'InvalidRedeemers
-                                ( Local.InvalidRedeemers'UnexpectedExcessEntries
+                                ( Local.InvalidRedeemers'ExcessEntries
                                     [Spending txOutRef]
                                   )
                               )
@@ -409,8 +409,8 @@ tests dummyScriptHash ledgerCfg =
             dummyDatumHash = hashDatum dummyDatum
          in ledgerFailsBy
               ( \case
-                  LedgerSimError'SubmissionError
-                    ( SubmissionError'ValidationFailure
+                  LedgerSimError'Submission
+                    ( SubmissionError'Validation
                         [ InvalidTxInfoError'Local
                             ( Local.InvalidTxInfoError'InvalidInputs
                                 ( Local.InvalidInputsError'UnspendableInput
@@ -472,8 +472,8 @@ tests dummyScriptHash ledgerCfg =
     , ledgerTestCase "Missing Policy Invocation"
         $ ledgerFailsBy @()
           ( \case
-              LedgerSimError'SubmissionError
-                ( SubmissionError'ValidationFailure
+              LedgerSimError'Submission
+                ( SubmissionError'Validation
                     [ InvalidTxInfoError'Local
                         ( Local.InvalidTxInfoError'InvalidRedeemers
                             (Local.InvalidRedeemers'MintingPolicyNotRan (CurrencySymbol scriptHash))
@@ -511,8 +511,8 @@ tests dummyScriptHash ledgerCfg =
     , ledgerTestCase "Missing Validator Invocation"
         $ ledgerFailsBy
           ( \case
-              LedgerSimError'SubmissionError
-                ( SubmissionError'ValidationFailure
+              LedgerSimError'Submission
+                ( SubmissionError'Validation
                     [ InvalidTxInfoError'Local
                         ( Local.InvalidTxInfoError'InvalidRedeemers
                             (Local.InvalidRedeemers'ValidatorNotRun scriptHash txOutRef)
@@ -573,8 +573,8 @@ tests dummyScriptHash ledgerCfg =
     , ledgerTestCase "Missing Datum In Script Output"
         $ ledgerFailsBy @()
           ( \case
-              LedgerSimError'SubmissionError
-                ( SubmissionError'ValidationFailure
+              LedgerSimError'Submission
+                ( SubmissionError'Validation
                     [ InvalidTxInfoError'Local
                         ( Local.InvalidTxInfoError'InvalidOutputs
                             ( Local.InvalidOutputsError'InvalidOutput
@@ -610,11 +610,11 @@ tests dummyScriptHash ledgerCfg =
     , ledgerTestCase "Not Script Input"
         $ ledgerFailsBy
           ( \case
-              LedgerSimError'SubmissionError
-                ( SubmissionError'ValidationFailure
+              LedgerSimError'Submission
+                ( SubmissionError'Validation
                     [ InvalidTxInfoError'Local
                         ( Local.InvalidTxInfoError'InvalidRedeemers
-                            ( Local.InvalidRedeemers'UnexpectedExcessEntries
+                            ( Local.InvalidRedeemers'ExcessEntries
                                 [Spending txOutRef]
                               )
                           )
@@ -678,8 +678,8 @@ tests dummyScriptHash ledgerCfg =
     , ledgerTestCase "Non-normal Mint"
         $ ledgerFailsBy @()
           ( \case
-              LedgerSimError'SubmissionError
-                ( SubmissionError'ValidationFailure
+              LedgerSimError'Submission
+                ( SubmissionError'Validation
                     [ InvalidTxInfoError'Normality
                         ( Normality.InvalidTxInfoError'InvalidMint
                             ( Normality.InvalidMintError'InvalidValue
@@ -723,8 +723,8 @@ tests dummyScriptHash ledgerCfg =
     , ledgerTestCase "Non-normal Output Value"
         $ ledgerFailsBy @()
           ( \case
-              LedgerSimError'SubmissionError
-                ( SubmissionError'ValidationFailure
+              LedgerSimError'Submission
+                ( SubmissionError'Validation
                     [ InvalidTxInfoError'Normality
                         ( Normality.InvalidTxInfoError'InvalidOutputs
                             ( Normality.InvalidOutputsError'InvalidTxOut
@@ -786,8 +786,8 @@ tests dummyScriptHash ledgerCfg =
          in
           ledgerFailsBy @()
             ( \case
-                LedgerSimError'SubmissionError
-                  ( SubmissionError'ValidationFailure
+                LedgerSimError'Submission
+                  ( SubmissionError'Validation
                       [ InvalidTxInfoError'Normality
                           ( Normality.InvalidTxInfoError'InvalidOutputs
                               ( Normality.InvalidOutputsError'InvalidTxOut

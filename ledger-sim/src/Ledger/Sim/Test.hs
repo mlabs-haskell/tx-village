@@ -12,7 +12,7 @@ module Ledger.Sim.Test (
 ) where
 
 import Control.Monad.Reader (MonadReader (ask), Reader, runReader)
-import Ledger.Sim (LedgerSim, LedgerSimError (LedgerSimError'ApplicationError), runLedgerSim)
+import Ledger.Sim (LedgerSim, LedgerSimError (LedgerSimError'Application), runLedgerSim)
 import Ledger.Sim.Types.Config (LedgerConfig)
 import Ledger.Sim.Types.State (LedgerState)
 import Test.Tasty (TestName, TestTree, testGroup)
@@ -39,13 +39,13 @@ ledgerFailsBy :: (Show e) => (LedgerSimError e -> Bool) -> LedgerSim ctx st e ()
 ledgerFailsBy = FailsBy
 
 ledgerFailsBy' :: (Show e) => (e -> Bool) -> LedgerSim ctx st e () -> LedgerExpectation ctx st
-ledgerFailsBy' predicate = ledgerFailsBy $ \case LedgerSimError'ApplicationError e -> predicate e; _ -> False
+ledgerFailsBy' predicate = ledgerFailsBy $ \case LedgerSimError'Application e -> predicate e; _ -> False
 
 ledgerFailsWith :: (Eq e, Show e, Eq a, Show a) => LedgerSimError e -> LedgerSim ctx st e a -> LedgerExpectation ctx st
 ledgerFailsWith = FailsWith
 
 ledgerFailsWith' :: (Eq e, Show e, Eq a, Show a) => e -> LedgerSim ctx st e a -> LedgerExpectation ctx st
-ledgerFailsWith' = ledgerFailsWith . LedgerSimError'ApplicationError
+ledgerFailsWith' = ledgerFailsWith . LedgerSimError'Application
 
 data LedgerExpectation ctx st
   = forall e a. (Eq e, Show e, Eq a, Show a) => SucceedsWith a (LedgerSim ctx st e a)
