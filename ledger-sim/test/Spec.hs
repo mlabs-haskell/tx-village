@@ -141,6 +141,7 @@ tests dummyScriptHash ledgerCfg =
                     , txOutDatum = OutputDatumHash datumHash
                     , txOutAddress = scriptHashAddress dummyScriptHash
                     }
+                , txInInfoResolved dummyInput
                 ]
                 (Value.lovelaceValue 0)
                 (Value.lovelaceValue 0)
@@ -152,6 +153,7 @@ tests dummyScriptHash ledgerCfg =
                 AssocMap.empty
                 dummyTxId
           let newUTxORef = TxOutRef txId 0
+              newDummyInputRef = TxOutRef txId 1
           currentTime' <- getCurrentSlot
           newUTxO <-
             lookupUTxO newUTxORef >>= \case
@@ -159,7 +161,11 @@ tests dummyScriptHash ledgerCfg =
               Nothing -> throwLedgerError "Newly created utxo absent from ledger state"
           void . submitTx $
             TxInfo
-              [TxInInfo newUTxORef newUTxO]
+              [ TxInInfo newUTxORef newUTxO
+              , dummyInput
+                  { txInInfoOutRef = newDummyInputRef
+                  }
+              ]
               mempty
               [ TxOut
                   { txOutValue = Value.lovelaceValue 0
@@ -432,6 +438,7 @@ tests dummyScriptHash ledgerCfg =
                           , txOutDatum = OutputDatumHash dummyDatumHash
                           , txOutAddress = scriptHashAddress dummyScriptHash
                           }
+                      , txInInfoResolved dummyInput
                       ]
                       (Value.lovelaceValue 0)
                       (Value.lovelaceValue 0)
@@ -443,13 +450,18 @@ tests dummyScriptHash ledgerCfg =
                       AssocMap.empty
                       dummyTxId
                 let newUTxORef = TxOutRef txId 0
+                    newDummyInputRef = TxOutRef txId 1
                 newUTxO <-
                   lookupUTxO newUTxORef >>= \case
                     Just x -> pure x
                     Nothing -> throwLedgerError "Newly created utxo absent from ledger state"
                 void . submitTx $
                   TxInfo
-                    [TxInInfo newUTxORef newUTxO]
+                    [ TxInInfo newUTxORef newUTxO
+                    , dummyInput
+                        { txInInfoOutRef = newDummyInputRef
+                        }
+                    ]
                     mempty
                     [ TxOut
                         { txOutValue = Value.lovelaceValue 0
@@ -533,6 +545,7 @@ tests dummyScriptHash ledgerCfg =
                     , txOutDatum = OutputDatumHash datumHash
                     , txOutAddress = scriptHashAddress dummyScriptHash
                     }
+                , txInInfoResolved dummyInput
                 ]
                 (Value.lovelaceValue 0)
                 (Value.lovelaceValue 0)
@@ -544,13 +557,18 @@ tests dummyScriptHash ledgerCfg =
                 AssocMap.empty
                 dummyTxId
           let newUTxORef = TxOutRef txId 0
+              newDummyInputRef = TxOutRef txId 1
           newUTxO <-
             lookupUTxO newUTxORef >>= \case
               Just x -> pure x
               Nothing -> throwLedgerError "Newly created utxo absent from ledger state"
           void . submitTx $
             TxInfo
-              [TxInInfo newUTxORef newUTxO]
+              [ TxInInfo newUTxORef newUTxO
+              , dummyInput
+                  { txInInfoOutRef = newDummyInputRef
+                  }
+              ]
               mempty
               [ TxOut
                   { txOutValue = Value.lovelaceValue 0
