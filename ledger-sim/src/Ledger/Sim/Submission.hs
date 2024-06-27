@@ -5,6 +5,7 @@ module Ledger.Sim.Submission (
   SubmissionError (..),
   Submission,
   submit,
+  evaluationResult'fee,
 ) where
 
 import Control.Monad.Error.Class (MonadError (throwError))
@@ -18,6 +19,7 @@ import Data.Map qualified as M
 import Data.Maybe (catMaybes)
 import Data.Set qualified as S
 import Ledger.Sim.Types.Config (LedgerConfig (lc'evaluationContext, lc'maxExBudget, lc'scriptStorage))
+import Ledger.Sim.Types.Prices (Prices, calcScriptFee)
 import Ledger.Sim.Types.State (LedgerState (ls'currentTime, ls'utxos))
 import Ledger.Sim.Utils.Hashing (hashScriptV2)
 import Ledger.Sim.Validation (InvalidTxInfoError, runTxInfoValidation)
@@ -56,6 +58,11 @@ data EvaluationResult = EvaluationResult
   , evaluationResult'outcome :: EvaluationOutcome
   }
   deriving stock (Show, Eq)
+
+evaluationResult'fee :: Prices -> EvaluationResult -> Maybe Integer
+evaluationResult'fee prices result = case evaluationResult'outcome result of
+  EvaluationOutcome'Success budget -> Just $ calcScriptFee prices budget
+  _ -> Nothing
 
 data EvaluationOutcome
   = EvaluationOutcome'Success ExBudget
