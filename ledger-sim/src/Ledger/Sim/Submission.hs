@@ -67,7 +67,7 @@ isEvaluationFailure _ = False
 
 data SubmissionError
   = SubmissionError'Validation [InvalidTxInfoError]
-  | SubmissionError'Evaludation [EvaluationResult]
+  | SubmissionError'Evaluation [EvaluationResult]
   deriving stock (Show, Eq)
 
 data SubmissionEnv ctx = SubmissionEnv
@@ -110,7 +110,7 @@ evaluate = do
 
   case filter (isEvaluationFailure . evaluationResult'outcome) evaluationResults of
     [] -> pure evaluationResults
-    failedResults -> throwError $ SubmissionError'Evaludation failedResults
+    failedResults -> throwError $ SubmissionError'Evaluation failedResults
 
 evaluateRedeemer ::
   ScriptPurpose ->
