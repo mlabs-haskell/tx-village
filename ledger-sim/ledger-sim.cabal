@@ -34,13 +34,17 @@ common common-language
 library
   import:          common-language
   exposed-modules:
-    Ledger.Sim
+    Ledger.Sim.Actions
     Ledger.Sim.Submission
     Ledger.Sim.Test
-    Ledger.Sim.Types.Config
     Ledger.Sim.Types.CostModel
+    Ledger.Sim.Types.EvaluationResult
+    Ledger.Sim.Types.LedgerSim
+    Ledger.Sim.Types.LedgerSim.LedgerConfig
+    Ledger.Sim.Types.LedgerSim.LedgerState
     Ledger.Sim.Types.Prices
-    Ledger.Sim.Types.State
+    Ledger.Sim.Types.Submission
+    Ledger.Sim.Utils.Fee
     Ledger.Sim.Utils.Hashing
     Ledger.Sim.Validation
     Ledger.Sim.Validation.Local

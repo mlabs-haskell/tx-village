@@ -1,28 +1,28 @@
-module Ledger.Sim.Submission (
-  EvaluationResult (..),
-  EvaluationOutcome (..),
-  SubmissionEnv (..),
-  SubmissionError (..),
-  Submission,
-  submit,
-  evaluationResult'fee,
-) where
+module Ledger.Sim.Submission (submit) where
 
 import Control.Monad.Error.Class (MonadError (throwError))
-import Control.Monad.Except (Except)
-import Control.Monad.Reader (MonadTrans (lift), ReaderT, asks)
-import Control.Monad.State (MonadState (get), StateT, modify')
+import Control.Monad.Reader (MonadTrans (lift), asks)
+import Control.Monad.State (MonadState (get), modify')
 import Control.Monad.Writer (MonadWriter (tell), WriterT, execWriterT)
 import Data.List qualified as L
 import Data.Map (Map)
 import Data.Map qualified as M
 import Data.Maybe (catMaybes)
 import Data.Set qualified as S
-import Ledger.Sim.Types.Config (LedgerConfig (lc'evaluationContext, lc'maxExBudget, lc'scriptStorage))
-import Ledger.Sim.Types.Prices (Prices, calcScriptFee)
-import Ledger.Sim.Types.State (LedgerState (ls'currentTime, ls'utxos))
+import Ledger.Sim.Types.EvaluationResult (
+  EvaluationOutcome (EvaluationOutcome'Failure, EvaluationOutcome'Success),
+  EvaluationResult (EvaluationResult),
+  evaluationResult'isFailure,
+ )
+import Ledger.Sim.Types.LedgerSim.LedgerConfig (LedgerConfig (lc'evaluationContext, lc'maxExBudget, lc'scriptStorage))
+import Ledger.Sim.Types.LedgerSim.LedgerState (LedgerState (ls'currentTime, ls'utxos))
+import Ledger.Sim.Types.Submission (
+  Submission,
+  SubmissionEnv (submissionEnv'config, submissionEnv'txInfo),
+  SubmissionError (SubmissionError'Evaluation, SubmissionError'Validation),
+ )
 import Ledger.Sim.Utils.Hashing (hashScriptV2)
-import Ledger.Sim.Validation (InvalidTxInfoError, runTxInfoValidation)
+import Ledger.Sim.Validation (runTxInfoValidation)
 import Ledger.Sim.Validation.Validator (Validity (Invalid, Valid))
 import PlutusLedgerApi.Common.Versions (vasilPV)
 import PlutusLedgerApi.V2 (
@@ -31,9 +31,6 @@ import PlutusLedgerApi.V2 (
   CurrencySymbol (unCurrencySymbol),
   Datum,
   DatumHash,
-  EvaluationError,
-  ExBudget,
-  LogOutput,
   OutputDatum (NoOutputDatum, OutputDatum, OutputDatumHash),
   Redeemer,
   ScriptContext (ScriptContext),
@@ -50,41 +47,6 @@ import PlutusLedgerApi.V2 (
  )
 import PlutusTx qualified
 import PlutusTx.AssocMap qualified as AssocMap
-
-data EvaluationResult = EvaluationResult
-  { evaluationResult'scriptHash :: ScriptHash
-  , evaluationResult'scriptPurpose :: ScriptPurpose
-  , evaluationResult'logOutput :: LogOutput
-  , evaluationResult'outcome :: EvaluationOutcome
-  }
-  deriving stock (Show, Eq)
-
-evaluationResult'fee :: Prices -> EvaluationResult -> Maybe Integer
-evaluationResult'fee prices result = case evaluationResult'outcome result of
-  EvaluationOutcome'Success budget -> Just $ calcScriptFee prices budget
-  _ -> Nothing
-
-data EvaluationOutcome
-  = EvaluationOutcome'Success ExBudget
-  | EvaluationOutcome'Failure EvaluationError
-  deriving stock (Show, Eq)
-
-isEvaluationFailure :: EvaluationOutcome -> Bool
-isEvaluationFailure (EvaluationOutcome'Failure _) = True
-isEvaluationFailure _ = False
-
-data SubmissionError
-  = SubmissionError'Validation [InvalidTxInfoError]
-  | SubmissionError'Evaluation [EvaluationResult]
-  deriving stock (Show, Eq)
-
-data SubmissionEnv ctx = SubmissionEnv
-  { submissionEnv'txInfo :: TxInfo
-  , submissionEnv'config :: LedgerConfig ctx
-  }
-
-type Submission ctx st e =
-  ReaderT (SubmissionEnv ctx) (StateT (LedgerState st) (Except SubmissionError))
 
 asksTxInfo :: (TxInfo -> a) -> Submission ctx st e a
 asksTxInfo f = asks $ f . submissionEnv'txInfo
@@ -116,7 +78,7 @@ evaluate = do
   redeemers <- asksTxInfo $ AssocMap.toList . txInfoRedeemers
   evaluationResults <- execWriterT $ traverse (uncurry evaluateRedeemer) redeemers
 
-  case filter (isEvaluationFailure . evaluationResult'outcome) evaluationResults of
+  case filter evaluationResult'isFailure evaluationResults of
     [] -> pure evaluationResults
     failedResults -> throwError $ SubmissionError'Evaluation failedResults
 

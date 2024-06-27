@@ -5,8 +5,8 @@ module Ledger.Sim.Validation (
 ) where
 
 import Control.Composition ((.*))
-import Ledger.Sim.Types.Config (LedgerConfig)
-import Ledger.Sim.Types.State (LedgerState)
+import Ledger.Sim.Types.LedgerSim.LedgerConfig (LedgerConfig)
+import Ledger.Sim.Types.LedgerSim.LedgerState (LedgerState)
 import Ledger.Sim.Validation.Local qualified as Local
 import Ledger.Sim.Validation.Normality qualified as Normality
 import Ledger.Sim.Validation.Stateful qualified as Stateful

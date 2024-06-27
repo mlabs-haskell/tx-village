@@ -18,8 +18,7 @@ import Data.ByteString.Short qualified as SBS
 import Data.Functor (void)
 import Data.Map.Strict qualified as M
 import Data.String (fromString)
-import Ledger.Sim (LedgerSimError (LedgerSimError'Submission), SubmissionResult (SubmissionResult), getCurrentSlot, lookupUTxO, submitTx, throwLedgerError)
-import Ledger.Sim.Submission (SubmissionError (SubmissionError'Validation))
+import Ledger.Sim.Actions (getCurrentSlot, lookupUTxO, submitTx, throwLedgerError)
 import Ledger.Sim.Test (
   ledgerFailsBy,
   ledgerSucceeds,
@@ -27,13 +26,15 @@ import Ledger.Sim.Test (
   ledgerTestGroup,
   testCostModel,
  )
-import Ledger.Sim.Types.Config (
-  LedgerConfig,
-  mkLedgerConfig,
- )
-import Ledger.Sim.Types.State (
+import Ledger.Sim.Types.LedgerSim (LedgerSimError (LedgerSimError'Submission))
+import Ledger.Sim.Types.LedgerSim.LedgerConfig (LedgerConfig, mkLedgerConfig)
+import Ledger.Sim.Types.LedgerSim.LedgerState (
   LedgerState (ls'currentTime),
   ledgerStateWithUtxos,
+ )
+import Ledger.Sim.Types.Submission (
+  SubmissionError (SubmissionError'Validation),
+  SubmissionResult (SubmissionResult),
  )
 import Ledger.Sim.Utils.Hashing (hashDatum, hashScriptV2)
 import Ledger.Sim.Validation (
