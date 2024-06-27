@@ -88,7 +88,7 @@ main :: IO ()
 main = do
   script <- either error pure . first show . deserialiseScript vasilPV $ SBS.toShort alwaysSucceedsCbor
   let sh = hashScriptV2 script
-  ledgerCfg <- either throwIO pure $ mkLedgerConfig (M.fromList [(sh, script)]) testCostModel ()
+  ledgerCfg <- either throwIO pure $ mkLedgerConfig (M.fromList [(sh, script)]) testCostModel Nothing ()
   defaultMain $ tests sh ledgerCfg
 
 tests :: ScriptHash -> LedgerConfig () -> TestTree
