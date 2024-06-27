@@ -18,13 +18,7 @@ import Data.ByteString.Short qualified as SBS
 import Data.Functor (void)
 import Data.Map.Strict qualified as M
 import Data.String (fromString)
-import Ledger.Sim (
-  LedgerSimError (LedgerSimError'Submission),
-  getCurrentSlot,
-  lookupUTxO,
-  submitTx,
-  throwLedgerError,
- )
+import Ledger.Sim (LedgerSimError (LedgerSimError'Submission), SubmissionResult (SubmissionResult), getCurrentSlot, lookupUTxO, submitTx, throwLedgerError)
 import Ledger.Sim.Submission (SubmissionError (SubmissionError'Validation))
 import Ledger.Sim.Test (
   ledgerFailsBy,
@@ -130,7 +124,7 @@ tests dummyScriptHash ledgerCfg =
           let datum = Datum $ toBuiltinData ()
               datumHash = hashDatum . Datum $ toBuiltinData ()
           currentTime <- getCurrentSlot
-          txId <-
+          SubmissionResult txId _ <-
             submitTx $
               TxInfo
                 [dummyInput]
@@ -290,7 +284,7 @@ tests dummyScriptHash ledgerCfg =
               Value.assetClassValue
                 (Value.AssetClass (cs, fromString "A"))
                 1
-          txId <-
+          SubmissionResult txId _ <-
             submitTx $
               TxInfo
                 [dummyInput]
@@ -427,7 +421,7 @@ tests dummyScriptHash ledgerCfg =
                   _ -> False
               )
               $ do
-                txId <-
+                SubmissionResult txId _ <-
                   submitTx $
                     TxInfo
                       [dummyInput]
@@ -534,7 +528,7 @@ tests dummyScriptHash ledgerCfg =
         $ do
           let datum = Datum $ toBuiltinData ()
               datumHash = hashDatum . Datum $ toBuiltinData ()
-          txId <-
+          SubmissionResult txId _ <-
             submitTx $
               TxInfo
                 [dummyInput]
@@ -645,7 +639,7 @@ tests dummyScriptHash ledgerCfg =
               Value.assetClassValue
                 (Value.AssetClass (cs, fromString "A"))
                 1
-          txId <-
+          SubmissionResult txId _ <-
             submitTx $
               TxInfo
                 [dummyInput]
