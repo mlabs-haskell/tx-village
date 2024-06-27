@@ -17,7 +17,7 @@ import Data.Map (Map)
 import Data.Map qualified as M
 import Data.Maybe (catMaybes)
 import Data.Set qualified as S
-import Ledger.Sim.Types.Config (LedgerConfig (lc'evaluationContext, lc'scriptStorage))
+import Ledger.Sim.Types.Config (LedgerConfig (lc'evaluationContext, lc'maxExBudget, lc'scriptStorage))
 import Ledger.Sim.Types.State (LedgerState (ls'currentTime, ls'utxos))
 import Ledger.Sim.Utils.Hashing (hashScriptV2)
 import Ledger.Sim.Validation (InvalidTxInfoError, runTxInfoValidation)
@@ -44,6 +44,7 @@ import PlutusLedgerApi.V2 (
   TxOutRef (TxOutRef),
   VerboseMode (Verbose),
   evaluateScriptCounting,
+  evaluateScriptRestricting,
  )
 import PlutusTx qualified
 import PlutusTx.AssocMap qualified as AssocMap
@@ -66,8 +67,8 @@ isEvaluationFailure (EvaluationOutcome'Failure _) = True
 isEvaluationFailure _ = False
 
 data SubmissionError
-  = SubmissionError'ValidationFailure [InvalidTxInfoError]
-  | SubmissionError'EvaludationFailure [EvaluationResult]
+  = SubmissionError'Validation [InvalidTxInfoError]
+  | SubmissionError'Evaluation [EvaluationResult]
   deriving stock (Show, Eq)
 
 data SubmissionEnv ctx = SubmissionEnv
@@ -101,7 +102,7 @@ validate = do
     Valid -> pure ()
     Invalid reasons ->
       throwError $
-        SubmissionError'ValidationFailure reasons
+        SubmissionError'Validation reasons
 
 evaluate :: Submission ctx st e [EvaluationResult]
 evaluate = do
@@ -110,7 +111,7 @@ evaluate = do
 
   case filter (isEvaluationFailure . evaluationResult'outcome) evaluationResults of
     [] -> pure evaluationResults
-    failedResults -> throwError $ SubmissionError'EvaludationFailure failedResults
+    failedResults -> throwError $ SubmissionError'Evaluation failedResults
 
 evaluateRedeemer ::
   ScriptPurpose ->
@@ -188,6 +189,7 @@ evaluatePlutusScript ::
 evaluatePlutusScript datum purpose redeemer script = do
   txInfo <- asks submissionEnv'txInfo
   evalCtx <- asksConfig lc'evaluationContext
+  maxExBudget <- asksConfig lc'maxExBudget
 
   let args =
         catMaybes
@@ -198,7 +200,9 @@ evaluatePlutusScript datum purpose redeemer script = do
 
       scriptContext = ScriptContext txInfo purpose
 
-      (logOutput, evalResultRaw) = evaluateScriptCounting vasilPV Verbose evalCtx script args
+      (logOutput, evalResultRaw) = case maxExBudget of
+        Nothing -> evaluateScriptCounting vasilPV Verbose evalCtx script args
+        Just exBudget -> evaluateScriptRestricting vasilPV Verbose evalCtx exBudget script args
 
       outcome = case evalResultRaw of
         Left err -> EvaluationOutcome'Failure err

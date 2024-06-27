@@ -13,6 +13,8 @@ module Ledger.Sim (
   askLedgerCtx,
   throwLedgerError,
   genTxId,
+  getTxId,
+  setLedgerState,
 ) where
 
 import Data.ByteArray (convert)
@@ -53,8 +55,8 @@ type LedgerSim ctx st e =
     )
 
 data LedgerSimError e
-  = LedgerSimError'SubmissionError SubmissionError
-  | LedgerSimError'ApplicationError e
+  = LedgerSimError'Submission SubmissionError
+  | LedgerSimError'Application e
   deriving stock (Show, Eq)
 
 runLedgerSim :: LedgerConfig ctx -> LedgerState st -> LedgerSim ctx st e a -> Either (LedgerSimError e) a
@@ -92,7 +94,7 @@ submitTx txInfo = do
   void $
     withReaderT (SubmissionEnv txInfo) $
       mapReaderT
-        (mapStateT (withExcept LedgerSimError'SubmissionError))
+        (mapStateT (withExcept LedgerSimError'Submission))
         Submission.submit
 
   pure $ txInfoId txInfo
@@ -108,6 +110,13 @@ getsLedgerState f = gets $ f . ls'userState
 getLedgerState :: LedgerSim ctx st e st
 getLedgerState = getsLedgerState id
 
+-- | Set the user state
+setLedgerState :: st -> LedgerSim ctx st e ()
+setLedgerState st = modify' $ \s ->
+  s
+    { ls'userState = st
+    }
+
 -- | Get a specific component of the user state from the ledger, using given projection function.
 asksLedgerCtx :: (ctx -> a) -> LedgerSim ctx st e a
 asksLedgerCtx f = asks $ f . lc'userCtx
@@ -118,7 +127,7 @@ askLedgerCtx = asksLedgerCtx id
 
 -- | Throw custom application error.
 throwLedgerError :: e -> LedgerSim ctx st e a
-throwLedgerError = throwError . LedgerSimError'ApplicationError
+throwLedgerError = throwError . LedgerSimError'Application
 
 incrementSlot :: LedgerSim ctx st e ()
 incrementSlot =
@@ -136,3 +145,6 @@ genTxId =
     . LBS.toStrict
     . serialise
     . getPOSIXTime
+
+getTxId :: LedgerSim ctx st e TxId
+getTxId = gets $ genTxId . ls'currentTime
