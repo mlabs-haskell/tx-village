@@ -21,7 +21,7 @@ use serde::{Deserialize, Serialize};
 use std::collections::BTreeMap;
 use std::path::PathBuf;
 use std::process::Stdio;
-use std::time;
+use std::time::{self, Duration};
 use tokio::process::{Child, Command};
 
 mod api;
@@ -295,7 +295,10 @@ impl Ogmios {
                 .as_ref()
                 .map_or(false, |h| h.network_synchronization == 1.0)
             {
-                let client = WsClientBuilder::default().build(&url).await?;
+                let client = WsClientBuilder::default()
+                    .request_timeout(Duration::new(180, 0))
+                    .build(&url)
+                    .await?;
                 let service = Self {
                     handler: Some(handler),
                     config: config.clone().into(),
