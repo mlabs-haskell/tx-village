@@ -15,9 +15,9 @@ module Ledger.Sim.Test (
 
 import Control.Monad.Reader (MonadReader (ask), Reader, runReader)
 import Data.Map qualified as M
-import Ledger.Sim (LedgerSim, LedgerSimError (LedgerSimError'Application), runLedgerSim)
-import Ledger.Sim.Types.Config (LedgerConfig, PlutusCostModel (PlutusCostModel))
-import Ledger.Sim.Types.State (LedgerState)
+import Ledger.Sim.Types.LedgerConfig (LedgerConfig, PlutusCostModel (PlutusCostModel))
+import Ledger.Sim.Types.LedgerSim (LedgerSim, LedgerSimError (LedgerSimError'Application), runLedgerSim)
+import Ledger.Sim.Types.LedgerState (LedgerState)
 import PlutusLedgerApi.Common (ExBudget (ExBudget, exBudgetCPU, exBudgetMemory))
 import PlutusLedgerApi.V2 qualified as PlutusV2
 import Test.Tasty (TestName, TestTree, testGroup)

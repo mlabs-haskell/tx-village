@@ -1,4 +1,8 @@
-module Ledger.Sim.Types.Config (LedgerConfig (..), PlutusCostModel (..), mkLedgerConfig) where
+module Ledger.Sim.Types.LedgerConfig (
+  LedgerConfig (..),
+  PlutusCostModel (..),
+  mkLedgerConfig,
+) where
 
 import Data.Map (Map)
 
@@ -12,7 +16,7 @@ data LedgerConfig ctx = LedgerConfig
   { lc'evaluationContext :: Plutus.EvaluationContext
   , lc'scriptStorage :: !(Map PlutusV2.ScriptHash PlutusV2.ScriptForEvaluation)
   , lc'maxExBudget :: Maybe ExBudget
-  , lc'userCtx :: !ctx
+  , lc'appCtx :: !ctx
   }
 
 -- | A ledger config built with 'practicalSlotConfig' and the given cost model.

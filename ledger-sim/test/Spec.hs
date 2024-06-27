@@ -18,14 +18,7 @@ import Data.ByteString.Short qualified as SBS
 import Data.Functor (void)
 import Data.Map.Strict qualified as M
 import Data.String (fromString)
-import Ledger.Sim (
-  LedgerSimError (LedgerSimError'Submission),
-  getCurrentSlot,
-  lookupUTxO,
-  submitTx,
-  throwLedgerError,
- )
-import Ledger.Sim.Submission (SubmissionError (SubmissionError'Validation))
+import Ledger.Sim.Actions (getCurrentSlot, lookupUTxO, submitTx, throwAppError)
 import Ledger.Sim.Test (
   ledgerFailsBy,
   ledgerSucceeds,
@@ -33,13 +26,15 @@ import Ledger.Sim.Test (
   ledgerTestGroup,
   testCostModel,
  )
-import Ledger.Sim.Types.Config (
-  LedgerConfig,
-  mkLedgerConfig,
- )
-import Ledger.Sim.Types.State (
+import Ledger.Sim.Types.LedgerConfig (LedgerConfig, mkLedgerConfig)
+import Ledger.Sim.Types.LedgerSim (LedgerSimError (LedgerSimError'Submission))
+import Ledger.Sim.Types.LedgerState (
   LedgerState (ls'currentTime),
   ledgerStateWithUtxos,
+ )
+import Ledger.Sim.Types.Submission (
+  SubmissionError (SubmissionError'Validation),
+  SubmissionResult (SubmissionResult),
  )
 import Ledger.Sim.Utils.Hashing (hashDatum, hashScriptV2)
 import Ledger.Sim.Validation (
@@ -130,7 +125,7 @@ tests dummyScriptHash ledgerCfg =
           let datum = Datum $ toBuiltinData ()
               datumHash = hashDatum . Datum $ toBuiltinData ()
           currentTime <- getCurrentSlot
-          txId <-
+          SubmissionResult txId _ <-
             submitTx $
               TxInfo
                 [dummyInput]
@@ -158,7 +153,7 @@ tests dummyScriptHash ledgerCfg =
           newUTxO <-
             lookupUTxO newUTxORef >>= \case
               Just x -> pure x
-              Nothing -> throwLedgerError "Newly created utxo absent from ledger state"
+              Nothing -> throwAppError "Newly created utxo absent from ledger state"
           void . submitTx $
             TxInfo
               [ TxInInfo newUTxORef newUTxO
@@ -290,7 +285,7 @@ tests dummyScriptHash ledgerCfg =
               Value.assetClassValue
                 (Value.AssetClass (cs, fromString "A"))
                 1
-          txId <-
+          SubmissionResult txId _ <-
             submitTx $
               TxInfo
                 [dummyInput]
@@ -315,7 +310,7 @@ tests dummyScriptHash ledgerCfg =
           newUTxO <-
             lookupUTxO newUTxORef >>= \case
               Just x -> pure x
-              Nothing -> throwLedgerError "Newly created utxo absent from ledger state"
+              Nothing -> throwAppError "Newly created utxo absent from ledger state"
           void . submitTx $
             TxInfo
               [TxInInfo newUTxORef newUTxO]
@@ -427,7 +422,7 @@ tests dummyScriptHash ledgerCfg =
                   _ -> False
               )
               $ do
-                txId <-
+                SubmissionResult txId _ <-
                   submitTx $
                     TxInfo
                       [dummyInput]
@@ -454,7 +449,7 @@ tests dummyScriptHash ledgerCfg =
                 newUTxO <-
                   lookupUTxO newUTxORef >>= \case
                     Just x -> pure x
-                    Nothing -> throwLedgerError "Newly created utxo absent from ledger state"
+                    Nothing -> throwAppError "Newly created utxo absent from ledger state"
                 void . submitTx $
                   TxInfo
                     [ TxInInfo newUTxORef newUTxO
@@ -534,7 +529,7 @@ tests dummyScriptHash ledgerCfg =
         $ do
           let datum = Datum $ toBuiltinData ()
               datumHash = hashDatum . Datum $ toBuiltinData ()
-          txId <-
+          SubmissionResult txId _ <-
             submitTx $
               TxInfo
                 [dummyInput]
@@ -561,7 +556,7 @@ tests dummyScriptHash ledgerCfg =
           newUTxO <-
             lookupUTxO newUTxORef >>= \case
               Just x -> pure x
-              Nothing -> throwLedgerError "Newly created utxo absent from ledger state"
+              Nothing -> throwAppError "Newly created utxo absent from ledger state"
           void . submitTx $
             TxInfo
               [ TxInInfo newUTxORef newUTxO
@@ -645,7 +640,7 @@ tests dummyScriptHash ledgerCfg =
               Value.assetClassValue
                 (Value.AssetClass (cs, fromString "A"))
                 1
-          txId <-
+          SubmissionResult txId _ <-
             submitTx $
               TxInfo
                 [dummyInput]
@@ -670,7 +665,7 @@ tests dummyScriptHash ledgerCfg =
           newUTxO <-
             lookupUTxO newUTxORef >>= \case
               Just x -> pure x
-              Nothing -> throwLedgerError "Newly created utxo absent from ledger state"
+              Nothing -> throwAppError "Newly created utxo absent from ledger state"
           void . submitTx $
             TxInfo
               [TxInInfo newUTxORef newUTxO]

@@ -1,40 +1,36 @@
-module Ledger.Sim (
-  LedgerSim,
-  LedgerSimError (..),
-  runLedgerSim,
-  submitTx,
-  incrementSlot,
-  getCurrentSlot,
+module Ledger.Sim.Actions (
   lookupUTxO,
   utxosAtAddress,
-  getsLedgerState,
-  getLedgerState,
-  asksLedgerCtx,
-  askLedgerCtx,
-  throwLedgerError,
-  genTxId,
+  submitTx,
+  getCurrentSlot,
+  getsAppState,
+  getAppState,
+  setAppState,
+  asksAppCtx,
+  askAppCtx,
+  throwAppError,
+  incrementSlot,
   getTxId,
-  setLedgerState,
 ) where
 
 import Data.ByteArray (convert)
 import Data.ByteString (ByteString)
 import Data.ByteString.Lazy qualified as LBS
-import Data.Functor (void)
 import Data.Map.Strict qualified as M
 import Data.Maybe (mapMaybe)
 
 import Codec.Serialise (serialise)
 import Crypto.Hash (Blake2b_224 (Blake2b_224), hashWith)
 
-import Control.Monad.Except (Except, MonadError (throwError), runExcept, withExcept)
-import Control.Monad.Reader (ReaderT (runReaderT), asks, mapReaderT, withReaderT)
-import Control.Monad.State (StateT (runStateT), mapStateT, modify')
+import Control.Monad.Except (MonadError (throwError), withExcept)
+import Control.Monad.Reader (asks, mapReaderT, withReaderT)
+import Control.Monad.State (mapStateT, modify')
 import Control.Monad.State.Strict (gets)
-import Ledger.Sim.Submission (SubmissionEnv (SubmissionEnv), SubmissionError)
 import Ledger.Sim.Submission qualified as Submission
-import Ledger.Sim.Types.Config (LedgerConfig (lc'userCtx))
-import Ledger.Sim.Types.State (LedgerState (ls'currentTime, ls'userState, ls'utxos))
+import Ledger.Sim.Types.LedgerConfig (LedgerConfig (lc'appCtx))
+import Ledger.Sim.Types.LedgerSim (LedgerSim, LedgerSimError (LedgerSimError'Application, LedgerSimError'Submission))
+import Ledger.Sim.Types.LedgerState (LedgerState (ls'currentTime, ls'userState, ls'utxos))
+import Ledger.Sim.Types.Submission (SubmissionEnv (SubmissionEnv), SubmissionResult (SubmissionResult, submissionResult'EvaluationResults, submissionResult'TxId))
 import PlutusLedgerApi.V2 (
   Address,
   POSIXTime (getPOSIXTime),
@@ -45,26 +41,6 @@ import PlutusLedgerApi.V2 (
   TxOutRef,
  )
 import PlutusTx.Builtins qualified as PlutusTx
-
-type LedgerSim ctx st e =
-  ReaderT
-    (LedgerConfig ctx)
-    ( StateT
-        (LedgerState st)
-        (Except (LedgerSimError e))
-    )
-
-data LedgerSimError e
-  = LedgerSimError'Submission SubmissionError
-  | LedgerSimError'Application e
-  deriving stock (Show, Eq)
-
-runLedgerSim :: LedgerConfig ctx -> LedgerState st -> LedgerSim ctx st e a -> Either (LedgerSimError e) a
-runLedgerSim ledgerCfg ledgerState =
-  fmap fst
-    . runExcept
-    . flip runStateT ledgerState
-    . flip runReaderT ledgerCfg
 
 lookupUTxO :: TxOutRef -> LedgerSim ctx st e (Maybe TxOut)
 lookupUTxO ref = M.lookup ref <$> gets ls'utxos
@@ -88,46 +64,49 @@ utxosAtAddress addr =
   use hashing inside them. ex: script that checks `txId txInfo != blake2b_224 time` where time is some time from validity range.
 - See: 'checkTx'
 -}
-submitTx :: TxInfo -> LedgerSim ctx st e TxId
+submitTx :: TxInfo -> LedgerSim ctx st e SubmissionResult
 submitTx txInfo = do
-  -- TODO(chfanghr): Do something with ExBudget
-  void $
+  evaluationResults <-
     withReaderT (SubmissionEnv txInfo) $
       mapReaderT
         (mapStateT (withExcept LedgerSimError'Submission))
         Submission.submit
 
-  pure $ txInfoId txInfo
+  pure $
+    SubmissionResult
+      { submissionResult'TxId = txInfoId txInfo
+      , submissionResult'EvaluationResults = evaluationResults
+      }
 
 getCurrentSlot :: LedgerSim ctx st e POSIXTime
 getCurrentSlot = gets ls'currentTime
 
 -- | Get a specific component of the user state from the ledger, using given projection function.
-getsLedgerState :: (st -> a) -> LedgerSim ctx st e a
-getsLedgerState f = gets $ f . ls'userState
+getsAppState :: (st -> a) -> LedgerSim ctx st e a
+getsAppState f = gets $ f . ls'userState
 
 -- | Get the user state from the ledger.
-getLedgerState :: LedgerSim ctx st e st
-getLedgerState = getsLedgerState id
+getAppState :: LedgerSim ctx st e st
+getAppState = getsAppState id
 
 -- | Set the user state
-setLedgerState :: st -> LedgerSim ctx st e ()
-setLedgerState st = modify' $ \s ->
+setAppState :: st -> LedgerSim ctx st e ()
+setAppState st = modify' $ \s ->
   s
     { ls'userState = st
     }
 
 -- | Get a specific component of the user state from the ledger, using given projection function.
-asksLedgerCtx :: (ctx -> a) -> LedgerSim ctx st e a
-asksLedgerCtx f = asks $ f . lc'userCtx
+asksAppCtx :: (ctx -> a) -> LedgerSim ctx st e a
+asksAppCtx f = asks $ f . lc'appCtx
 
 -- | Get the user state from the ledger.
-askLedgerCtx :: LedgerSim ctx st e ctx
-askLedgerCtx = asksLedgerCtx id
+askAppCtx :: LedgerSim ctx st e ctx
+askAppCtx = asksAppCtx id
 
 -- | Throw custom application error.
-throwLedgerError :: e -> LedgerSim ctx st e a
-throwLedgerError = throwError . LedgerSimError'Application
+throwAppError :: e -> LedgerSim ctx st e a
+throwAppError = throwError . LedgerSimError'Application
 
 incrementSlot :: LedgerSim ctx st e ()
 incrementSlot =

@@ -1,4 +1,4 @@
-module Ledger.Sim.Types.State (
+module Ledger.Sim.Types.LedgerState (
   LedgerState (..),
   ledgerStateWithUtxos,
   emptyLedgerState,
