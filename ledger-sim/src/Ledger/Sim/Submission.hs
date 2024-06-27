@@ -14,8 +14,8 @@ import Ledger.Sim.Types.EvaluationResult (
   EvaluationResult (EvaluationResult),
   evaluationResult'isFailure,
  )
-import Ledger.Sim.Types.LedgerSim.LedgerConfig (LedgerConfig (lc'evaluationContext, lc'maxExBudget, lc'scriptStorage))
-import Ledger.Sim.Types.LedgerSim.LedgerState (LedgerState (ls'currentTime, ls'utxos))
+import Ledger.Sim.Types.LedgerConfig (LedgerConfig (lc'evaluationContext, lc'maxExBudget, lc'scriptStorage))
+import Ledger.Sim.Types.LedgerState (LedgerState (ls'currentTime, ls'utxos))
 import Ledger.Sim.Types.Submission (
   Submission,
   SubmissionEnv (submissionEnv'config, submissionEnv'txInfo),

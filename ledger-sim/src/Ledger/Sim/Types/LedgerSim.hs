@@ -7,8 +7,8 @@ module Ledger.Sim.Types.LedgerSim (
 import Control.Monad.Except (Except, runExcept)
 import Control.Monad.Reader (ReaderT (runReaderT))
 import Control.Monad.State (StateT (runStateT))
-import Ledger.Sim.Types.LedgerSim.LedgerConfig (LedgerConfig)
-import Ledger.Sim.Types.LedgerSim.LedgerState (LedgerState)
+import Ledger.Sim.Types.LedgerConfig (LedgerConfig)
+import Ledger.Sim.Types.LedgerState (LedgerState)
 import Ledger.Sim.Types.Submission (SubmissionError)
 
 type LedgerSim ctx st e =

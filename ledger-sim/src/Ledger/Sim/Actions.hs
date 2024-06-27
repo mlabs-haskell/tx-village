@@ -3,12 +3,12 @@ module Ledger.Sim.Actions (
   utxosAtAddress,
   submitTx,
   getCurrentSlot,
-  getsLedgerState,
-  getLedgerState,
-  setLedgerState,
-  asksLedgerCtx,
-  askLedgerCtx,
-  throwLedgerError,
+  getsAppState,
+  getAppState,
+  setAppState,
+  asksAppCtx,
+  askAppCtx,
+  throwAppError,
   incrementSlot,
   getTxId,
 ) where
@@ -27,9 +27,9 @@ import Control.Monad.Reader (asks, mapReaderT, withReaderT)
 import Control.Monad.State (mapStateT, modify')
 import Control.Monad.State.Strict (gets)
 import Ledger.Sim.Submission qualified as Submission
+import Ledger.Sim.Types.LedgerConfig (LedgerConfig (lc'appCtx))
 import Ledger.Sim.Types.LedgerSim (LedgerSim, LedgerSimError (LedgerSimError'Application, LedgerSimError'Submission))
-import Ledger.Sim.Types.LedgerSim.LedgerConfig (LedgerConfig (lc'appCtx))
-import Ledger.Sim.Types.LedgerSim.LedgerState (LedgerState (ls'currentTime, ls'userState, ls'utxos))
+import Ledger.Sim.Types.LedgerState (LedgerState (ls'currentTime, ls'userState, ls'utxos))
 import Ledger.Sim.Types.Submission (SubmissionEnv (SubmissionEnv), SubmissionResult (SubmissionResult, submissionResult'EvaluationResults, submissionResult'TxId))
 import PlutusLedgerApi.V2 (
   Address,
@@ -82,31 +82,31 @@ getCurrentSlot :: LedgerSim ctx st e POSIXTime
 getCurrentSlot = gets ls'currentTime
 
 -- | Get a specific component of the user state from the ledger, using given projection function.
-getsLedgerState :: (st -> a) -> LedgerSim ctx st e a
-getsLedgerState f = gets $ f . ls'userState
+getsAppState :: (st -> a) -> LedgerSim ctx st e a
+getsAppState f = gets $ f . ls'userState
 
 -- | Get the user state from the ledger.
-getLedgerState :: LedgerSim ctx st e st
-getLedgerState = getsLedgerState id
+getAppState :: LedgerSim ctx st e st
+getAppState = getsAppState id
 
 -- | Set the user state
-setLedgerState :: st -> LedgerSim ctx st e ()
-setLedgerState st = modify' $ \s ->
+setAppState :: st -> LedgerSim ctx st e ()
+setAppState st = modify' $ \s ->
   s
     { ls'userState = st
     }
 
 -- | Get a specific component of the user state from the ledger, using given projection function.
-asksLedgerCtx :: (ctx -> a) -> LedgerSim ctx st e a
-asksLedgerCtx f = asks $ f . lc'appCtx
+asksAppCtx :: (ctx -> a) -> LedgerSim ctx st e a
+asksAppCtx f = asks $ f . lc'appCtx
 
 -- | Get the user state from the ledger.
-askLedgerCtx :: LedgerSim ctx st e ctx
-askLedgerCtx = asksLedgerCtx id
+askAppCtx :: LedgerSim ctx st e ctx
+askAppCtx = asksAppCtx id
 
 -- | Throw custom application error.
-throwLedgerError :: e -> LedgerSim ctx st e a
-throwLedgerError = throwError . LedgerSimError'Application
+throwAppError :: e -> LedgerSim ctx st e a
+throwAppError = throwError . LedgerSimError'Application
 
 incrementSlot :: LedgerSim ctx st e ()
 incrementSlot =

@@ -39,9 +39,9 @@ library
     Ledger.Sim.Test
     Ledger.Sim.Types.CostModel
     Ledger.Sim.Types.EvaluationResult
+    Ledger.Sim.Types.LedgerConfig
     Ledger.Sim.Types.LedgerSim
-    Ledger.Sim.Types.LedgerSim.LedgerConfig
-    Ledger.Sim.Types.LedgerSim.LedgerState
+    Ledger.Sim.Types.LedgerState
     Ledger.Sim.Types.Prices
     Ledger.Sim.Types.Submission
     Ledger.Sim.Utils.Fee

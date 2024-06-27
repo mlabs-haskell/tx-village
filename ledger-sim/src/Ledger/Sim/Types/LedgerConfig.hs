@@ -1,4 +1,4 @@
-module Ledger.Sim.Types.LedgerSim.LedgerConfig (
+module Ledger.Sim.Types.LedgerConfig (
   LedgerConfig (..),
   PlutusCostModel (..),
   mkLedgerConfig,
