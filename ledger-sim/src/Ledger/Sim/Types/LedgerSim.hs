@@ -10,6 +10,7 @@ import Control.Monad.State (StateT (runStateT))
 import Ledger.Sim.Types.LedgerConfig (LedgerConfig)
 import Ledger.Sim.Types.LedgerState (LedgerState)
 import Ledger.Sim.Types.Submission (SubmissionError)
+import PlutusLedgerApi.V2 (TxOutRef)
 
 type LedgerSim ctx st e =
   ReaderT
@@ -21,6 +22,7 @@ type LedgerSim ctx st e =
 
 data LedgerSimError e
   = LedgerSimError'Submission SubmissionError
+  | LedgerSimError'UtxoNotFound TxOutRef
   | LedgerSimError'Application e
   deriving stock (Show, Eq)
 
