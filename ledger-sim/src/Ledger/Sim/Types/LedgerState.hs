@@ -1,11 +1,13 @@
 module Ledger.Sim.Types.LedgerState (
   LedgerState (..),
   ledgerStateWithUtxos,
+  ledgerStateWithUtxos',
   emptyLedgerState,
 ) where
 
 import Data.Map (Map)
-import PlutusLedgerApi.V2 (POSIXTime, TxOut, TxOutRef)
+import Data.Map qualified as Map
+import PlutusLedgerApi.V2 (POSIXTime, TxInInfo (txInInfoOutRef, txInInfoResolved), TxOut, TxOutRef)
 
 data LedgerState st = LedgerState
   { ls'currentTime :: !POSIXTime
@@ -20,6 +22,12 @@ ledgerStateWithUtxos existingUtxos userState =
     , ls'utxos = existingUtxos
     , ls'userState = userState
     }
+
+ledgerStateWithUtxos' :: [TxInInfo] -> st -> LedgerState st
+ledgerStateWithUtxos' =
+  ledgerStateWithUtxos
+    . Map.fromList
+    . fmap (liftA2 (,) txInInfoOutRef txInInfoResolved)
 
 emptyLedgerState :: st -> LedgerState st
 emptyLedgerState = ledgerStateWithUtxos mempty

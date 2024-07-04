@@ -1,5 +1,8 @@
 module Ledger.Sim.Actions (
   lookupUTxO,
+  lookupUTxO',
+  mustLookupUtxo,
+  mustLookupUtxo',
   utxosAtAddress,
   submitTx,
   getCurrentSlot,
@@ -28,7 +31,7 @@ import Control.Monad.State (mapStateT, modify')
 import Control.Monad.State.Strict (gets)
 import Ledger.Sim.Submission qualified as Submission
 import Ledger.Sim.Types.LedgerConfig (LedgerConfig (lc'appCtx))
-import Ledger.Sim.Types.LedgerSim (LedgerSim, LedgerSimError (LedgerSimError'Application, LedgerSimError'Submission))
+import Ledger.Sim.Types.LedgerSim (LedgerSim, LedgerSimError (LedgerSimError'Application, LedgerSimError'Submission, LedgerSimError'UtxoNotFound))
 import Ledger.Sim.Types.LedgerState (LedgerState (ls'currentTime, ls'userState, ls'utxos))
 import Ledger.Sim.Types.Submission (SubmissionEnv (SubmissionEnv), SubmissionResult (SubmissionResult, submissionResult'EvaluationResults, submissionResult'TxId))
 import PlutusLedgerApi.V2 (
@@ -44,6 +47,19 @@ import PlutusTx.Builtins qualified as PlutusTx
 
 lookupUTxO :: TxOutRef -> LedgerSim ctx st e (Maybe TxOut)
 lookupUTxO ref = M.lookup ref <$> gets ls'utxos
+
+lookupUTxO' :: TxOutRef -> LedgerSim ctx st e (Maybe TxInInfo)
+lookupUTxO' ref = (TxInInfo ref <$>) <$> lookupUTxO ref
+
+mustLookupUtxo :: TxOutRef -> LedgerSim ctx st e TxOut
+mustLookupUtxo ref = do
+  txOut <- lookupUTxO ref
+  maybe (throwError (LedgerSimError'UtxoNotFound ref)) pure txOut
+
+mustLookupUtxo' :: TxOutRef -> LedgerSim ctx st e TxInInfo
+mustLookupUtxo' ref = do
+  txInInfo <- lookupUTxO' ref
+  maybe (throwError (LedgerSimError'UtxoNotFound ref)) pure txInInfo
 
 utxosAtAddress :: Address -> LedgerSim ctx st e [TxInInfo]
 utxosAtAddress addr =
