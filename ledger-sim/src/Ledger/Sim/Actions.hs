@@ -20,7 +20,7 @@ import Data.Map.Strict qualified as M
 import Data.Maybe (mapMaybe)
 
 import Codec.Serialise (serialise)
-import Crypto.Hash (Blake2b_224 (Blake2b_224), hashWith)
+import Crypto.Hash (Blake2b_256 (Blake2b_256), hashWith)
 
 import Control.Monad.Except (MonadError (throwError), withExcept)
 import Control.Monad.Reader (asks, mapReaderT, withReaderT)
@@ -120,7 +120,7 @@ genTxId =
   TxId
     . PlutusTx.toBuiltin
     . convert @_ @ByteString
-    . hashWith Blake2b_224
+    . hashWith Blake2b_256
     . LBS.toStrict
     . serialise
     . getPOSIXTime
