@@ -12,6 +12,9 @@ module Ledger.Sim.Test (
   testCostModel,
   testPrices,
   testMaxExBudget,
+  calcExBudgetRatioToTestMax,
+  calcScriptFeeUsingTestPrices,
+  calcScriptFeeRatioToTestMax,
 ) where
 
 import Control.Monad.Reader (MonadReader (ask), Reader, runReader)
@@ -20,7 +23,8 @@ import Data.Ratio ((%))
 import Ledger.Sim.Types.LedgerConfig (LedgerConfig, PlutusCostModel (PlutusCostModel))
 import Ledger.Sim.Types.LedgerSim (LedgerSim, LedgerSimError (LedgerSimError'Application), runLedgerSim)
 import Ledger.Sim.Types.LedgerState (LedgerState)
-import Ledger.Sim.Types.Prices (Prices (Prices, prMem, prStep))
+import Ledger.Sim.Types.Prices (ExBudgetRatio, Prices (Prices, prMem, prStep))
+import Ledger.Sim.Utils.Fee (calcExBudgtRatio, calcScriptFee, calcScriptFeeRatio)
 import PlutusLedgerApi.Common (ExBudget (ExBudget, exBudgetCPU, exBudgetMemory))
 import PlutusLedgerApi.V2 qualified as PlutusV2
 import Test.Tasty (TestName, TestTree, testGroup)
@@ -75,12 +79,25 @@ toAssertion cfg st (FailsBy predicate sim) =
 testMaxExBudget :: ExBudget
 testMaxExBudget = ExBudget {exBudgetMemory = 10000000, exBudgetCPU = 10000000000}
 
+calcExBudgetRatioToTestMax :: ExBudget -> ExBudgetRatio
+calcExBudgetRatioToTestMax = calcExBudgtRatio testMaxExBudget
+
 {- | Prices of the alonzo era
 
      Copied from: https://github.com/IntersectMBO/cardano-node/blob/06943b66e634fc9eb83ddb376ed3508003dbb607/configuration/cardano/mainnet-alonzo-genesis.json#L3-L14
 -}
 testPrices :: Prices
 testPrices = Prices {prStep = 721 % 10000000, prMem = 577 % 10000}
+
+calcScriptFeeUsingTestPrices :: ExBudget -> Integer
+calcScriptFeeUsingTestPrices = calcScriptFee testPrices
+
+calcScriptFeeRatioToTestMax :: ExBudget -> Rational
+calcScriptFeeRatioToTestMax exBudget =
+  calcScriptFeeRatio
+    testPrices
+    exBudget
+    testMaxExBudget
 
 -- | Copied from: https://github.com/IntersectMBO/plutus/blob/774616b464c44dc934957dc0738098ca270ed9ee/plutus-benchmark/marlowe/src/PlutusBenchmark/Marlowe/BenchUtil.hs#L310
 testCostModel :: PlutusCostModel
