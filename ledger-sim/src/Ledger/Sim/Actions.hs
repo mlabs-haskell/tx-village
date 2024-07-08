@@ -1,8 +1,8 @@
 module Ledger.Sim.Actions (
   lookupUTxO,
   lookupUTxO',
-  mustLookupUtxo,
-  mustLookupUtxo',
+  mustLookupUTxO,
+  mustLookupUTxO',
   utxosAtAddress,
   submitTx,
   getCurrentSlot,
@@ -51,13 +51,13 @@ lookupUTxO ref = M.lookup ref <$> gets ls'utxos
 lookupUTxO' :: TxOutRef -> LedgerSim ctx st e (Maybe TxInInfo)
 lookupUTxO' ref = (TxInInfo ref <$>) <$> lookupUTxO ref
 
-mustLookupUtxo :: TxOutRef -> LedgerSim ctx st e TxOut
-mustLookupUtxo ref = do
+mustLookupUTxO :: TxOutRef -> LedgerSim ctx st e TxOut
+mustLookupUTxO ref = do
   txOut <- lookupUTxO ref
   maybe (throwError (LedgerSimError'UtxoNotFound ref)) pure txOut
 
-mustLookupUtxo' :: TxOutRef -> LedgerSim ctx st e TxInInfo
-mustLookupUtxo' ref = do
+mustLookupUTxO' :: TxOutRef -> LedgerSim ctx st e TxInInfo
+mustLookupUTxO' ref = do
   txInInfo <- lookupUTxO' ref
   maybe (throwError (LedgerSimError'UtxoNotFound ref)) pure txInInfo
 
