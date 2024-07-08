@@ -520,7 +520,7 @@ tests dummyScriptHash ledgerCfg =
                 ( SubmissionError'Validation
                     [ InvalidTxInfoError'Local
                         ( Local.InvalidTxInfoError'InvalidRedeemers
-                            (Local.InvalidRedeemers'ValidatorNotRun scriptHash txOutRef)
+                            (Local.InvalidRedeemers'ValidatorNotRan scriptHash txOutRef)
                           )
                       ]
                   ) -> scriptHash == dummyScriptHash && txOutRef == TxOutRef dummyTxId 0
