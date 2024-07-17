@@ -14,6 +14,7 @@ use jsonrpsee::core::client::ClientT;
 use jsonrpsee::core::params::ObjectParams;
 use jsonrpsee::core::traits::ToRpcParams;
 use jsonrpsee::rpc_params;
+use jsonrpsee::tracing::warn;
 use jsonrpsee::ws_client::{WsClient, WsClientBuilder};
 use plutus_ledger_api::v2::address::Address;
 use plutus_ledger_api::v2::transaction::{TransactionHash, TransactionInput};
@@ -229,30 +230,51 @@ impl Submitter for Ogmios {
         &self,
         tx_hash: &TransactionHash,
     ) -> std::result::Result<(), SubmitterError> {
-        loop {
-            let _ = self.acquire_mempool().await?;
+        let do_wait = || async {
+            loop {
+                let _ = self.acquire_mempool().await?;
 
-            // TODO: hasTransaction returns a false even when there's a transaction in mempool
-            // Bug report: https://github.com/CardanoSolutions/ogmios/issues/376
-            //
-            // let has_tx = self.has_transaction(tx_hash).await?;
-            let mut has_tx = false;
-            while let NextTransactionResponse::TransactionId {
-                transaction: Some(resp),
-            } = self.next_transaction().await?
-            {
-                has_tx = has_tx || resp == tx_hash.into();
+                // TODO: hasTransaction returns a false even when there's a transaction in mempool
+                // Bug report: https://github.com/CardanoSolutions/ogmios/issues/376
+                //
+                // let has_tx = self.has_transaction(tx_hash).await?;
+                let mut has_tx = false;
+                while let NextTransactionResponse::TransactionId {
+                    transaction: Some(resp),
+                } = self.next_transaction().await?
+                {
+                    has_tx = has_tx || resp == tx_hash.into();
 
-                if has_tx {
-                    break;
+                    if has_tx {
+                        break;
+                    }
+                }
+
+                if !has_tx {
+                    let _ = self.release_mempool().await?;
+                    return Result::Ok(());
                 }
             }
+        };
 
-            if !has_tx {
-                let _ = self.release_mempool().await?;
-                return Ok(());
+        let mut retry_counter = 0;
+
+        while retry_counter < 5 {
+            match do_wait().await {
+                Ok(_) => return Ok(()),
+                Err(err) => warn!(
+                    "Unable to confirm transaction {:?}: {}, retrying",
+                    tx_hash, err
+                ),
             }
+
+            retry_counter += 1;
         }
+
+        return Err(SubmitterError(anyhow!(
+            "Unable to confirm transaction {:?}",
+            tx_hash
+        )));
     }
 }
 
