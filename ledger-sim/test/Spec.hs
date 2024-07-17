@@ -26,7 +26,7 @@ import Ledger.Sim.Test (
   ledgerTestGroup,
   testCostModel,
  )
-import Ledger.Sim.Types.LedgerConfig (LedgerConfig, mkLedgerConfig)
+import Ledger.Sim.Types.LedgerConfig (LedgerConfig, ScriptMode (ScriptMode'AllowWitness), mkLedgerConfig)
 import Ledger.Sim.Types.LedgerSim (LedgerSimError (LedgerSimError'Submission))
 import Ledger.Sim.Types.LedgerState (
   LedgerState (ls'currentTime),
@@ -83,7 +83,7 @@ main :: IO ()
 main = do
   script <- either error pure . first show . deserialiseScript vasilPV $ SBS.toShort alwaysSucceedsCbor
   let sh = hashScriptV2 script
-  ledgerCfg <- either throwIO pure $ mkLedgerConfig (M.fromList [(sh, script)]) testCostModel Nothing ()
+  ledgerCfg <- either throwIO pure $ mkLedgerConfig (M.fromList [(sh, script)]) testCostModel Nothing ScriptMode'AllowWitness ()
   defaultMain $ tests sh ledgerCfg
 
 tests :: ScriptHash -> LedgerConfig () -> TestTree
