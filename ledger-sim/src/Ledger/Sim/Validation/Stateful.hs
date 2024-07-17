@@ -11,7 +11,8 @@ module Ledger.Sim.Validation.Stateful (
 import Data.Functor.Contravariant (Contravariant (contramap))
 import Data.Map qualified as M
 import Data.Maybe (mapMaybe)
-import Ledger.Sim.Types.LedgerConfig (LedgerConfig (lc'scriptStorage))
+import Data.Set qualified as S
+import Ledger.Sim.Types.LedgerConfig (LedgerConfig (lc'scriptMode, lc'scriptStorage), ScriptMode (ScriptMode'AllowWitness, ScriptMode'MustBeReference))
 import Ledger.Sim.Types.LedgerState (LedgerState (ls'currentTime, ls'utxos))
 import Ledger.Sim.Validation.Validator (
   Validator,
@@ -20,6 +21,7 @@ import Ledger.Sim.Validation.Validator (
   validateIf,
   validateListAndAnnotateErrWithIdx,
   validateOptional,
+  validateWith,
  )
 import PlutusLedgerApi.V1.Interval qualified as IV
 import PlutusLedgerApi.V1.Value qualified as Value
@@ -99,31 +101,41 @@ validateValidRange state =
 newtype InvalidRedeemersError = InvalidRedeemers'ScriptRequiredForEvaluationNotAvailable ScriptHash
   deriving stock (Show, Eq)
 
-validateRedeemers :: LedgerConfig ctx -> Validator InvalidRedeemersError ([TxInInfo], Value)
-validateRedeemers config =
-  contramap
-    ( \(inputs, mintValue) ->
-        let
-          validatorHashes =
-            mapMaybe
-              ( \txInInfo ->
-                  let txOut = txInInfoResolved txInInfo
-                   in case addressCredential $ txOutAddress txOut of
-                        ScriptCredential sh -> Just sh
-                        _ -> Nothing
+validateRedeemers :: LedgerConfig ctx -> [TxInInfo] -> Validator InvalidRedeemersError ([TxInInfo], Value)
+validateRedeemers config referenceInputs =
+  let availableReferenceScripts =
+        S.fromList $
+          mapMaybe (txOutReferenceScript . txInInfoResolved) referenceInputs
+   in contramap
+        ( \(inputs, mintValue) ->
+            let
+              validatorHashes =
+                mapMaybe
+                  ( \txInInfo ->
+                      let txOut = txInInfoResolved txInInfo
+                       in case addressCredential $ txOutAddress txOut of
+                            ScriptCredential sh -> Just sh
+                            _ -> Nothing
+                  )
+                  inputs
+              mintingPolicyHashes =
+                fmap (ScriptHash . unCurrencySymbol) $
+                  filter (/= Value.adaSymbol) $
+                    Value.symbols mintValue
+             in
+              validatorHashes <> mintingPolicyHashes
+        )
+        $ validateFoldable
+        $ validateIf
+          ( liftA2
+              (&&)
+              (`M.member` lc'scriptStorage config)
+              ( case lc'scriptMode config of
+                  ScriptMode'AllowWitness -> const True
+                  ScriptMode'MustBeReference -> flip S.member availableReferenceScripts
               )
-              inputs
-          mintingPolicyHashes =
-            fmap (ScriptHash . unCurrencySymbol) $
-              filter (/= Value.adaSymbol) $
-                Value.symbols mintValue
-         in
-          validatorHashes <> mintingPolicyHashes
-    )
-    $ validateFoldable
-    $ validateIf
-      (`M.member` lc'scriptStorage config)
-      InvalidRedeemers'ScriptRequiredForEvaluationNotAvailable
+          )
+          InvalidRedeemers'ScriptRequiredForEvaluationNotAvailable
 
 --------------------------------------------------------------------------------
 
@@ -140,5 +152,8 @@ validateTxInfo config state =
     [ contramapAndMapErr txInfoInputs InvalidTxInfoError'InvalidInputs $ validateInputs config state
     , contramapAndMapErr txInfoReferenceInputs InvalidTxInfoError'InvalidReferenceInputs $ validateReferenceInputs state
     , contramapAndMapErr txInfoValidRange InvalidTxInfoError'InvalidValidRange $ validateValidRange state
-    , contramapAndMapErr (liftA2 (,) txInfoInputs txInfoMint) InvalidTxInfoError'InvalidRedeemers $ validateRedeemers config
+    , validateWith $
+        contramapAndMapErr (liftA2 (,) txInfoInputs txInfoMint) InvalidTxInfoError'InvalidRedeemers
+          . validateRedeemers config
+          . txInfoReferenceInputs
     ]

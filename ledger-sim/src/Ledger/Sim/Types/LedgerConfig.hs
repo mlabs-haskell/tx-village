@@ -1,6 +1,7 @@
 module Ledger.Sim.Types.LedgerConfig (
   LedgerConfig (..),
   PlutusCostModel (..),
+  ScriptMode (..),
   mkLedgerConfig,
 ) where
 
@@ -12,10 +13,13 @@ import PlutusLedgerApi.V2 qualified as PlutusV2
 import Ledger.Sim.Types.CostModel (PlutusCostModel (PlutusCostModel), mkEvaluationContext)
 import PlutusLedgerApi.Common (ExBudget)
 
+data ScriptMode = ScriptMode'AllowWitness | ScriptMode'MustBeReference
+
 data LedgerConfig ctx = LedgerConfig
   { lc'evaluationContext :: Plutus.EvaluationContext
   , lc'scriptStorage :: !(Map PlutusV2.ScriptHash PlutusV2.ScriptForEvaluation)
   , lc'maxExBudget :: Maybe ExBudget
+  , lc'scriptWitnessMode :: ScriptMode
   , lc'appCtx :: !ctx
   }
 
@@ -24,8 +28,9 @@ mkLedgerConfig ::
   Map PlutusV2.ScriptHash PlutusV2.ScriptForEvaluation ->
   PlutusCostModel ->
   Maybe ExBudget ->
+  ScriptMode ->
   ctx ->
   Either PlutusV2.CostModelApplyError (LedgerConfig ctx)
-mkLedgerConfig scripts costModel exBudget userCtx = do
+mkLedgerConfig scripts costModel exBudget scriptWitnessMode userCtx = do
   evalContext <- mkEvaluationContext costModel
-  pure $ LedgerConfig evalContext scripts exBudget userCtx
+  pure $ LedgerConfig evalContext scripts exBudget scriptWitnessMode userCtx
