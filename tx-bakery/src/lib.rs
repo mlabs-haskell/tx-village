@@ -189,6 +189,7 @@ impl TxBakery {
     fn mk_inputs(
         &self,
         inputs: &Vec<TxInInfo>,
+        ref_inputs: &Vec<TxInInfo>,
         input_redeemers: &BTreeMap<TransactionInput, Redeemer>,
         input_datums: &BTreeMap<DatumHash, Datum>,
         scripts: &BTreeMap<ScriptHash, ScriptOrRef>,
@@ -222,7 +223,7 @@ impl TxBakery {
                         }?;
                         let script_or_ref = scripts
                             .get(script_hash)
-                            .ok_or(Error::MissingScript(script_hash.clone()))?;
+                            .ok_or_else(|| Error::MissingScript(script_hash.clone()))?;
 
                         let csl_redeemer = redeemer.try_to_csl_with((
                             &csl::plutus::RedeemerTag::new_spend(),
@@ -238,10 +239,20 @@ impl TxBakery {
 
                         let script_source = match &script_or_ref {
                             ScriptOrRef::PlutusScript(script) => PlutusScriptSource::new(&script),
-                            ScriptOrRef::RefScript(tx_in, script) => {
+                            ScriptOrRef::RefScript(ref_tx_in, script) => {
+                                ref_inputs
+                                    .iter()
+                                    .find(|TxInInfo { reference, .. }| reference == ref_tx_in)
+                                    .map(|_| ())
+                                    .ok_or_else(|| {
+                                        Error::MissingReferenceScript(
+                                            ref_tx_in.clone(),
+                                            script_or_ref.get_script_hash(),
+                                        )
+                                    })?;
                                 PlutusScriptSource::new_ref_input_with_lang_ver(
                                     &script_hash.try_to_csl()?,
-                                    &tx_in.try_to_csl()?,
+                                    &ref_tx_in.try_to_csl()?,
                                     &script.language_version(),
                                 )
                             }
@@ -325,6 +336,7 @@ impl TxBakery {
 
     fn mk_mints(
         tx_mint: &Value,
+        ref_inputs: &Vec<TxInInfo>,
         mint_redeemers: &BTreeMap<ScriptHash, Redeemer>,
         scripts: &BTreeMap<ScriptHash, ScriptOrRef>,
         ex_units_map: Option<
@@ -365,10 +377,20 @@ impl TxBakery {
 
                         let script_source = match &script_or_ref {
                             ScriptOrRef::PlutusScript(script) => PlutusScriptSource::new(&script),
-                            ScriptOrRef::RefScript(tx_in, script) => {
+                            ScriptOrRef::RefScript(ref_tx_in, script) => {
+                                ref_inputs
+                                    .iter()
+                                    .find(|TxInInfo { reference, .. }| reference == ref_tx_in)
+                                    .map(|_| ())
+                                    .ok_or_else(|| {
+                                        Error::MissingReferenceScript(
+                                            ref_tx_in.clone(),
+                                            script_or_ref.get_script_hash(),
+                                        )
+                                    })?;
                                 PlutusScriptSource::new_ref_input_with_lang_ver(
                                     &script_hash.try_to_csl()?,
-                                    &tx_in.try_to_csl()?,
+                                    &ref_tx_in.try_to_csl()?,
                                     &script.language_version(),
                                 )
                             }
@@ -460,6 +482,7 @@ impl TxBakery {
 
         tx_builder.set_inputs(&self.mk_inputs(
             &tx.tx_info.inputs,
+            &tx.tx_info.reference_inputs,
             &input_redeemers,
             &input_datums,
             &tx.scripts,
@@ -482,6 +505,7 @@ impl TxBakery {
 
         tx_builder.set_mint_builder(&TxBakery::mk_mints(
             &tx.tx_info.mint,
+            &tx.tx_info.reference_inputs,
             &mint_redeemers,
             &tx.scripts,
             tx.ex_units_map,
