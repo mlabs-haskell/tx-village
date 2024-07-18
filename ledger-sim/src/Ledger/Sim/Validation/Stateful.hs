@@ -3,6 +3,8 @@ module Ledger.Sim.Validation.Stateful (
   InvalidInputsError (..),
   InvalidReferenceInputsError (..),
   InvalidValidRangeError (..),
+  RedeemerKind (..),
+  InvalidRedeemerErrorKind (..),
   InvalidRedeemersError (..),
   InvalidTxInfoError (..),
   validateTxInfo,
@@ -98,35 +100,51 @@ validateValidRange state =
 
 --------------------------------------------------------------------------------
 
-newtype InvalidRedeemersError = InvalidRedeemers'ScriptRequiredForEvaluationNotAvailable ScriptHash
+data RedeemerKind = RedeemerKind'Spending | RedeemerKind'Minting
+  deriving stock (Show, Eq)
+
+data InvalidRedeemerErrorKind
+  = InvalidRedeemerErrorKind'UnknownScript
+  | InvalidRedeemerErrorKind'MissingReferenceScript
+  deriving stock (Show, Eq)
+
+data InvalidRedeemersError = InvalidRedeemersError RedeemerKind InvalidRedeemerErrorKind ScriptHash
   deriving stock (Show, Eq)
 
 validateRedeemers :: LedgerConfig ctx -> [TxInInfo] -> Validator InvalidRedeemersError ([TxInInfo], Value)
 validateRedeemers config referenceInputs =
-  let availableReferenceScripts =
-        S.fromList $
-          mapMaybe (txOutReferenceScript . txInInfoResolved) referenceInputs
-   in contramap
-        ( \(inputs, mintValue) ->
-            let
-              validatorHashes =
-                mapMaybe
-                  ( \txInInfo ->
-                      let txOut = txInInfoResolved txInInfo
-                       in case addressCredential $ txOutAddress txOut of
-                            ScriptCredential sh -> Just sh
-                            _ -> Nothing
-                  )
-                  inputs
-              mintingPolicyHashes =
-                fmap (ScriptHash . unCurrencySymbol) $
-                  filter (/= Value.adaSymbol) $
-                    Value.symbols mintValue
-             in
-              validatorHashes <> mintingPolicyHashes
-        )
-        $ validateFoldable
-        $ validateIf
+  contramap
+    ( \(inputs, mintValue) ->
+        let
+          validatorHashes =
+            mapMaybe
+              ( \txInInfo ->
+                  let txOut = txInInfoResolved txInInfo
+                   in case addressCredential $ txOutAddress txOut of
+                        ScriptCredential sh -> Just sh
+                        _ -> Nothing
+              )
+              inputs
+          mintingPolicyHashes =
+            fmap (ScriptHash . unCurrencySymbol) $
+              filter (/= Value.adaSymbol) $
+                Value.symbols mintValue
+         in
+          (validatorHashes, mintingPolicyHashes)
+    )
+    $ mconcat
+      [ contramap fst $ validateScriptHashes RedeemerKind'Spending
+      , contramap snd $ validateScriptHashes RedeemerKind'Minting
+      ]
+  where
+    availableReferenceScripts =
+      S.fromList $
+        mapMaybe (txOutReferenceScript . txInInfoResolved) referenceInputs
+
+    validateScriptHashes :: RedeemerKind -> Validator InvalidRedeemersError [ScriptHash]
+    validateScriptHashes k =
+      validateFoldable $
+        validateIf
           ( liftA2
               (&&)
               (`M.member` lc'scriptStorage config)
@@ -135,7 +153,10 @@ validateRedeemers config referenceInputs =
                   ScriptMode'MustBeReference -> flip S.member availableReferenceScripts
               )
           )
-          InvalidRedeemers'ScriptRequiredForEvaluationNotAvailable
+          ( InvalidRedeemersError
+              k
+              InvalidRedeemerErrorKind'UnknownScript
+          )
 
 --------------------------------------------------------------------------------
 
