@@ -144,19 +144,23 @@ validateRedeemers config referenceInputs =
     validateScriptHashes :: RedeemerKind -> Validator InvalidRedeemersError [ScriptHash]
     validateScriptHashes k =
       validateFoldable $
-        validateIf
-          ( liftA2
-              (&&)
+        mconcat
+          [ validateIf
               (`M.member` lc'scriptStorage config)
+              ( InvalidRedeemersError
+                  k
+                  InvalidRedeemerErrorKind'UnknownScript
+              )
+          , validateIf
               ( case lc'scriptMode config of
                   ScriptMode'AllowWitness -> const True
                   ScriptMode'MustBeReference -> flip S.member availableReferenceScripts
               )
-          )
-          ( InvalidRedeemersError
-              k
-              InvalidRedeemerErrorKind'UnknownScript
-          )
+              ( InvalidRedeemersError
+                  k
+                  InvalidRedeemerErrorKind'MissingReferenceScript
+              )
+          ]
 
 --------------------------------------------------------------------------------
 
