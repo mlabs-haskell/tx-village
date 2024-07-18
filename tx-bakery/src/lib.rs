@@ -242,8 +242,8 @@ impl TxBakery {
                             ScriptOrRef::RefScript(ref_tx_in, script) => {
                                 ref_inputs
                                     .iter()
-                                    .find(|TxInInfo { reference, .. }| reference == ref_tx_in)
-                                    .map(|_| ())
+                                    .any(|TxInInfo { reference, .. }| reference == ref_tx_in)
+                                    .then_some(())
                                     .ok_or_else(|| {
                                         Error::MissingReferenceScript(
                                             ref_tx_in.clone(),
