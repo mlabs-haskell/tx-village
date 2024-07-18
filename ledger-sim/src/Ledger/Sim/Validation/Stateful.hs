@@ -10,6 +10,7 @@ module Ledger.Sim.Validation.Stateful (
   validateTxInfo,
 ) where
 
+import Control.Applicative (liftA3)
 import Data.Functor.Contravariant (Contravariant (contramap))
 import Data.Map qualified as M
 import Data.Maybe (mapMaybe)
@@ -111,10 +112,10 @@ data InvalidRedeemerErrorKind
 data InvalidRedeemersError = InvalidRedeemersError RedeemerKind InvalidRedeemerErrorKind ScriptHash
   deriving stock (Show, Eq)
 
-validateRedeemers :: LedgerConfig ctx -> [TxInInfo] -> Validator InvalidRedeemersError ([TxInInfo], Value)
-validateRedeemers config referenceInputs =
+validateRedeemers :: LedgerConfig ctx -> Validator InvalidRedeemersError ([TxInInfo], [TxInInfo], Value)
+validateRedeemers config =
   contramap
-    ( \(inputs, mintValue) ->
+    ( \(referenceInputs, inputs, mintValue) ->
         let
           validatorHashes =
             mapMaybe
@@ -129,38 +130,41 @@ validateRedeemers config referenceInputs =
             fmap (ScriptHash . unCurrencySymbol) $
               filter (/= Value.adaSymbol) $
                 Value.symbols mintValue
+
+          availableReferenceScripts =
+            S.fromList $
+              mapMaybe (txOutReferenceScript . txInInfoResolved) referenceInputs
          in
-          (validatorHashes, mintingPolicyHashes)
+          (availableReferenceScripts, validatorHashes, mintingPolicyHashes)
     )
     $ mconcat
-      [ contramap fst $ validateScriptHashes RedeemerKind'Spending
-      , contramap snd $ validateScriptHashes RedeemerKind'Minting
+      [ contramap (\(availableReferenceScripts, validatorHashes, _) -> (availableReferenceScripts, validatorHashes)) $
+          validateScriptHashes RedeemerKind'Spending
+      , contramap (\(availableReferenceScripts, _, mintingPolicyHashes) -> (availableReferenceScripts, mintingPolicyHashes)) $
+          validateScriptHashes RedeemerKind'Minting
       ]
   where
-    availableReferenceScripts =
-      S.fromList $
-        mapMaybe (txOutReferenceScript . txInInfoResolved) referenceInputs
-
-    validateScriptHashes :: RedeemerKind -> Validator InvalidRedeemersError [ScriptHash]
-    validateScriptHashes k =
-      validateFoldable $
-        mconcat
-          [ validateIf
-              (`M.member` lc'scriptStorage config)
-              ( InvalidRedeemersError
-                  k
-                  InvalidRedeemerErrorKind'UnknownScript
-              )
-          , validateIf
-              ( case lc'scriptMode config of
-                  ScriptMode'AllowWitness -> const True
-                  ScriptMode'MustBeReference -> flip S.member availableReferenceScripts
-              )
-              ( InvalidRedeemersError
-                  k
-                  InvalidRedeemerErrorKind'MissingReferenceScript
-              )
-          ]
+    validateScriptHashes :: RedeemerKind -> Validator InvalidRedeemersError (S.Set ScriptHash, [ScriptHash])
+    validateScriptHashes k = validateWith $ \(availableReferenceScripts, _) ->
+      contramap snd $
+        validateFoldable $
+          mconcat
+            [ validateIf
+                (`M.member` lc'scriptStorage config)
+                ( InvalidRedeemersError
+                    k
+                    InvalidRedeemerErrorKind'UnknownScript
+                )
+            , validateIf
+                ( case lc'scriptMode config of
+                    ScriptMode'AllowWitness -> const True
+                    ScriptMode'MustBeReference -> flip S.member availableReferenceScripts
+                )
+                ( InvalidRedeemersError
+                    k
+                    InvalidRedeemerErrorKind'MissingReferenceScript
+                )
+            ]
 
 --------------------------------------------------------------------------------
 
@@ -177,8 +181,6 @@ validateTxInfo config state =
     [ contramapAndMapErr txInfoInputs InvalidTxInfoError'InvalidInputs $ validateInputs config state
     , contramapAndMapErr txInfoReferenceInputs InvalidTxInfoError'InvalidReferenceInputs $ validateReferenceInputs state
     , contramapAndMapErr txInfoValidRange InvalidTxInfoError'InvalidValidRange $ validateValidRange state
-    , validateWith $
-        contramapAndMapErr (liftA2 (,) txInfoInputs txInfoMint) InvalidTxInfoError'InvalidRedeemers
-          . validateRedeemers config
-          . txInfoReferenceInputs
+    , contramapAndMapErr (liftA3 (,,) txInfoReferenceInputs txInfoInputs txInfoMint) InvalidTxInfoError'InvalidRedeemers $
+        validateRedeemers config
     ]
