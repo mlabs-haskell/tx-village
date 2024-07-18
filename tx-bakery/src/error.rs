@@ -22,7 +22,7 @@ pub enum Error {
     #[error("Unable to find Plutus script (hash: {0:?})")]
     MissingScript(ScriptHash),
 
-    #[error("Reference input for script {0:?} is missing")]
+    #[error("Reference input containing script {0:?} is missing from the TransactionInfo reference input list.")]
     MissingReferenceScript(TransactionInput, ScriptHash),
 
     #[error("Couldn't find suitable collateral.")]
