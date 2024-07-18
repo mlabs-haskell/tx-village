@@ -50,9 +50,9 @@ pub struct KeyWallet {
 }
 
 impl KeyWallet {
-    pub async fn new<P: AsRef<Path>>(
-        payment_skey: P,
-        staking_skey: Option<P>,
+    pub async fn new(
+        payment_skey: impl AsRef<Path>,
+        staking_skey: Option<impl AsRef<Path>>,
     ) -> Result<KeyWallet, KeyWalletError> {
         let pay_priv_key = Self::read_priv_key(payment_skey).await?;
         let pay_pkh: Ed25519PubKeyHash = pay_priv_key.to_public().hash().to_pla();
@@ -79,6 +79,13 @@ impl KeyWallet {
             address,
         })
     }
+
+    pub async fn new_enterprise(
+        payment_skey: impl AsRef<Path>,
+    ) -> Result<KeyWallet, KeyWalletError> {
+        Self::new(payment_skey, None::<&str>).await
+    }
+
     /// Get the private key used by Plutip
     async fn read_priv_key(filepath: impl AsRef<Path>) -> Result<PrivateKey, KeyWalletError> {
         let skey_str = fs::read_to_string(&filepath)
