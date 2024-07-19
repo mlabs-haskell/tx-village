@@ -151,7 +151,7 @@ impl Plutip {
         );
 
         let path = self.config.wallets_dir.join(filename);
-        Ok(KeyWallet::new(&path, None).await?)
+        Ok(KeyWallet::new_enterprise(&path).await?)
     }
 
     pub async fn get_own_wallet(&self) -> Result<KeyWallet, PlutipError> {

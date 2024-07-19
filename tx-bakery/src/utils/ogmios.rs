@@ -456,7 +456,7 @@ pub struct OgmiosConfig {
     pub verbose: bool,
     #[builder(default = "Network::Testnet")]
     pub network: Network,
-    #[builder(default = "90")]
+    #[builder(default = "180")]
     pub timeout: u32,
     #[builder(default = "1000")]
     pub max_in_flight: u32,

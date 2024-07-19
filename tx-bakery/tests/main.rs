@@ -541,6 +541,7 @@ mod use_ref_script {
         cur_sym: &CurrencySymbol,
         token_name: &TokenName,
         secret: u32,
+        script_ref: &TxInInfo,
         own_utxos: &BTreeMap<TransactionInput, FullTransactionOutput>,
     ) -> TransactionInfo {
         let fee_input = own_utxos
@@ -555,6 +556,7 @@ mod use_ref_script {
 
         TxScaffold::new()
             .add_pub_key_input(fee_input.0.clone(), fee_input.1.into())
+            .add_reference_input(script_ref.reference.clone(), script_ref.output.clone())
             .add_mint(
                 mint_asset,
                 1,
@@ -578,14 +580,18 @@ mod use_ref_script {
             .query_utxos_by_addr(&wallet.get_change_addr())
             .await?;
 
-        let ref_script = utxos
+        let (script_ref, ref_script) = utxos
             .iter()
             .find_map(|(tx_in, tx_out)| match tx_out.reference_script {
-                Some(ref script) => Some(
+                Some(ref script) => Some((
+                    TxInInfo {
+                        reference: tx_in.clone(),
+                        output: tx_out.into(),
+                    },
                     tx_bakery::utils::script::ScriptOrRef::from_script(script.clone())
                         .unwrap()
                         .into_ref_script(tx_in.clone()),
-                ),
+                )),
                 _ => None,
             })
             .expect("Couldn't find UTxO with reference script");
@@ -598,6 +604,7 @@ mod use_ref_script {
             &cur_sym,
             &token_name,
             1234,
+            &script_ref,
             &utxos,
         );
 
