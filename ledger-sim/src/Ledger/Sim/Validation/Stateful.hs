@@ -12,14 +12,16 @@ module Ledger.Sim.Validation.Stateful (
 
 import Control.Applicative (liftA3)
 import Data.Functor.Contravariant (Contravariant (contramap))
+import Data.Functor.Contravariant.Divisible (Decidable (choose))
 import Data.Map qualified as M
 import Data.Maybe (mapMaybe)
 import Data.Set qualified as S
-import Ledger.Sim.Types.LedgerConfig (LedgerConfig (lc'scriptMode, lc'scriptStorage), ScriptMode (ScriptMode'AllowWitness, ScriptMode'MustBeReference))
+import Ledger.Sim.Types.LedgerConfig (LedgerConfig (lc'scriptStorage), ScriptMode (ScriptMode'MustBeReference, ScriptMode'Unchecked))
 import Ledger.Sim.Types.LedgerState (LedgerState (ls'currentTime, ls'utxos))
 import Ledger.Sim.Validation.Validator (
   Validator,
   contramapAndMapErr,
+  validateFail,
   validateFoldable,
   validateIf,
   validateListAndAnnotateErrWithIdx,
@@ -148,23 +150,27 @@ validateRedeemers config =
     validateScriptHashes k = validateWith $ \(availableReferenceScripts, _) ->
       contramap snd $
         validateFoldable $
-          mconcat
-            [ validateIf
-                (`M.member` lc'scriptStorage config)
-                ( InvalidRedeemersError
-                    k
-                    InvalidRedeemerErrorKind'UnknownScript
-                )
-            , validateIf
-                ( case lc'scriptMode config of
-                    ScriptMode'AllowWitness -> const True
-                    ScriptMode'MustBeReference -> flip S.member availableReferenceScripts
-                )
-                ( InvalidRedeemersError
-                    k
-                    InvalidRedeemerErrorKind'MissingReferenceScript
-                )
-            ]
+          choose
+            ( \scriptHash ->
+                case M.lookup scriptHash (lc'scriptStorage config) of
+                  Nothing -> Left scriptHash
+                  Just (mode, _) -> Right (availableReferenceScripts, mode, scriptHash)
+            )
+            (validateWith $ validateFail . InvalidRedeemersError k InvalidRedeemerErrorKind'UnknownScript)
+            (validateScriptHash k)
+
+    validateScriptHash :: RedeemerKind -> Validator InvalidRedeemersError (S.Set ScriptHash, ScriptMode, ScriptHash)
+    validateScriptHash k = validateWith $ \(availableReferenceScripts, scriptMode, scriptHash) ->
+      contramap (const scriptHash) $
+        validateIf
+          ( case scriptMode of
+              ScriptMode'Unchecked -> const True
+              ScriptMode'MustBeReference -> flip S.member availableReferenceScripts
+          )
+          ( InvalidRedeemersError
+              k
+              InvalidRedeemerErrorKind'MissingReferenceScript
+          )
 
 --------------------------------------------------------------------------------
 

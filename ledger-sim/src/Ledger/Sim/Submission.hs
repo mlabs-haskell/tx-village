@@ -142,7 +142,7 @@ mustFindScriptByHash h = do
 
   case M.lookup h scriptStorage of
     Nothing -> shouldHaveBeenCaughtByValidation "script with the given hash not found in script storage"
-    Just s -> pure s
+    Just s -> pure $ snd s
 
 shouldHaveBeenCaughtByValidation :: String -> Submission ctx st e a
 shouldHaveBeenCaughtByValidation msg =

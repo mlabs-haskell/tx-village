@@ -13,24 +13,22 @@ import PlutusLedgerApi.V2 qualified as PlutusV2
 import Ledger.Sim.Types.CostModel (PlutusCostModel (PlutusCostModel), mkEvaluationContext)
 import PlutusLedgerApi.Common (ExBudget)
 
-data ScriptMode = ScriptMode'AllowWitness | ScriptMode'MustBeReference
+data ScriptMode = ScriptMode'Unchecked | ScriptMode'MustBeReference
 
 data LedgerConfig ctx = LedgerConfig
   { lc'evaluationContext :: Plutus.EvaluationContext
-  , lc'scriptStorage :: !(Map PlutusV2.ScriptHash PlutusV2.ScriptForEvaluation)
+  , lc'scriptStorage :: !(Map PlutusV2.ScriptHash (ScriptMode, PlutusV2.ScriptForEvaluation))
   , lc'maxExBudget :: Maybe ExBudget
-  , lc'scriptMode :: ScriptMode
   , lc'appCtx :: !ctx
   }
 
 -- | A ledger config built with 'practicalSlotConfig' and the given cost model.
 mkLedgerConfig ::
-  Map PlutusV2.ScriptHash PlutusV2.ScriptForEvaluation ->
+  Map PlutusV2.ScriptHash (ScriptMode, PlutusV2.ScriptForEvaluation) ->
   PlutusCostModel ->
   Maybe ExBudget ->
-  ScriptMode ->
   ctx ->
   Either PlutusV2.CostModelApplyError (LedgerConfig ctx)
-mkLedgerConfig scripts costModel exBudget scriptWitnessMode userCtx = do
+mkLedgerConfig scripts costModel exBudget userCtx = do
   evalContext <- mkEvaluationContext costModel
-  pure $ LedgerConfig evalContext scripts exBudget scriptWitnessMode userCtx
+  pure $ LedgerConfig evalContext scripts exBudget userCtx
