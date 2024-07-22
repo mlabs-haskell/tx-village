@@ -1042,7 +1042,7 @@ mod tests {
             .verbose(verbose)
             .build()
             .unwrap();
-        let plutip = Plutip::start(&plutip_config).await.unwrap();
+        let plutip = Plutip::start(plutip_config).await.unwrap();
 
         let ogmios_config = OgmiosLauncherConfigBuilder::default()
             .node_socket(plutip.get_node_socket())
