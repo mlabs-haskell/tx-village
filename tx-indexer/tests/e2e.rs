@@ -20,7 +20,10 @@ mod e2e_tests {
         submitter::Submitter,
         tx_info_builder::TxScaffold,
         utils::{
-            ogmios::{Ogmios, OgmiosConfigBuilder},
+            ogmios::{
+                client::OgmiosClient,
+                launcher::{OgmiosLauncher, OgmiosLauncherConfigBuilder},
+            },
             plutip::{Plutip, PlutipConfigBuilder},
             script::ScriptOrRef,
         },
@@ -53,16 +56,17 @@ mod e2e_tests {
             .verbose(verbose)
             .build()
             .unwrap();
-        let plutip = Plutip::start(&plutip_config).await.unwrap();
+        let plutip = Plutip::start(plutip_config).await.unwrap();
 
-        let ogmios_config = OgmiosConfigBuilder::default()
+        let ogmios_launcher_config = OgmiosLauncherConfigBuilder::default()
             .node_socket(plutip.get_node_socket())
             .node_config(plutip.get_node_config_path().await)
             .network(plutip.get_network())
             .verbose(verbose)
             .build()
             .unwrap();
-        let ogmios = Ogmios::start(&ogmios_config).await.unwrap();
+        let ogmios_launcher = OgmiosLauncher::start(ogmios_launcher_config).await.unwrap();
+        let ogmios = ogmios_launcher.connect().await.unwrap();
 
         let (observer_sender, observer_receiver) = mpsc::channel();
         TxIndexer::run(TxIndexerConfig::new(
@@ -155,7 +159,10 @@ mod e2e_tests {
         }
     }
 
-    async fn test_mint(plutip: &Plutip, ogmios: &Ogmios) -> (TransactionHash, TransactionInfo) {
+    async fn test_mint(
+        plutip: &Plutip,
+        ogmios: &OgmiosClient,
+    ) -> (TransactionHash, TransactionInfo) {
         let mp: Vec<u8> = Json::from_json_string("\"WD8BAAAyIlMwA0kBBFtFUV0AFTM1c0ZuHN1oASQUgmKTCpmAGkkWW0VRXSBWYWxpZGF0aW9uIGZhaWxlZAAWVzk=\"").unwrap();
         let minting_policy = ScriptOrRef::from_bytes(mp).unwrap().as_minting_policy();
 
