@@ -56,7 +56,7 @@ pub struct TxBakery {
     collateral_amount: u64,
 }
 
-/// TransactionInfo with additional context required to build a valid transactions
+/// TransactionInfo with additional context required to build a valid transaction
 #[derive(Clone, Debug)]
 pub struct TxWithCtx<'a> {
     pub tx_info: &'a TransactionInfo,
@@ -95,11 +95,13 @@ impl<'a> TxWithCtx<'a> {
         }
     }
 
+    /// Attach transaction metadata to the context
     pub fn with_metadata(mut self, metadata: &'a TransactionMetadata) -> Self {
         self.metadata = Some(metadata);
         self
     }
 
+    /// Explicitly add execution units instead of running the ChainQuery evaluation
     pub fn with_ex_units(
         mut self,
         ex_units_map: &'a BTreeMap<
@@ -125,6 +127,7 @@ pub enum CollateralStrategy {
 
 impl TxBakery {
     /// Query all the parameters required to build a transaction and store it for later use.
+    /// This command will call the ChainQuery service to pull certain chain parameters
     pub async fn init(chain_query: &impl ChainQuery) -> Result<Self> {
         let protocol_params = chain_query.query_protocol_params().await?;
         let system_start = chain_query.query_system_start().await?;
@@ -135,6 +138,8 @@ impl TxBakery {
     }
 
     /// Init TxBakey with the required configurations
+    /// This allows to directly inject configurations, and handle them separately from the bakery
+    /// (for example prefetch and cache them)
     pub async fn init_with_config(
         network: &Network,
         protocol_params: &ProtocolParameters,
