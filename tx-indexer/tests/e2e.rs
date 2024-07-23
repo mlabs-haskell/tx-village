@@ -21,7 +21,7 @@ mod e2e_tests {
         tx_info_builder::TxScaffold,
         utils::{
             ogmios::{
-                client::OgmiosClient,
+                client::{OgmiosClient, OgmiosClientConfigBuilder},
                 launcher::{OgmiosLauncher, OgmiosLauncherConfigBuilder},
             },
             plutip::{Plutip, PlutipConfigBuilder},
@@ -40,6 +40,7 @@ mod e2e_tests {
         },
         TxIndexer,
     };
+    use url::Url;
 
     #[tokio::test]
     #[serial]
@@ -65,8 +66,14 @@ mod e2e_tests {
             .verbose(verbose)
             .build()
             .unwrap();
-        let ogmios_launcher = OgmiosLauncher::start(ogmios_launcher_config).await.unwrap();
-        let ogmios = ogmios_launcher.connect().await.unwrap();
+        let _ogmios_launcher = OgmiosLauncher::start(ogmios_launcher_config).await.unwrap();
+
+        let ogmios_client_config = OgmiosClientConfigBuilder::default()
+            .url(Url::parse("http://127.0.0.1").unwrap())
+            .network(plutip.get_network())
+            .build()
+            .unwrap();
+        let ogmios = OgmiosClient::connect(ogmios_client_config).await.unwrap();
 
         let (observer_sender, observer_receiver) = mpsc::channel();
         TxIndexer::run(TxIndexerConfig::new(
