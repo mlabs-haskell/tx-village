@@ -9,6 +9,7 @@ use plutus_ledger_api::v2::value::Value;
 use serde::Deserialize;
 use std::collections::BTreeMap;
 use std::future::Future;
+use std::str::FromStr;
 use thiserror::Error;
 
 /// A chain query client responsible for all read actions from the blockchain (no write)
@@ -54,6 +55,18 @@ impl Network {
     }
 }
 
+impl FromStr for Network {
+    type Err = String;
+
+    fn from_str(str: &str) -> Result<Network, Self::Err> {
+        match str {
+            "mainnet" => Ok(Network::Mainnet),
+            "testnet" => Ok(Network::Testnet),
+            _ => Err(format!("Invalid network variant: {}", str)),
+        }
+    }
+}
+
 #[derive(Error, Debug)]
 #[error(transparent)]
 pub struct ChainQueryError(pub anyhow::Error);
@@ -75,7 +88,7 @@ pub struct EraTime {
 #[derive(Debug, Clone)]
 pub struct EraParameters {
     pub epoch_length: u64,
-    pub slot_length: f64,
+    pub slot_length: u64,
     pub safe_zone: Option<u64>,
 }
 
@@ -149,7 +162,7 @@ impl From<FullTransactionOutput> for TransactionOutput {
             value: full_tx_out.value,
             datum: full_tx_out.datum,
             reference_script: full_tx_out.reference_script.map(|script| match script {
-                Script::PlutusScript(script, _) => script.hash().to_pla(),
+                Script::PlutusScript(script) => script.hash().to_pla(),
                 Script::NativeScript(script) => script.hash().to_pla(),
             }),
         }

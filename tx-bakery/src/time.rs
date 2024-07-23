@@ -2,7 +2,7 @@ use crate::chain_query::EraSummary;
 use crate::error::{Error, Result};
 use anyhow::anyhow;
 use cardano_serialization_lib as csl;
-use chrono::{DateTime, Utc};
+use chrono::{DateTime, Duration, Utc};
 use plutus_ledger_api::v2::interval::{Extended, LowerBound, PlutusInterval, UpperBound};
 use plutus_ledger_api::v2::transaction::{POSIXTime, POSIXTimeConversionError, POSIXTimeRange};
 
@@ -15,9 +15,16 @@ pub fn posix_time_into_slot(
     let abs_time: DateTime<Utc> = posix_time
         .try_into()
         .map_err(|source: POSIXTimeConversionError| Error::ConversionError(anyhow!(source)))?;
+    time_into_slot(era_summaries, sys_start, abs_time)
+}
 
+pub fn time_into_slot(
+    era_summaries: &Vec<EraSummary>,
+    sys_start: &DateTime<Utc>,
+    time: DateTime<Utc>,
+) -> Result<u64> {
     // Time since system start
-    let rel_time = abs_time - sys_start;
+    let rel_time = time - sys_start;
 
     if era_summaries.is_empty() {
         return Err(Error::InvalidConfiguration("era_summaries".to_string()));
@@ -29,13 +36,42 @@ pub fn posix_time_into_slot(
         .last()
         .ok_or(Error::InvalidPOSIXTime(format!(
             "{} is before system start at {}, or era_summaries are invalid.",
-            abs_time, sys_start
+            time, sys_start
         )))?;
 
     let time_in_era = rel_time - era_summary.start.time;
-    let slots_in_era = time_in_era.num_milliseconds() as f64 / era_summary.parameters.slot_length;
+    let slots_in_era = time_in_era.num_milliseconds() as u64 / era_summary.parameters.slot_length;
 
-    Ok(era_summary.start.slot + slots_in_era as u64)
+    Ok(era_summary.start.slot + slots_in_era)
+}
+
+pub fn slot_into_posix_time(
+    era_summaries: &Vec<EraSummary>,
+    sys_start: &DateTime<Utc>,
+    slot: u64,
+) -> Result<POSIXTime> {
+    Ok(slot_into_time(era_summaries, sys_start, slot)?.into())
+}
+
+pub fn slot_into_time(
+    era_summaries: &Vec<EraSummary>,
+    sys_start: &DateTime<Utc>,
+    slot: u64,
+) -> Result<DateTime<Utc>> {
+    let era_summary = era_summaries
+        .iter()
+        .filter(|era_summary| era_summary.start.slot <= slot)
+        .last()
+        .ok_or(Error::InvalidConfiguration("era_summaries".to_string()))?;
+
+    let time_in_era = Duration::try_milliseconds(
+        ((slot - era_summary.start.slot) * era_summary.parameters.slot_length) as i64,
+    )
+    .ok_or(Error::Internal(anyhow!(
+        "Couldn't convert era in time to milliseconds"
+    )))?;
+
+    Ok(*sys_start + era_summary.start.time + time_in_era)
 }
 
 pub fn time_range_into_slots(

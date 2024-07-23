@@ -13,13 +13,9 @@
           cargoNextestExtraArgs = "--no-capture";
 
           extraSources = [
-            inputs'.plutus-ledger-api-rust.packages.plutus-ledger-api-rust-src
-
             # LB base schema and runtime libs
             inputs'.lbf.packages.lbf-prelude-rust
             inputs'.lbf.packages.lbf-plutus-rust
-            inputs'.lbf.packages.lbr-prelude-rust-src
-            inputs'.lbf.packages.lbr-prelude-derive-rust-src
 
             # Demo API
             config.packages.lbf-tx-bakery-tests-config-api-rust

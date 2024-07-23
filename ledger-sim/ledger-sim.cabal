@@ -1,0 +1,91 @@
+cabal-version: 3.0
+name:          ledger-sim
+version:       0.1.0.0
+maintainer:    info@mlabs.city
+author:        mlabs-haskell
+description:   Simple ledger simulator wrapper around plutus-ledger-api
+
+flag dev
+  description: Enable non-strict compilation for development
+  manual:      True
+
+common common-language
+  ghc-options:
+    -Wall -Wcompat -Wincomplete-uni-patterns -Wunused-do-bind
+    -Wpartial-type-signatures -Wmissing-export-lists
+    -Wincomplete-record-updates -Wmissing-deriving-strategies
+    -Wname-shadowing -Wunused-foralls -fprint-explicit-foralls
+    -fprint-explicit-kinds -fwarn-missing-import-lists
+    -Wredundant-constraints -Wmissing-export-lists
+    -Wmissing-deriving-strategies -Wname-shadowing -Wunused-packages
+    -fwrite-ide-info
+
+  if !flag(dev)
+    ghc-options: -Werror
+
+  default-extensions:
+    DerivingStrategies
+    LambdaCase
+    PatternSynonyms
+    ViewPatterns
+
+  default-language:   GHC2021
+
+library
+  import:          common-language
+  exposed-modules:
+    Ledger.Sim.Actions
+    Ledger.Sim.Submission
+    Ledger.Sim.Test
+    Ledger.Sim.Types.CostModel
+    Ledger.Sim.Types.EvaluationResult
+    Ledger.Sim.Types.LedgerConfig
+    Ledger.Sim.Types.LedgerSim
+    Ledger.Sim.Types.LedgerState
+    Ledger.Sim.Types.Prices
+    Ledger.Sim.Types.Submission
+    Ledger.Sim.Utils.Fee
+    Ledger.Sim.Utils.Hashing
+    Ledger.Sim.Validation
+    Ledger.Sim.Validation.Local
+    Ledger.Sim.Validation.Normality
+    Ledger.Sim.Validation.Stateful
+    Ledger.Sim.Validation.Validator
+
+  hs-source-dirs:  src
+  build-depends:
+    , aeson
+    , base
+    , bytestring
+    , composition-prelude
+    , containers
+    , contravariant
+    , cryptonite
+    , memory
+    , mtl
+    , plutus-ledger-api
+    , plutus-tx
+    , serialise
+    , tasty
+    , tasty-hunit
+
+test-suite ledger-sim-test
+  import:         common-language
+  type:           exitcode-stdio-1.0
+  main-is:        Spec.hs
+  build-depends:
+    , base
+    , base16-bytestring
+    , binary
+    , bytestring
+    , containers
+    , cryptonite
+    , ledger-sim
+    , memory
+    , mtl
+    , plutus-ledger-api
+    , plutus-tx
+    , tasty
+
+  hs-source-dirs: test
+  ghc-options:    -threaded -rtsopts -with-rtsopts=-N

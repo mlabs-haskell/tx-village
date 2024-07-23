@@ -2,14 +2,13 @@
 name = "tx-bakery"
 version = "0.1.0"
 edition = "2021"
+license = "Apache-2.0"
+description = "Cardano transaction builder"
+repository = "https://github.com/mlabs-haskell/tx-village"
 
 [dependencies]
-lbf-prelude = { path = ".extras/lbf-prelude-0.1.0" }
 cardano-serialization-lib = "11.5.0"
-plutus-ledger-api = { path = ".extras/plutus-ledger-api-0.1.0", features = [
-  "lbf",
-  "chrono",
-] }
+plutus-ledger-api = { version = "0.2.1", features = ["lbf", "chrono"] }
 num-bigint = { version = "0.4.4", features = ["serde"] }
 num-integer = "0.1.45"
 linked-hash-map = "0.5.6"
@@ -34,12 +33,16 @@ anyhow = { version = "1.0.79", features = ["backtrace"] }
 thiserror = "1.0.57"
 chrono = "0.4.35"
 futures = "0.3.30"
-nix = { version = "0.28.0", features = [ "signal" ] }
+nix = { version = "0.28.0", features = ["signal"] }
 num-traits = "0.2.18"
+assertables = "7.0.1"
+hex = "0.4.3"
+wait-timeout = "0.2.0"
 
 [dev-dependencies]
 proptest = "1.4.0"
 serial_test = "3.0.0"
 lbf-tx-bakery-tests-config-api = { path = ".extras/lbf-tx-bakery-tests-config-api-0.1.0" }
 lbf-tx-bakery-tests-plutus-api = { path = ".extras/lbf-tx-bakery-tests-plutus-api-0.1.0" }
-lbr-prelude = { path = ".extras/lbr-prelude-0.1.0", features = ["derive"] }
+lbr-prelude = { version = "0.1.1", features = ["derive"] }
+lbf-prelude = { path = ".extras/lbf-prelude-0.1.0" }

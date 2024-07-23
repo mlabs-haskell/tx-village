@@ -1,0 +1,55 @@
+[package]
+name = "tx-indexer"
+version = "0.1.0"
+edition = "2021"
+license = "Apache-2.0"
+description = "Cardano transaction indexer"
+repository = "https://github.com/mlabs-haskell/tx-village"
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+[dependencies]
+data-encoding = "2.4.0"
+num-bigint = "0.4.4"
+proptest = "1.3.1"
+serde = "1.0.188"
+serde_json = { version = "1.0.107", features = ["arbitrary_precision"] }
+thiserror = "1.0.49"
+cardano-serialization-lib = "11.4"
+bigdecimal = "0.3"
+num-traits = "0.2"
+num-derive = "0.3"
+# Using the latest alpha of sqlx from GitHub where this is fixed: https://github.com/launchbadge/sqlx/issues/1031
+sqlx = { path = ".extras/sqlx-0.8.0", version = "0.8.0-alpha", features = [
+  "postgres",
+  "chrono",
+  "macros",
+  "uuid",
+  "json",
+  "runtime-tokio",
+  "tls-rustls",
+] }
+# errors, config
+anyhow = "1.0.68"
+log = "0.4.17"
+cbor_event = "2.4.0"
+uplc = "0.0.29"
+clap = { version = "4.3.10", features = ["derive"] }
+oura = "1.8.5"
+pallas = "0.18.2"
+async-trait = "0.1.74"
+tokio = { version = "1.24.2", features = ["full"] }
+tracing = "0.1"
+tracing-subscriber = "0.3"
+strum = "0.24"
+strum_macros = "0.24"
+frunk = "0.4.2"
+tx-bakery = { version = "0.1.0", path = ".extras/tx-bakery-0.1.0" }
+plutus-ledger-api = { version = "0.2.1", features = ["chrono", "serde"] }
+chrono = "0.4.38"
+
+[dev-dependencies]
+serial_test = "3.1.1"
+
+[build-dependencies]
+tokio = { version = "1.24.2", features = ["full"] }

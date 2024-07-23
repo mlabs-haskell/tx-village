@@ -7,11 +7,13 @@ use nix::sys::signal::{self, Signal};
 use nix::unistd::Pid;
 use plutus_ledger_api::v2::crypto::{Ed25519PubKeyHash, LedgerBytes};
 use serde::Deserialize;
+use std::path::{Path, PathBuf};
 use std::process::{Child, Command, Stdio};
-use std::time;
+use std::time::{self, Duration};
 use thiserror::Error;
 use tokio;
 use tokio::fs;
+use wait_timeout::ChildExt;
 
 use super::key_wallet::KeyWallet;
 use super::key_wallet::KeyWalletError;
@@ -36,10 +38,10 @@ impl From<PlutipError> for WalletError {
 
 #[derive(Debug, Builder, Clone, Deserialize)]
 pub struct PlutipConfig {
-    #[builder(default = r#""plutip-info.json".to_string()"#, setter(skip))]
-    dump_path: String,
-    #[builder(default = r#"".wallets".to_string()"#, setter(skip))]
-    wallets_dir: String,
+    #[builder(default = r#""plutip-info.json".try_into().unwrap()"#, setter(skip))]
+    dump_path: PathBuf,
+    #[builder(default = r#"".wallets".try_into().unwrap()"#, setter(skip))]
+    wallets_dir: PathBuf,
     #[builder(default = "false")]
     verbose: bool,
     #[builder(default = "1")]
@@ -74,21 +76,17 @@ impl Plutip {
     const NETWORK: Network = Network::Mainnet;
 
     pub async fn start(config: &PlutipConfig) -> Result<Self, PlutipError> {
-        let args = [
-            "--dump-info-json",
-            &config.dump_path,
-            "--wallets-dir",
-            &config.wallets_dir,
-            "--wallets",
-            &config.wallets.to_string(),
-            "--slot-len",
-            &format!("{}s", config.slot_length),
-            "--epoch-size",
-            &config.epoch_size.to_string(),
-        ];
-
         let handler = Command::new("local-cluster")
-            .args(args)
+            .arg("--dump-info-json")
+            .arg(&config.dump_path)
+            .arg("--wallets-dir")
+            .arg(&config.wallets_dir)
+            .arg("--wallets")
+            .arg(&config.wallets.to_string())
+            .arg("--slot-len")
+            .arg(format!("{}s", config.slot_length))
+            .arg("--epoch-size")
+            .arg(config.epoch_size.to_string())
             .stdout(if config.verbose {
                 Stdio::inherit()
             } else {
@@ -123,7 +121,7 @@ impl Plutip {
     }
 
     /// Fetch Plutip info (node socket path, wallet pkh, etc.)
-    async fn fetch_info(path: &str) -> Result<PlutipInfo, PlutipError> {
+    async fn fetch_info(path: impl AsRef<Path>) -> Result<PlutipInfo, PlutipError> {
         let info_str =
             fs::read_to_string(path)
                 .await
@@ -147,12 +145,13 @@ impl Plutip {
     }
 
     pub async fn get_wallet(&self, wallet_idx: usize) -> Result<KeyWallet, PlutipError> {
-        let path = format!(
-            "{}/signing-key-{}.skey",
-            self.config.wallets_dir,
+        let filename = format!(
+            "signing-key-{}.skey",
             HEXLOWER.encode(&self.get_wallet_pkh(wallet_idx).0 .0)
         );
-        Ok(KeyWallet::new(&path, None).await?)
+
+        let path = self.config.wallets_dir.join(filename);
+        Ok(KeyWallet::new_enterprise(&path).await?)
     }
 
     pub async fn get_own_wallet(&self) -> Result<KeyWallet, PlutipError> {
@@ -160,8 +159,8 @@ impl Plutip {
     }
 
     /// Get the path to the active cardano-node socket
-    pub fn get_node_socket(&self) -> String {
-        self.info.node_socket.clone()
+    pub fn get_node_socket(&self) -> PathBuf {
+        self.info.node_socket.clone().try_into().unwrap()
     }
 
     pub fn get_network(&self) -> Network {
@@ -169,14 +168,13 @@ impl Plutip {
     }
 
     /// Get the path cardano-node configuration file
-    pub async fn get_node_config_path(&self) -> String {
+    pub async fn get_node_config_path(&self) -> PathBuf {
         let mut path = fs::canonicalize(&self.info.node_socket).await.unwrap();
         path.pop();
         path.pop();
         path.push("pool-1");
         path.push("node.config");
-
-        path.to_str().unwrap().to_string()
+        path
     }
 
     /// Kill plutip process
@@ -184,8 +182,16 @@ impl Plutip {
         self.cleanup()?;
         let plutip_pid = i32::try_from(self.handler.id()).map(Pid::from_raw).unwrap();
         signal::kill(plutip_pid, Signal::SIGINT)?;
-        let _ = self.handler.wait();
-        Ok(())
+
+        match self.handler.wait_timeout(Duration::from_secs(60))? {
+            Some(_) => Ok(()),
+            None => {
+                // child hasn't exited yet
+                self.handler.kill()?;
+                self.handler.wait()?;
+                Ok(())
+            }
+        }
     }
 
     /// Cleanup all resources used by plutip

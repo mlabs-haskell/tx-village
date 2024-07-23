@@ -12,25 +12,25 @@ has a reference input to an EqValidator UTxO with a given inline datum
 -}
 refInputMintingPolicy :: ClosedTerm V2.PMintingPolicy
 refInputMintingPolicy = plam $ \redeemer ctx -> ptrace "[RefMint]" $ unTermCont $ do
-    RefInputRedeemer refEqDatum refTxOutRef <-
-        pmatchC $ pfromData $ pfromPlutusDataPTryFrom @RefInputRedeemer # redeemer
+  RefInputRedeemer refEqDatum refTxOutRef <-
+    pmatchC $ pfromData $ pfromPlutusDataPTryFrom @RefInputRedeemer # redeemer
 
-    refInputs <- pletC $ pfield @"referenceInputs" # (pfield @"txInfo" # ctx)
+  refInputs <- pletC $ pfield @"referenceInputs" # (pfield @"txInfo" # ctx)
 
-    PJust refInput <-
-        pmatchC $
-            pfind
-                # plam (\txInInfo -> (pfield @"outRef" # txInInfo) #== pfromData refTxOutRef)
-                # pfromData refInputs
+  PJust refInput <-
+    pmatchC $
+      pfind
+        # plam (\txInInfo -> (pfield @"outRef" # txInInfo) #== pfromData refTxOutRef)
+        # pfromData refInputs
 
-    let validates =
-            pmatch
-                (pfield @"datum" # (pfield @"resolved" # refInput))
-                $ \case
-                    V2.POutputDatum datum -> unTermCont $ do
-                        V2.PDatum stored <- pmatchC $ pfield @"outputDatum" # datum
-                        storedEqDatum <- pletC $ pfromData $ pfromPlutusDataPTryFrom @EqDatum # stored
-                        pure $ pfromData refEqDatum #== storedEqDatum
-                    _ -> pcon PFalse
+  let validates =
+        pmatch
+          (pfield @"datum" # (pfield @"resolved" # refInput))
+          $ \case
+            V2.POutputDatum datum -> unTermCont $ do
+              V2.PDatum stored <- pmatchC $ pfield @"outputDatum" # datum
+              storedEqDatum <- pletC $ pfromData $ pfromPlutusDataPTryFrom @EqDatum # stored
+              pure $ pfromData refEqDatum #== storedEqDatum
+            _ -> pcon PFalse
 
-    pure $ pif validates (popaque (pconstant ())) (ptrace "[RefMint] Validation failed" perror)
+  pure $ pif validates (popaque (pconstant ())) (ptrace "[RefMint] Validation failed" perror)

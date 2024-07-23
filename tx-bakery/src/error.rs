@@ -1,8 +1,5 @@
 use cardano_serialization_lib as csl;
-use plutus_ledger_api::v2::{
-    datum::DatumHash,
-    script::{MintingPolicyHash, ScriptHash, ValidatorHash},
-};
+use plutus_ledger_api::v2::{datum::DatumHash, script::ScriptHash, transaction::TransactionInput};
 use thiserror::Error;
 
 use crate::{
@@ -17,19 +14,16 @@ pub type Result<T> = std::result::Result<T, Error>;
 #[derive(Error, Debug)]
 pub enum Error {
     #[error("Unable to find redeemer for minting policy (hash: {0:?})")]
-    MissingMintRedeemer(MintingPolicyHash),
+    MissingMintRedeemer(ScriptHash),
 
     #[error("Unable to find redeemer for datum (hash: {0:?})")]
     MissingDatum(DatumHash),
 
-    #[error("Unable to find validator script (hash: {0:?})")]
-    MissingValidatorScript(ValidatorHash),
-
-    #[error("Unable to find minting policy script (hash: {0:?})")]
-    MissingMintingPolicyScript(MintingPolicyHash),
-
-    #[error("Unable to find plutus script (hash: {0:?})")]
+    #[error("Unable to find Plutus script (hash: {0:?})")]
     MissingScript(ScriptHash),
+
+    #[error("Reference input containing script {0:?} is missing from the TransactionInfo reference input list.")]
+    MissingReferenceScript(TransactionInput, ScriptHash),
 
     #[error("Couldn't find suitable collateral.")]
     MissingCollateral,
