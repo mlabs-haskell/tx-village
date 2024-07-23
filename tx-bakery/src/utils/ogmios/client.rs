@@ -82,15 +82,6 @@ impl OgmiosClientConfig {
         // JUSTIFICATION: The base url and the path are always valid.
         self.url.join("health").unwrap()
     }
-
-    pub async fn check_health(&self) -> Result<OgmiosHealth> {
-        Ok(reqwest::Client::new()
-            .get(self.get_restful_health_url())
-            .send()
-            .await?
-            .json::<OgmiosHealth>()
-            .await?)
-    }
 }
 
 /// Ogmios client for interacting with the blockchain
@@ -106,7 +97,7 @@ impl OgmiosClient {
         let base = time::Duration::from_secs(1);
         let mut attempt = 0;
         loop {
-            let health = config.check_health().await;
+            let health = Self::check_health(&config).await;
             if health
                 .as_ref()
                 .map_or(false, |h| h.network_synchronization == 1.0)
@@ -114,10 +105,7 @@ impl OgmiosClient {
                 let client = WsClientBuilder::default()
                     .build(&config.get_ws_url())
                     .await?;
-                let client = Self {
-                    config,
-                    client,
-                };
+                let client = Self { config, client };
 
                 return Ok(client);
             } else {
@@ -182,6 +170,15 @@ impl OgmiosClient {
             .request(method, params)
             .await
             .map_err(|source| OgmiosError::JSONRpcError(source))
+    }
+
+    pub async fn check_health(config: &OgmiosClientConfig) -> Result<OgmiosHealth> {
+        Ok(reqwest::Client::new()
+            .get(config.get_restful_health_url())
+            .send()
+            .await?
+            .json::<OgmiosHealth>()
+            .await?)
     }
 }
 
