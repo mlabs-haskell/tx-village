@@ -1,11 +1,12 @@
 use anyhow::Result;
 use clap::Parser;
-use sqlx::PgPool;
+use sqlx::{Acquire, PgPool};
 use std::{default::Default, fmt::Debug};
 use tracing::Level;
 use tx_indexer::{
     aux::ParseCurrencySymbol,
     config::{NetworkConfig, NetworkName, NodeAddress, TxIndexerConfig},
+    database::sync_progress::SyncProgressTable,
     filter::Filter,
     TxIndexer,
 };
@@ -122,13 +123,18 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
 
                 let pg_pool = PgPool::connect(&postgres_url).await?;
 
+                let mut conn = pg_pool.acquire().await.unwrap();
+                let conn = conn.acquire().await.unwrap();
+                let sync_progress =
+                    SyncProgressTable::get_or(conn, since_slot, since_block_hash).await?;
+
                 let handler = UtxoIndexerHandler::new(pg_pool);
 
                 let indexer = TxIndexer::run(TxIndexerConfig::new(
                     handler,
                     NodeAddress::UnixSocket(socket_path),
                     network_config,
-                    since_slot.zip(since_block_hash),
+                    sync_progress,
                     4,
                     Filter {
                         curr_symbols: curr_symbols

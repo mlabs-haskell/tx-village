@@ -11,6 +11,9 @@ pub enum UtxoIndexerError {
 
     #[error(transparent)]
     DBTypeConversionError(#[from] DBTypeConversionError),
+
+    #[error("Internal error occurred: {0}")]
+    Internal(anyhow::Error),
 }
 
 impl ErrorPolicyProvider for UtxoIndexerError {
