@@ -68,8 +68,7 @@ impl EventHandler for UtxoIndexerHandler {
                     SyncProgressTable::new(block_slot, block_hash)
                         .map_err(UtxoIndexerError::Internal)?
                         .store(conn)
-                        .await
-                        .map_err(UtxoIndexerError::Internal)?;
+                        .await?;
 
                     Ok(())
                 }

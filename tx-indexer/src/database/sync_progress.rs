@@ -1,7 +1,6 @@
-use anyhow::anyhow;
 use data_encoding::HEXLOWER;
 use sqlx::{FromRow, PgConnection};
-use tracing::{event, span, Instrument, Level};
+use tracing::{info_span, span, Instrument, Level};
 
 #[derive(Clone, Debug, FromRow, Eq, PartialEq)]
 pub struct SyncProgressTable {
@@ -18,29 +17,21 @@ impl SyncProgressTable {
     }
 
     /// Obtain the sync status of the DB
-    pub async fn get(conn: &mut PgConnection) -> Result<Option<Self>, anyhow::Error> {
-        let span = span!(Level::INFO, "Get SyncProgress");
-        async move {
-            // Get existing entity
-            sqlx::query_as::<_, Self>("SELECT block_slot, block_hash FROM sync_progress")
-                .fetch_optional(conn)
-                .await
-                .map_err(|err| {
-                    event!(Level::ERROR, label = "Get sync progress", ?err);
-                    anyhow!(err).context("Get sync progress")
-                })
-        }
-        .instrument(span)
-        .await
+    pub async fn get(conn: &mut PgConnection) -> Result<Option<Self>, sqlx::Error> {
+        let span = info_span!("Get SyncProgress");
+        // Get existing entity
+        sqlx::query_as::<_, Self>("SELECT block_slot, block_hash FROM sync_progress")
+            .fetch_optional(conn)
+            .instrument(span)
+            .await
     }
 
     /// Save a new entity to the database.
-    pub async fn store(&self, conn: &mut PgConnection) -> Result<(), anyhow::Error> {
+    pub async fn store(&self, conn: &mut PgConnection) -> Result<(), sqlx::Error> {
         let span = span!(Level::INFO, "Store SyncProgress", ?self.block_slot);
-        async move {
-            // Insert new entity
-            sqlx::query(
-                r#"
+        // Insert new entity
+        sqlx::query(
+            r#"
                 INSERT INTO sync_progress (block_slot, block_hash)
                 VALUES ($1, $2)
                 ON CONFLICT (id)
@@ -48,20 +39,14 @@ impl SyncProgressTable {
                     block_slot = EXCLUDED.block_slot,
                     block_hash = EXCLUDED.block_hash
                 "#,
-            )
-            .bind(self.block_slot)
-            .bind(self.block_hash.clone())
-            .execute(conn)
-            .await
-            .map_err(|err| {
-                event!(Level::ERROR, label = "Store sync progress", ?err);
-                anyhow!(err).context("Store sync progress")
-            })?;
-
-            Ok(())
-        }
+        )
+        .bind(self.block_slot)
+        .bind(self.block_hash.clone())
+        .execute(conn)
         .instrument(span)
-        .await
+        .await?;
+
+        Ok(())
     }
 
     pub async fn get_or(
