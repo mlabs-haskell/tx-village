@@ -69,7 +69,7 @@ mod e2e_tests {
         let _ogmios_launcher = OgmiosLauncher::start(ogmios_launcher_config).await.unwrap();
 
         let ogmios_client_config = OgmiosClientConfigBuilder::default()
-            .url(Url::parse("http://127.0.0.1").unwrap())
+            .url(Url::parse("http://127.0.0.1:1337").unwrap())
             .network(plutip.get_network())
             .build()
             .unwrap();
