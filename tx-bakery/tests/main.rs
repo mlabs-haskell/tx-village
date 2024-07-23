@@ -761,16 +761,18 @@ mod tests {
     use tx_bakery::chain_query::ChainQuery;
     use tx_bakery::error::Result;
     use tx_bakery::submitter::Submitter;
-    use tx_bakery::utils::ogmios::{Ogmios, OgmiosConfigBuilder};
+    use tx_bakery::utils::ogmios::client::{OgmiosClient, OgmiosClientConfigBuilder};
+    use tx_bakery::utils::ogmios::launcher::{OgmiosLauncher, OgmiosLauncherConfigBuilder};
     use tx_bakery::utils::plutip::{Plutip, PlutipConfigBuilder};
     use tx_bakery::utils::script::ScriptOrRef;
     use tx_bakery::wallet::Wallet;
     use tx_bakery::TxBakery;
+    use url::Url;
 
     #[tokio::test]
     #[serial]
     async fn init_tx_bakery() -> Result<()> {
-        let (_plutip, ogmios) = setup_plutip_test().await;
+        let (_plutip, _ogmios_launcher, ogmios) = setup_plutip_test().await;
         TxBakery::init(&ogmios).await?;
         Ok(())
     }
@@ -778,7 +780,8 @@ mod tests {
     #[tokio::test]
     #[serial]
     async fn time_test() -> Result<()> {
-        let (_plutip, ogmios) = setup_plutip_test().await;
+        let (_plutip, _ogmios_launcher, ogmios) = setup_plutip_test().await;
+
         let posix_time_now: POSIXTime = Local::now().into();
 
         let system_start = ogmios.query_system_start().await?;
@@ -812,7 +815,8 @@ mod tests {
             .as_validator();
         let (example_eq_datum_a, _) = setup_test_data();
 
-        let (plutip, ogmios) = setup_plutip_test().await;
+        let (plutip, _ogmios_launcher, ogmios) = setup_plutip_test().await;
+
         let wallet = plutip.get_own_wallet().await.unwrap();
 
         let tx_hash_lock_a = lock_eq_datum::build_and_submit(
@@ -872,7 +876,8 @@ mod tests {
             .unwrap()
             .as_minting_policy();
 
-        let (plutip, ogmios) = setup_plutip_test().await;
+        let (plutip, _ogmios_launcher, ogmios) = setup_plutip_test().await;
+
         let wallet = plutip.get_own_wallet().await.unwrap();
 
         let tx_hash_mint =
@@ -901,7 +906,8 @@ mod tests {
             .as_minting_policy();
         let (example_eq_datum_a, _) = setup_test_data();
 
-        let (plutip, ogmios) = setup_plutip_test().await;
+        let (plutip, _ogmios_launcher, ogmios) = setup_plutip_test().await;
+
         let wallet = plutip.get_own_wallet().await.unwrap();
 
         let tx_hash_lock_a = lock_eq_datum::build_and_submit(
@@ -937,7 +943,8 @@ mod tests {
             .unwrap()
             .as_minting_policy();
 
-        let (plutip, ogmios) = setup_plutip_test().await;
+        let (plutip, _ogmios_launcher, ogmios) = setup_plutip_test().await;
+
         let wallet = plutip.get_own_wallet().await.unwrap();
 
         let tx_hash_mint =
@@ -955,7 +962,7 @@ mod tests {
             .unwrap()
             .as_minting_policy();
 
-        let (plutip, ogmios) = setup_plutip_test().await;
+        let (plutip, _ogmios_launcher, ogmios) = setup_plutip_test().await;
         let wallet = plutip.get_own_wallet().await.unwrap();
 
         let tx_hash_store_script =
@@ -975,7 +982,8 @@ mod tests {
     #[tokio::test]
     #[serial]
     async fn test_with_metadata() -> Result<()> {
-        let (plutip, ogmios) = setup_plutip_test().await;
+        let (plutip, _ogmios_launcher, ogmios) = setup_plutip_test().await;
+
         let wallet = plutip.get_own_wallet().await.unwrap();
 
         let tx_hash_lock_a = with_metadata::build_and_submit(&wallet, &ogmios, &ogmios).await?;
@@ -990,7 +998,8 @@ mod tests {
     async fn test_with_last_output_change() -> Result<()> {
         let (example_eq_datum_a, _) = setup_test_data();
 
-        let (plutip, ogmios) = setup_plutip_test().await;
+        let (plutip, _ogmios_launcher, ogmios) = setup_plutip_test().await;
+
         let wallet = plutip.get_own_wallet().await.unwrap();
 
         let tx_hash = with_last_output_change::build_and_submit(
@@ -1019,24 +1028,33 @@ mod tests {
         Ok(())
     }
 
-    async fn setup_plutip_test() -> (Plutip, Ogmios) {
+    async fn setup_plutip_test() -> (Plutip, OgmiosLauncher, OgmiosClient) {
         let verbose = false;
         let plutip_config = PlutipConfigBuilder::default()
             .verbose(verbose)
             .build()
             .unwrap();
-        let plutip = Plutip::start(&plutip_config).await.unwrap();
+        let plutip = Plutip::start(plutip_config).await.unwrap();
 
-        let ogmios_config = OgmiosConfigBuilder::default()
+        let ogmios_config = OgmiosLauncherConfigBuilder::default()
             .node_socket(plutip.get_node_socket())
             .node_config(plutip.get_node_config_path().await)
             .network(plutip.get_network())
+            .host("127.0.0.1".into())
+            .port(1337)
             .verbose(verbose)
             .build()
             .unwrap();
-        let ogmios = Ogmios::start(&ogmios_config).await.unwrap();
+        let ogmios_launcher = OgmiosLauncher::start(ogmios_config).await.unwrap();
 
-        (plutip, ogmios)
+        let ogmios_client_config = OgmiosClientConfigBuilder::default()
+            .network(plutip.get_network())
+            .url(Url::parse("http://127.0.0.1:1337").unwrap())
+            .build()
+            .unwrap();
+        let ogmios_client = OgmiosClient::connect(ogmios_client_config).await.unwrap();
+
+        (plutip, ogmios_launcher, ogmios_client)
     }
 
     fn setup_test_data() -> (EqDatum, EqDatum) {
