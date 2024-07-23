@@ -3,23 +3,30 @@ module Ledger.Sim.Validation.Stateful (
   InvalidInputsError (..),
   InvalidReferenceInputsError (..),
   InvalidValidRangeError (..),
+  ScriptPurpose (..),
+  InvalidRedeemerError (..),
   InvalidRedeemersError (..),
   InvalidTxInfoError (..),
   validateTxInfo,
 ) where
 
+import Control.Applicative (liftA3)
 import Data.Functor.Contravariant (Contravariant (contramap))
+import Data.Functor.Contravariant.Divisible (Decidable (choose))
 import Data.Map qualified as M
 import Data.Maybe (mapMaybe)
-import Ledger.Sim.Types.LedgerConfig (LedgerConfig (lc'scriptStorage))
+import Data.Set qualified as S
+import Ledger.Sim.Types.LedgerConfig (LedgerConfig (lc'scriptStorage), ScriptMode (ScriptMode'AsReference, ScriptMode'AsWitness))
 import Ledger.Sim.Types.LedgerState (LedgerState (ls'currentTime, ls'utxos))
 import Ledger.Sim.Validation.Validator (
   Validator,
   contramapAndMapErr,
+  validateFail,
   validateFoldable,
   validateIf,
   validateListAndAnnotateErrWithIdx,
   validateOptional,
+  validateWith,
  )
 import PlutusLedgerApi.V1.Interval qualified as IV
 import PlutusLedgerApi.V1.Value qualified as Value
@@ -96,13 +103,21 @@ validateValidRange state =
 
 --------------------------------------------------------------------------------
 
-newtype InvalidRedeemersError = InvalidRedeemers'ScriptRequiredForEvaluationNotAvailable ScriptHash
+data ScriptPurpose = ScriptPurpose'Spending | ScriptPurpose'Minting
   deriving stock (Show, Eq)
 
-validateRedeemers :: LedgerConfig ctx -> Validator InvalidRedeemersError ([TxInInfo], Value)
+data InvalidRedeemerError
+  = InvalidRedeemerError'MissingScriptInConfig
+  | InvalidRedeemerError'MissingReferenceScript
+  deriving stock (Show, Eq)
+
+data InvalidRedeemersError = InvalidRedeemersError ScriptPurpose InvalidRedeemerError ScriptHash
+  deriving stock (Show, Eq)
+
+validateRedeemers :: LedgerConfig ctx -> Validator InvalidRedeemersError ([TxInInfo], [TxInInfo], Value)
 validateRedeemers config =
   contramap
-    ( \(inputs, mintValue) ->
+    ( \(referenceInputs, inputs, mintValue) ->
         let
           validatorHashes =
             mapMaybe
@@ -117,13 +132,45 @@ validateRedeemers config =
             fmap (ScriptHash . unCurrencySymbol) $
               filter (/= Value.adaSymbol) $
                 Value.symbols mintValue
+
+          availableReferenceScripts =
+            S.fromList $
+              mapMaybe (txOutReferenceScript . txInInfoResolved) referenceInputs
          in
-          validatorHashes <> mintingPolicyHashes
+          (availableReferenceScripts, validatorHashes, mintingPolicyHashes)
     )
-    $ validateFoldable
-    $ validateIf
-      (`M.member` lc'scriptStorage config)
-      InvalidRedeemers'ScriptRequiredForEvaluationNotAvailable
+    $ mconcat
+      [ contramap (\(availableReferenceScripts, validatorHashes, _) -> (availableReferenceScripts, validatorHashes)) $
+          validateScriptHashes ScriptPurpose'Spending
+      , contramap (\(availableReferenceScripts, _, mintingPolicyHashes) -> (availableReferenceScripts, mintingPolicyHashes)) $
+          validateScriptHashes ScriptPurpose'Minting
+      ]
+  where
+    validateScriptHashes :: ScriptPurpose -> Validator InvalidRedeemersError (S.Set ScriptHash, [ScriptHash])
+    validateScriptHashes k = validateWith $ \(availableReferenceScripts, _) ->
+      contramap snd $
+        validateFoldable $
+          choose
+            ( \scriptHash ->
+                case M.lookup scriptHash (lc'scriptStorage config) of
+                  Nothing -> Left scriptHash
+                  Just (mode, _) -> Right (availableReferenceScripts, mode, scriptHash)
+            )
+            (validateWith $ validateFail . InvalidRedeemersError k InvalidRedeemerError'MissingScriptInConfig)
+            (validateScriptHash k)
+
+    validateScriptHash :: ScriptPurpose -> Validator InvalidRedeemersError (S.Set ScriptHash, ScriptMode, ScriptHash)
+    validateScriptHash k = validateWith $ \(availableReferenceScripts, scriptMode, scriptHash) ->
+      contramap (const scriptHash) $
+        validateIf
+          ( case scriptMode of
+              ScriptMode'AsWitness -> const True
+              ScriptMode'AsReference -> flip S.member availableReferenceScripts
+          )
+          ( InvalidRedeemersError
+              k
+              InvalidRedeemerError'MissingReferenceScript
+          )
 
 --------------------------------------------------------------------------------
 
@@ -140,5 +187,6 @@ validateTxInfo config state =
     [ contramapAndMapErr txInfoInputs InvalidTxInfoError'InvalidInputs $ validateInputs config state
     , contramapAndMapErr txInfoReferenceInputs InvalidTxInfoError'InvalidReferenceInputs $ validateReferenceInputs state
     , contramapAndMapErr txInfoValidRange InvalidTxInfoError'InvalidValidRange $ validateValidRange state
-    , contramapAndMapErr (liftA2 (,) txInfoInputs txInfoMint) InvalidTxInfoError'InvalidRedeemers $ validateRedeemers config
+    , contramapAndMapErr (liftA3 (,,) txInfoReferenceInputs txInfoInputs txInfoMint) InvalidTxInfoError'InvalidRedeemers $
+        validateRedeemers config
     ]
