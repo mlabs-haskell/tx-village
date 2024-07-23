@@ -3,8 +3,8 @@ module Ledger.Sim.Validation.Stateful (
   InvalidInputsError (..),
   InvalidReferenceInputsError (..),
   InvalidValidRangeError (..),
-  RedeemerKind (..),
-  InvalidRedeemerErrorKind (..),
+  ScriptPurpose (..),
+  InvalidRedeemerError (..),
   InvalidRedeemersError (..),
   InvalidTxInfoError (..),
   validateTxInfo,
@@ -16,7 +16,7 @@ import Data.Functor.Contravariant.Divisible (Decidable (choose))
 import Data.Map qualified as M
 import Data.Maybe (mapMaybe)
 import Data.Set qualified as S
-import Ledger.Sim.Types.LedgerConfig (LedgerConfig (lc'scriptStorage), ScriptMode (ScriptMode'MustBeReference, ScriptMode'Unchecked))
+import Ledger.Sim.Types.LedgerConfig (LedgerConfig (lc'scriptStorage), ScriptMode (ScriptMode'AsReference, ScriptMode'AsWitness))
 import Ledger.Sim.Types.LedgerState (LedgerState (ls'currentTime, ls'utxos))
 import Ledger.Sim.Validation.Validator (
   Validator,
@@ -103,15 +103,15 @@ validateValidRange state =
 
 --------------------------------------------------------------------------------
 
-data RedeemerKind = RedeemerKind'Spending | RedeemerKind'Minting
+data ScriptPurpose = ScriptPurpose'Spending | ScriptPurpose'Minting
   deriving stock (Show, Eq)
 
-data InvalidRedeemerErrorKind
-  = InvalidRedeemerErrorKind'UnknownScript
-  | InvalidRedeemerErrorKind'MissingReferenceScript
+data InvalidRedeemerError
+  = InvalidRedeemerError'MissingScriptInConfig
+  | InvalidRedeemerError'MissingReferenceScript
   deriving stock (Show, Eq)
 
-data InvalidRedeemersError = InvalidRedeemersError RedeemerKind InvalidRedeemerErrorKind ScriptHash
+data InvalidRedeemersError = InvalidRedeemersError ScriptPurpose InvalidRedeemerError ScriptHash
   deriving stock (Show, Eq)
 
 validateRedeemers :: LedgerConfig ctx -> Validator InvalidRedeemersError ([TxInInfo], [TxInInfo], Value)
@@ -141,12 +141,12 @@ validateRedeemers config =
     )
     $ mconcat
       [ contramap (\(availableReferenceScripts, validatorHashes, _) -> (availableReferenceScripts, validatorHashes)) $
-          validateScriptHashes RedeemerKind'Spending
+          validateScriptHashes ScriptPurpose'Spending
       , contramap (\(availableReferenceScripts, _, mintingPolicyHashes) -> (availableReferenceScripts, mintingPolicyHashes)) $
-          validateScriptHashes RedeemerKind'Minting
+          validateScriptHashes ScriptPurpose'Minting
       ]
   where
-    validateScriptHashes :: RedeemerKind -> Validator InvalidRedeemersError (S.Set ScriptHash, [ScriptHash])
+    validateScriptHashes :: ScriptPurpose -> Validator InvalidRedeemersError (S.Set ScriptHash, [ScriptHash])
     validateScriptHashes k = validateWith $ \(availableReferenceScripts, _) ->
       contramap snd $
         validateFoldable $
@@ -156,20 +156,20 @@ validateRedeemers config =
                   Nothing -> Left scriptHash
                   Just (mode, _) -> Right (availableReferenceScripts, mode, scriptHash)
             )
-            (validateWith $ validateFail . InvalidRedeemersError k InvalidRedeemerErrorKind'UnknownScript)
+            (validateWith $ validateFail . InvalidRedeemersError k InvalidRedeemerError'MissingScriptInConfig)
             (validateScriptHash k)
 
-    validateScriptHash :: RedeemerKind -> Validator InvalidRedeemersError (S.Set ScriptHash, ScriptMode, ScriptHash)
+    validateScriptHash :: ScriptPurpose -> Validator InvalidRedeemersError (S.Set ScriptHash, ScriptMode, ScriptHash)
     validateScriptHash k = validateWith $ \(availableReferenceScripts, scriptMode, scriptHash) ->
       contramap (const scriptHash) $
         validateIf
           ( case scriptMode of
-              ScriptMode'Unchecked -> const True
-              ScriptMode'MustBeReference -> flip S.member availableReferenceScripts
+              ScriptMode'AsWitness -> const True
+              ScriptMode'AsReference -> flip S.member availableReferenceScripts
           )
           ( InvalidRedeemersError
               k
-              InvalidRedeemerErrorKind'MissingReferenceScript
+              InvalidRedeemerError'MissingReferenceScript
           )
 
 --------------------------------------------------------------------------------

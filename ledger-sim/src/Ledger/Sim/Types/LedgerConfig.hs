@@ -13,7 +13,7 @@ import PlutusLedgerApi.V2 qualified as PlutusV2
 import Ledger.Sim.Types.CostModel (PlutusCostModel (PlutusCostModel), mkEvaluationContext)
 import PlutusLedgerApi.Common (ExBudget)
 
-data ScriptMode = ScriptMode'Unchecked | ScriptMode'MustBeReference
+data ScriptMode = ScriptMode'AsWitness | ScriptMode'AsReference
 
 data LedgerConfig ctx = LedgerConfig
   { lc'evaluationContext :: Plutus.EvaluationContext
