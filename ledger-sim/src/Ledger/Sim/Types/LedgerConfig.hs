@@ -1,6 +1,7 @@
 module Ledger.Sim.Types.LedgerConfig (
   LedgerConfig (..),
   PlutusCostModel (..),
+  ScriptMode (..),
   mkLedgerConfig,
 ) where
 
@@ -12,16 +13,18 @@ import PlutusLedgerApi.V2 qualified as PlutusV2
 import Ledger.Sim.Types.CostModel (PlutusCostModel (PlutusCostModel), mkEvaluationContext)
 import PlutusLedgerApi.Common (ExBudget)
 
+data ScriptMode = ScriptMode'AsWitness | ScriptMode'AsReference
+
 data LedgerConfig ctx = LedgerConfig
   { lc'evaluationContext :: Plutus.EvaluationContext
-  , lc'scriptStorage :: !(Map PlutusV2.ScriptHash PlutusV2.ScriptForEvaluation)
+  , lc'scriptStorage :: !(Map PlutusV2.ScriptHash (ScriptMode, PlutusV2.ScriptForEvaluation))
   , lc'maxExBudget :: Maybe ExBudget
   , lc'appCtx :: !ctx
   }
 
 -- | A ledger config built with 'practicalSlotConfig' and the given cost model.
 mkLedgerConfig ::
-  Map PlutusV2.ScriptHash PlutusV2.ScriptForEvaluation ->
+  Map PlutusV2.ScriptHash (ScriptMode, PlutusV2.ScriptForEvaluation) ->
   PlutusCostModel ->
   Maybe ExBudget ->
   ctx ->

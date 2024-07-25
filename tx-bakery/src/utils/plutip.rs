@@ -75,7 +75,7 @@ pub struct Plutip {
 impl Plutip {
     const NETWORK: Network = Network::Mainnet;
 
-    pub async fn start(config: &PlutipConfig) -> Result<Self, PlutipError> {
+    pub async fn start(config: PlutipConfig) -> Result<Self, PlutipError> {
         let handler = Command::new("local-cluster")
             .arg("--dump-info-json")
             .arg(&config.dump_path)
@@ -115,7 +115,7 @@ impl Plutip {
         let info = Self::fetch_info(&config.dump_path).await?;
         Ok(Self {
             handler,
-            config: config.clone(),
+            config,
             info,
         })
     }
@@ -151,7 +151,7 @@ impl Plutip {
         );
 
         let path = self.config.wallets_dir.join(filename);
-        Ok(KeyWallet::new(&path, None).await?)
+        Ok(KeyWallet::new_enterprise(&path).await?)
     }
 
     pub async fn get_own_wallet(&self) -> Result<KeyWallet, PlutipError> {

@@ -38,6 +38,7 @@ num-traits = "0.2.18"
 assertables = "7.0.1"
 hex = "0.4.3"
 wait-timeout = "0.2.0"
+url = "2.5.2"
 
 [dev-dependencies]
 proptest = "1.4.0"
