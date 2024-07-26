@@ -3836,6 +3836,7 @@ dependencies = [
  "tokio",
  "tokio-test",
  "tower",
+ "url",
  "uuid",
  "wait-timeout",
 ]
