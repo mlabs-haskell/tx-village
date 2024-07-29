@@ -2,7 +2,7 @@
 , extraDDLs ? [ ]
 , pgUser ? "tx_indexer"
 , pgPort ? "5555"
-, pgDir ? "./.pg"
+, pgDir ? ".pg"
 , postgresql ? pkgs.postgresql_16
 , extraPostgresConf ? ""
 }:
@@ -37,10 +37,10 @@ let
       LC_CTYPE = "en_US.UTF-8";
       LC_ALL = "en_US.UTF-8";
       LANG = "en_US.UTF-8";
-      PGDATA = pgDir;
-      PGHOST = pgDir;
     };
     text = ''
+      export PGDATA="$PWD/${pgDir}"
+      export PGHOST="$PWD/${pgDir}"
       [ ! -d "$PGDATA" ] && pg_ctl initdb -o "-U ${pgUser}" && cat "${postgresConf}" >> "$PGDATA/postgresql.conf"
 
       start-db
@@ -52,10 +52,8 @@ let
   start-db = pkgs.writeShellApplication {
     name = "start-db";
     runtimeInputs = [ postgresql ];
-    runtimeEnv = {
-      PGDATA = pgDir;
-    };
     text = ''
+      export PGDATA="$PWD/${pgDir}";
       pg_ctl -o "-p ${pgPort} -k $PGDATA" start
     '';
   };
@@ -63,10 +61,8 @@ let
   stop-db = pkgs.writeShellApplication {
     name = "stop-db";
     runtimeInputs = [ postgresql ];
-    runtimeEnv = {
-      PGDATA = pgDir;
-    };
     text = ''
+      export PGDATA="$PWD/${pgDir}";
       pg_ctl stop && exit
     '';
   };
@@ -74,10 +70,8 @@ let
   pg = pkgs.writeShellApplication {
     name = "pg";
     runtimeInputs = [ postgresql ];
-    runtimeEnv = {
-      PGHOST = pgDir;
-    };
     text = ''
+      export PGHOST="$PWD/${pgDir}";
       psql -p ${pgPort} -U ${pgUser}
     '';
   };
