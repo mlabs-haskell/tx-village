@@ -91,7 +91,7 @@ async fn handle_event<'a, H: EventHandler>(
     input: StageReceiver,
     retry_policy: &RetryPolicy,
     utils: Arc<Utils>,
-    progress_tracker: Option<ProgressTracker>,
+    mut progress_tracker: Option<ProgressTracker>,
 ) -> Result<(), H::Error> {
     let span = span!(Level::DEBUG, "handle_event");
     let _enter = span.enter();
@@ -106,7 +106,7 @@ async fn handle_event<'a, H: EventHandler>(
             &handler,
             chain_event.clone(),
             retry_policy,
-            progress_tracker.clone(),
+            &mut progress_tracker,
         )
         .instrument(span)
         .await

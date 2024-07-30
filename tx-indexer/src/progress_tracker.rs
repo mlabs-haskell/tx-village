@@ -1,8 +1,11 @@
-use crate::from_oura::OuraParseError;
+use std::sync::{atomic::AtomicUsize, Arc};
+
 use anyhow::anyhow;
 use chrono::{DateTime, Duration, Utc};
 use oura::utils::ChainWellKnownInfo;
 use tx_bakery::chain_query::{EraParameters, EraSummary, EraTime};
+
+use crate::from_oura::OuraParseError;
 
 /// A progress tracker holds information about the chain info required to calculate
 /// POSIX time from slots
@@ -11,6 +14,7 @@ pub struct ProgressTracker {
     pub system_start: DateTime<Utc>,
     pub era_summaries: Vec<EraSummary>,
     pub since_slot: u64,
+    pub sync_progress: Arc<AtomicUsize>,
 }
 
 impl ProgressTracker {
@@ -23,10 +27,11 @@ impl ProgressTracker {
             system_start,
             era_summaries: chain_info_to_era_summaries(&system_start, chain_info)?,
             since_slot,
+            sync_progress: Arc::new(AtomicUsize::new(0)),
         })
     }
 
-    pub fn get_percentage(&self, slot: u64) -> Result<u8, OuraParseError> {
+    pub fn get_percentage(&self, slot: u64) -> Result<f32, OuraParseError> {
         let current_time = Utc::now();
         let current_slot =
             tx_bakery::time::time_into_slot(&self.era_summaries, &self.system_start, current_time)
@@ -35,7 +40,7 @@ impl ProgressTracker {
         let synced = slot - self.since_slot;
         let to_be_synced = current_slot - self.since_slot;
 
-        Ok((synced * 100 / to_be_synced) as u8)
+        Ok(synced as f32 * 100.0 / to_be_synced as f32)
     }
 }
 

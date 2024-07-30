@@ -53,7 +53,7 @@ pub(crate) async fn perform_with_retry<H: EventHandler>(
     handler: &H,
     oura_event: oura::Event,
     policy: &RetryPolicy,
-    progress_tracker: Option<ProgressTracker>,
+    progress_tracker: &mut Option<ProgressTracker>,
 ) -> Result<(), H::Error> {
     let span = span!(Level::DEBUG, "perform_with_retry");
     let _enter = span.enter();

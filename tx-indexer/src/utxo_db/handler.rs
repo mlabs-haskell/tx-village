@@ -1,7 +1,10 @@
 use super::{error::UtxoIndexerError, table::utxos::UtxosTable};
 use sqlx::{Acquire, Connection, PgPool};
 use tracing::{event, span, Instrument, Level};
-use tx_indexer::handler::{callback::EventHandler, chain_event::ChainEvent};
+use tx_indexer::{
+    database::sync_progress::SyncProgressTable,
+    handler::{callback::EventHandler, chain_event::ChainEvent},
+};
 
 #[derive(Clone)]
 pub struct UtxoIndexerHandler {
@@ -57,7 +60,18 @@ impl EventHandler for UtxoIndexerHandler {
                     })
                     .await
                 }
-                ChainEvent::SyncProgressEvent { .. } => Ok(()),
+                ChainEvent::SyncProgressEvent {
+                    block_slot,
+                    block_hash,
+                    ..
+                } => {
+                    SyncProgressTable::new(block_slot, block_hash)
+                        .map_err(UtxoIndexerError::Internal)?
+                        .store(conn)
+                        .await?;
+
+                    Ok(())
+                }
             }
         }
         .instrument(span)

@@ -28,7 +28,7 @@ let
         ${extraPostgresConf}
       '';
 
-  ddls = [ ./db/plutus.sql ] ++ extraDDLs;
+  ddls = [ ./db/plutus.sql ./db/sync_progress.sql ] ++ extraDDLs;
 
   init-db = pkgs.writeShellApplication {
     name = "init-db";

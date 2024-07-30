@@ -15169,8 +15169,7 @@
         "pre-commit-hooks": [
           "lbf",
           "pre-commit-hooks"
-        ],
-        "sqlx": "sqlx"
+        ]
       }
     },
     "rust-analyzer-src": {
@@ -15661,22 +15660,6 @@
       "original": {
         "owner": "michaelpj",
         "repo": "sphinxcontrib-haddock",
-        "type": "github"
-      }
-    },
-    "sqlx": {
-      "flake": false,
-      "locked": {
-        "lastModified": 1718477971,
-        "narHash": "sha256-0DcrX8ZN0/lBlMUFh+P5AgWMw2BhufxmN7v/yB49az4=",
-        "owner": "launchbadge",
-        "repo": "sqlx",
-        "rev": "402022df87ae159fb4c0125dbfc936c5fd71fac0",
-        "type": "github"
-      },
-      "original": {
-        "owner": "launchbadge",
-        "repo": "sqlx",
         "type": "github"
       }
     },
