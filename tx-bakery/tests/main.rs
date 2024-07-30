@@ -1047,12 +1047,10 @@ mod tests {
             .unwrap();
         let ogmios_launcher = OgmiosLauncher::start(ogmios_config).await.unwrap();
 
-        let ogmios_client_config = OgmiosClientConfigBuilder::default()
-            .network(plutip.get_network())
-            .url(Url::parse("http://127.0.0.1:1337").unwrap())
-            .build()
+        let ogmios_client = ogmios_launcher
+            .get_client(plutip.get_network())
+            .await
             .unwrap();
-        let ogmios_client = OgmiosClient::connect(ogmios_client_config).await.unwrap();
 
         (plutip, ogmios_launcher, ogmios_client)
     }
