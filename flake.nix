@@ -28,12 +28,6 @@
     # Light-weight wrapper around cardano-node
     ogmios.url = "github:mlabs-haskell/ogmios-nixos";
 
-    # Using the latest alpha of sqlx from GitHub where this is fixed: https://github.com/launchbadge/sqlx/issues/1031
-    sqlx = {
-      url = "github:launchbadge/sqlx";
-      flake = false;
-    };
-
   };
   outputs = inputs@{ flake-parts, ... }:
     flake-parts.lib.mkFlake { inherit inputs; } {

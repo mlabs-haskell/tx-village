@@ -10,8 +10,8 @@ use plutus_ledger_api::v2::{
     transaction::{TransactionHash, TransactionInput, TransactionOutput, TxInInfo},
     value::Value,
 };
-use std::collections::HashMap;
 use std::fmt::Debug;
+use std::{collections::HashMap, sync::atomic::Ordering};
 use tracing::{event, Level};
 
 /// Indication of when an event happened in the context of the chain.
@@ -23,7 +23,7 @@ pub struct ChainEventTime {
 }
 
 /// Chain events that the indexer is configured to produce.
-#[derive(Clone, Debug, PartialEq, Eq)]
+#[derive(Clone, Debug, PartialEq)]
 pub enum ChainEvent {
     /// A filtered transaction was confirmed
     TransactionEvent {
@@ -38,7 +38,7 @@ pub enum ChainEvent {
     SyncProgressEvent {
         block_slot: u64,
         block_hash: String,
-        percentage: u8,
+        percentage: f32,
     },
 }
 
@@ -63,7 +63,7 @@ pub struct TransactionEventRecord {
 
 pub fn parse_oura_event(
     ev: oura::Event,
-    progress_tracker: Option<ProgressTracker>,
+    progress_tracker: &mut Option<ProgressTracker>,
 ) -> Result<Option<ChainEvent>, OuraParseError> {
     Ok(match ev.data {
         oura::EventData::Transaction(tx_rec) => {
@@ -98,6 +98,28 @@ pub fn parse_oura_event(
 
                     let percentage = progress_tracker.get_percentage(block_slot)?;
 
+                    let throttled_sync_progress = (percentage * 10.0) as usize;
+                    let is_updated = progress_tracker
+                        .sync_progress
+                        .fetch_update(Ordering::SeqCst, Ordering::SeqCst, |prev_status| {
+                            if prev_status < throttled_sync_progress {
+                                Some(throttled_sync_progress)
+                            } else {
+                                None
+                            }
+                        })
+                        .is_ok();
+
+                    if is_updated {
+                        event!(
+                            Level::INFO,
+                            percentage = format!("{:.1}%", percentage),
+                            ?block_slot,
+                            ?block_hash,
+                            label = "Chain synchronization progress"
+                        );
+                    }
+
                     Some(ChainEvent::SyncProgressEvent {
                         percentage,
                         block_slot,
@@ -106,7 +128,7 @@ pub fn parse_oura_event(
                 }
 
                 None => Some(ChainEvent::SyncProgressEvent {
-                    percentage: 100,
+                    percentage: 100.0,
                     block_slot: block_rec.slot,
                     block_hash: block_rec.hash,
                 }),

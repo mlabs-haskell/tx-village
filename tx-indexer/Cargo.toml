@@ -20,7 +20,7 @@ bigdecimal = "0.3"
 num-traits = "0.2"
 num-derive = "0.3"
 # Using the latest alpha of sqlx from GitHub where this is fixed: https://github.com/launchbadge/sqlx/issues/1031
-sqlx = { path = ".extras/sqlx-0.8.0", version = "0.8.0-alpha", features = [
+sqlx = { version = "0.8.0", features = [
   "postgres",
   "chrono",
   "macros",
