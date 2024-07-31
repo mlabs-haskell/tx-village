@@ -53,7 +53,6 @@ pub struct TxBakery {
     system_start: DateTime<Utc>,
     era_summaries: Vec<EraSummary>,
     network_id: u8,
-    collateral_amount: u64,
 }
 
 /// TransactionInfo with additional context required to build a valid transactions
@@ -116,9 +115,9 @@ impl<'a> TxWithCtx<'a> {
 #[derive(Clone, Debug)]
 pub enum CollateralStrategy {
     /// Automatically pick a suitable UTxO from the transaction inputs
-    Automatic,
+    Automatic { amount: u64 },
     /// Explicitly set a UTxO (doesn't have to be an input UTxO)
-    Explicit(TxInInfo),
+    Explicit { utxo: TxInInfo, amount: u64 },
     /// No collateral (for transaction without scripts)
     None,
 }
@@ -166,8 +165,6 @@ impl TxBakery {
             .build()
             .unwrap();
 
-        let collateral_amount = 5_000_000;
-
         Ok(TxBakery {
             config,
             data_cost,
@@ -178,7 +175,6 @@ impl TxBakery {
             system_start,
             era_summaries,
             network_id: network.to_network_id(),
-            collateral_amount,
         })
     }
 
@@ -418,7 +414,11 @@ impl TxBakery {
     /// - must have at least the configured amount of Ada
     ///         (TODO: we could calculate the exact minimum collateral amount using protocol params)
     ///
-    fn find_collateral(&self, tx_inputs: &Vec<TxInInfo>) -> Option<TxInInfo> {
+    fn find_collateral(
+        &self,
+        collateral_amount: u64,
+        tx_inputs: &Vec<TxInInfo>,
+    ) -> Option<TxInInfo> {
         tx_inputs
             .iter()
             .find(
@@ -428,7 +428,7 @@ impl TxBakery {
                  }| {
                     if let Credential::PubKey(_) = output.address.credential {
                         let ada_amount = output.value.get_ada_amount();
-                        ada_amount > BigInt::from(self.collateral_amount)
+                        ada_amount > BigInt::from(collateral_amount)
                     } else {
                         false
                     }
@@ -523,25 +523,25 @@ impl TxBakery {
         };
 
         match &tx.collateral_strategy {
-            CollateralStrategy::Automatic => {
+            CollateralStrategy::Automatic { amount } => {
                 let tx_input = self
-                    .find_collateral(&tx.tx_info.inputs)
+                    .find_collateral(*amount, &tx.tx_info.inputs)
                     .ok_or(Error::MissingCollateral)?;
                 let collateral = self.mk_collateral(&tx_input)?;
                 tx_builder.set_collateral(&collateral);
                 tx_builder
                     .set_total_collateral_and_return(
-                        &csl::utils::to_bignum(self.collateral_amount),
+                        &csl::utils::to_bignum(*amount),
                         &collateral_return_address.try_to_csl_with(self.network_id)?,
                     )
                     .map_err(|source| Error::TransactionBuildError(anyhow!(source)))?;
             }
-            CollateralStrategy::Explicit(tx_input) => {
-                let collateral = self.mk_collateral(&tx_input)?;
+            CollateralStrategy::Explicit { utxo, amount } => {
+                let collateral = self.mk_collateral(&utxo)?;
                 tx_builder.set_collateral(&collateral);
                 tx_builder
                     .set_total_collateral_and_return(
-                        &csl::utils::to_bignum(self.collateral_amount),
+                        &csl::utils::to_bignum(*amount),
                         &collateral_return_address.try_to_csl_with(self.network_id)?,
                     )
                     .map_err(|source| Error::TransactionBuildError(anyhow!(source)))?;
