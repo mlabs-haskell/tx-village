@@ -25,7 +25,6 @@ import Ledger.Sim.Validation.Validator (
   validateFoldable,
   validateIf,
   validateListAndAnnotateErrWithIdx,
-  validateOptional,
   validateWith,
  )
 import PlutusLedgerApi.V1.Interval qualified as IV
@@ -49,34 +48,24 @@ import PlutusLedgerApi.V2 (
 
 --------------------------------------------------------------------------------
 
-data InvalidInputError
+newtype InvalidInputError
   = InvalidInputError'NotFoundOnLedger TxOutRef
-  | InvalidInputError'ReferenceScriptNotAvailable ScriptHash
   deriving stock (Show, Eq)
+
 validateInputExist :: LedgerState st -> Validator InvalidInputError TxInInfo
 validateInputExist state =
   contramap txInInfoOutRef $
     validateIf (`M.member` ls'utxos state) InvalidInputError'NotFoundOnLedger
-
-validateInputReferenceScriptAvailable :: LedgerConfig ctx -> Validator InvalidInputError TxInInfo
-validateInputReferenceScriptAvailable config =
-  contramap (txOutReferenceScript . txInInfoResolved) $
-    validateOptional $
-      validateIf (`M.member` lc'scriptStorage config) InvalidInputError'ReferenceScriptNotAvailable
 
 --------------------------------------------------------------------------------
 
 data InvalidInputsError = InvalidInputsError'InvalidInput Int InvalidInputError
   deriving stock (Show, Eq)
 
-validateInputs ::
-  LedgerConfig cfg -> LedgerState st -> Validator InvalidInputsError [TxInInfo]
-validateInputs config state =
+validateInputs :: LedgerState st -> Validator InvalidInputsError [TxInInfo]
+validateInputs state =
   validateListAndAnnotateErrWithIdx InvalidInputsError'InvalidInput $
-    mconcat
-      [ validateInputExist state
-      , validateInputReferenceScriptAvailable config
-      ]
+    validateInputExist state
 
 --------------------------------------------------------------------------------
 
@@ -184,7 +173,7 @@ data InvalidTxInfoError
 validateTxInfo :: LedgerConfig cfg -> LedgerState st -> Validator InvalidTxInfoError TxInfo
 validateTxInfo config state =
   mconcat
-    [ contramapAndMapErr txInfoInputs InvalidTxInfoError'InvalidInputs $ validateInputs config state
+    [ contramapAndMapErr txInfoInputs InvalidTxInfoError'InvalidInputs $ validateInputs state
     , contramapAndMapErr txInfoReferenceInputs InvalidTxInfoError'InvalidReferenceInputs $ validateReferenceInputs state
     , contramapAndMapErr txInfoValidRange InvalidTxInfoError'InvalidValidRange $ validateValidRange state
     , contramapAndMapErr (liftA3 (,,) txInfoReferenceInputs txInfoInputs txInfoMint) InvalidTxInfoError'InvalidRedeemers $
