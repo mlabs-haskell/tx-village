@@ -48,20 +48,20 @@ import PlutusLedgerApi.V2 (
 import PlutusTx qualified
 import PlutusTx.AssocMap qualified as AssocMap
 
-asksTxInfo :: (TxInfo -> a) -> Submission ctx st e a
+asksTxInfo :: (Monad m) => (TxInfo -> a) -> Submission ctx st e m a
 asksTxInfo f = asks $ f . submissionEnv'txInfo
 
-asksConfig :: (LedgerConfig ctx -> a) -> Submission ctx st e a
+asksConfig :: (Monad m) => (LedgerConfig ctx -> a) -> Submission ctx st e m a
 asksConfig f = asks $ f . submissionEnv'config
 
-submit :: Submission ctx st e [EvaluationResult]
+submit :: (Monad m) => Submission ctx st e m [EvaluationResult]
 submit = do
   validate
   r <- evaluate
   updateLedgerState
   pure r
 
-validate :: Submission ctx st e ()
+validate :: (Monad m) => Submission ctx st e m ()
 validate = do
   state <- get
   config <- asks submissionEnv'config
@@ -73,7 +73,7 @@ validate = do
       throwError $
         SubmissionError'Validation reasons
 
-evaluate :: Submission ctx st e [EvaluationResult]
+evaluate :: (Monad m) => Submission ctx st e m [EvaluationResult]
 evaluate = do
   redeemers <- asksTxInfo $ AssocMap.toList . txInfoRedeemers
   evaluationResults <- execWriterT $ traverse (uncurry evaluateRedeemer) redeemers
@@ -83,9 +83,10 @@ evaluate = do
     failedResults -> throwError $ SubmissionError'Evaluation failedResults
 
 evaluateRedeemer ::
+  (Monad m) =>
   ScriptPurpose ->
   Redeemer ->
-  WriterT [EvaluationResult] (Submission ctx st e) ()
+  WriterT [EvaluationResult] (Submission ctx st e m) ()
 evaluateRedeemer p red = do
   result <- lift $ case p of
     Minting cs -> evaluateMintingRedeemer cs red
@@ -94,20 +95,20 @@ evaluateRedeemer p red = do
 
   tell [result]
 
-evaluateMintingRedeemer :: CurrencySymbol -> Redeemer -> Submission ctx st e EvaluationResult
+evaluateMintingRedeemer :: (Monad m) => CurrencySymbol -> Redeemer -> Submission ctx st e m EvaluationResult
 evaluateMintingRedeemer cs red = do
   script <- mustResolveMintingPolicy cs
   evaluatePlutusScript Nothing (Minting cs) red script
 
-evaluateSpendingRedeemer :: TxOutRef -> Redeemer -> Submission ctx st e EvaluationResult
+evaluateSpendingRedeemer :: (Monad m) => TxOutRef -> Redeemer -> Submission ctx st e m EvaluationResult
 evaluateSpendingRedeemer txOutRef red = do
   (script, datum) <- mustResolveValidatorAndDatum txOutRef
   evaluatePlutusScript (Just datum) (Spending txOutRef) red script
 
-mustResolveMintingPolicy :: CurrencySymbol -> Submission ctx st e ScriptForEvaluation
+mustResolveMintingPolicy :: (Monad m) => CurrencySymbol -> Submission ctx st e m ScriptForEvaluation
 mustResolveMintingPolicy cs = mustFindScriptByHash $ ScriptHash $ unCurrencySymbol cs
 
-mustResolveValidatorAndDatum :: TxOutRef -> Submission ctx st e (ScriptForEvaluation, Datum)
+mustResolveValidatorAndDatum :: (Monad m) => TxOutRef -> Submission ctx st e m (ScriptForEvaluation, Datum)
 mustResolveValidatorAndDatum txOutRef = do
   inputs <- asksTxInfo txInfoInputs
 
@@ -128,7 +129,7 @@ mustResolveValidatorAndDatum txOutRef = do
 
   pure (script, datum)
 
-mustFindDatumByHash :: DatumHash -> Submission ctx st e Datum
+mustFindDatumByHash :: (Monad m) => DatumHash -> Submission ctx st e m Datum
 mustFindDatumByHash h = do
   dat <- asksTxInfo txInfoData
 
@@ -136,7 +137,7 @@ mustFindDatumByHash h = do
     Just d -> pure d
     Nothing -> shouldHaveBeenCaughtByValidation "datum with the given hash not found"
 
-mustFindScriptByHash :: ScriptHash -> Submission ctx st e ScriptForEvaluation
+mustFindScriptByHash :: (Monad m) => ScriptHash -> Submission ctx st e m ScriptForEvaluation
 mustFindScriptByHash h = do
   scriptStorage <- asks $ lc'scriptStorage . submissionEnv'config
 
@@ -144,17 +145,18 @@ mustFindScriptByHash h = do
     Nothing -> shouldHaveBeenCaughtByValidation "script with the given hash not found in script storage"
     Just s -> pure $ snd s
 
-shouldHaveBeenCaughtByValidation :: String -> Submission ctx st e a
+shouldHaveBeenCaughtByValidation :: String -> Submission ctx st e m a
 shouldHaveBeenCaughtByValidation msg =
   error $
     "ledger-sim: " <> msg <> " This is a bug; it should have been caught during validation"
 
 evaluatePlutusScript ::
+  (Monad m) =>
   Maybe Datum ->
   ScriptPurpose ->
   Redeemer ->
   ScriptForEvaluation ->
-  Submission ctx st e EvaluationResult
+  Submission ctx st e m EvaluationResult
 evaluatePlutusScript datum purpose redeemer script = do
   txInfo <- asks submissionEnv'txInfo
   evalCtx <- asksConfig lc'evaluationContext
@@ -184,10 +186,10 @@ evaluatePlutusScript datum purpose redeemer script = do
   pure evalResult
 
 -- TODO(chfanghr): Use lens please
-modifyUtxos :: (Map TxOutRef TxOut -> Map TxOutRef TxOut) -> Submission ctx st e ()
+modifyUtxos :: (Monad m) => (Map TxOutRef TxOut -> Map TxOutRef TxOut) -> Submission ctx st e m ()
 modifyUtxos f = modify' $ \st -> st {ls'utxos = f $ ls'utxos st}
 
-updateUtxos :: Submission ctx st e ()
+updateUtxos :: (Monad m) => Submission ctx st e m ()
 updateUtxos = do
   TxInfo {txInfoId, txInfoInputs, txInfoOutputs} <- asks submissionEnv'txInfo
   -- Remove spent utxos.
@@ -205,9 +207,9 @@ updateUtxos = do
           [0 ..]
           txInfoOutputs
 
-incrementSlot :: Submission ctx st e ()
+incrementSlot :: (Monad m) => Submission ctx st e m ()
 incrementSlot =
   modify' $ \st -> st {ls'currentTime = ls'currentTime st + 1}
 
-updateLedgerState :: Submission ctx st e ()
+updateLedgerState :: (Monad m) => Submission ctx st e m ()
 updateLedgerState = updateUtxos >> incrementSlot

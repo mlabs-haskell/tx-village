@@ -5,7 +5,7 @@ module Ledger.Sim.Types.Submission (
   SubmissionResult (..),
 ) where
 
-import Control.Monad.Except (Except)
+import Control.Monad.Except (ExceptT)
 import Control.Monad.Reader (ReaderT)
 import Control.Monad.State (StateT)
 import Ledger.Sim.Types.EvaluationResult (EvaluationResult)
@@ -24,8 +24,8 @@ data SubmissionEnv ctx = SubmissionEnv
   , submissionEnv'config :: LedgerConfig ctx
   }
 
-type Submission ctx st e =
-  ReaderT (SubmissionEnv ctx) (StateT (LedgerState st) (Except SubmissionError))
+type Submission ctx st e m =
+  ReaderT (SubmissionEnv ctx) (StateT (LedgerState st) (ExceptT SubmissionError m))
 
 data SubmissionResult = SubmissionResult
   { submissionResult'TxId :: TxId
