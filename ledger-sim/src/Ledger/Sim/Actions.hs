@@ -25,13 +25,13 @@ import Data.Maybe (mapMaybe)
 import Codec.Serialise (serialise)
 import Crypto.Hash (Blake2b_256 (Blake2b_256), hashWith)
 
-import Control.Monad.Except (MonadError (throwError), withExcept)
+import Control.Monad.Except (MonadError (throwError), withExceptT)
 import Control.Monad.Reader (asks, mapReaderT, withReaderT)
 import Control.Monad.State (mapStateT, modify')
 import Control.Monad.State.Strict (gets)
 import Ledger.Sim.Submission qualified as Submission
 import Ledger.Sim.Types.LedgerConfig (LedgerConfig (lc'appCtx))
-import Ledger.Sim.Types.LedgerSim (LedgerSim, LedgerSimError (LedgerSimError'Application, LedgerSimError'Submission, LedgerSimError'UtxoNotFound))
+import Ledger.Sim.Types.LedgerSim (LedgerSimError (LedgerSimError'Application, LedgerSimError'Submission, LedgerSimError'UtxoNotFound), LedgerSimT)
 import Ledger.Sim.Types.LedgerState (LedgerState (ls'currentTime, ls'userState, ls'utxos))
 import Ledger.Sim.Types.Submission (SubmissionEnv (SubmissionEnv), SubmissionResult (SubmissionResult, submissionResult'EvaluationResults, submissionResult'TxId))
 import PlutusLedgerApi.V2 (
@@ -45,23 +45,23 @@ import PlutusLedgerApi.V2 (
  )
 import PlutusTx.Builtins qualified as PlutusTx
 
-lookupUTxO :: TxOutRef -> LedgerSim ctx st e (Maybe TxOut)
+lookupUTxO :: (Monad m) => TxOutRef -> LedgerSimT ctx st e m (Maybe TxOut)
 lookupUTxO ref = M.lookup ref <$> gets ls'utxos
 
-lookupUTxO' :: TxOutRef -> LedgerSim ctx st e (Maybe TxInInfo)
+lookupUTxO' :: (Monad m) => TxOutRef -> LedgerSimT ctx st e m (Maybe TxInInfo)
 lookupUTxO' ref = (TxInInfo ref <$>) <$> lookupUTxO ref
 
-mustLookupUTxO :: TxOutRef -> LedgerSim ctx st e TxOut
+mustLookupUTxO :: (Monad m) => TxOutRef -> LedgerSimT ctx st e m TxOut
 mustLookupUTxO ref = do
   txOut <- lookupUTxO ref
   maybe (throwError (LedgerSimError'UtxoNotFound ref)) pure txOut
 
-mustLookupUTxO' :: TxOutRef -> LedgerSim ctx st e TxInInfo
+mustLookupUTxO' :: (Monad m) => TxOutRef -> LedgerSimT ctx st e m TxInInfo
 mustLookupUTxO' ref = do
   txInInfo <- lookupUTxO' ref
   maybe (throwError (LedgerSimError'UtxoNotFound ref)) pure txInInfo
 
-utxosAtAddress :: Address -> LedgerSim ctx st e [TxInInfo]
+utxosAtAddress :: (Monad m) => Address -> LedgerSimT ctx st e m [TxInInfo]
 utxosAtAddress addr =
   mapMaybe
     ( \(ref, txOut) ->
@@ -80,12 +80,12 @@ utxosAtAddress addr =
   use hashing inside them. ex: script that checks `txId txInfo != blake2b_224 time` where time is some time from validity range.
 - See: 'checkTx'
 -}
-submitTx :: TxInfo -> LedgerSim ctx st e SubmissionResult
+submitTx :: (Monad m) => TxInfo -> LedgerSimT ctx st e m SubmissionResult
 submitTx txInfo = do
   evaluationResults <-
     withReaderT (SubmissionEnv txInfo) $
       mapReaderT
-        (mapStateT (withExcept LedgerSimError'Submission))
+        (mapStateT (withExceptT LedgerSimError'Submission))
         Submission.submit
 
   pure $
@@ -94,37 +94,37 @@ submitTx txInfo = do
       , submissionResult'EvaluationResults = evaluationResults
       }
 
-getCurrentSlot :: LedgerSim ctx st e POSIXTime
+getCurrentSlot :: (Monad m) => LedgerSimT ctx st e m POSIXTime
 getCurrentSlot = gets ls'currentTime
 
 -- | Get a specific component of the user state from the ledger, using given projection function.
-getsAppState :: (st -> a) -> LedgerSim ctx st e a
+getsAppState :: (Monad m) => (st -> a) -> LedgerSimT ctx st e m a
 getsAppState f = gets $ f . ls'userState
 
 -- | Get the user state from the ledger.
-getAppState :: LedgerSim ctx st e st
+getAppState :: (Monad m) => LedgerSimT ctx st e m st
 getAppState = getsAppState id
 
 -- | Set the user state
-setAppState :: st -> LedgerSim ctx st e ()
+setAppState :: (Monad m) => st -> LedgerSimT ctx st e m ()
 setAppState st = modify' $ \s ->
   s
     { ls'userState = st
     }
 
 -- | Get a specific component of the user state from the ledger, using given projection function.
-asksAppCtx :: (ctx -> a) -> LedgerSim ctx st e a
+asksAppCtx :: (Monad m) => (ctx -> a) -> LedgerSimT ctx st e m a
 asksAppCtx f = asks $ f . lc'appCtx
 
 -- | Get the user state from the ledger.
-askAppCtx :: LedgerSim ctx st e ctx
+askAppCtx :: (Monad m) => LedgerSimT ctx st e m ctx
 askAppCtx = asksAppCtx id
 
 -- | Throw custom application error.
-throwAppError :: e -> LedgerSim ctx st e a
+throwAppError :: (Monad m) => e -> LedgerSimT ctx st e m a
 throwAppError = throwError . LedgerSimError'Application
 
-incrementSlot :: LedgerSim ctx st e ()
+incrementSlot :: (Monad m) => LedgerSimT ctx st e m ()
 incrementSlot =
   modify' $ \st -> st {ls'currentTime = ls'currentTime st + 1}
 
@@ -141,5 +141,5 @@ genTxId =
     . serialise
     . getPOSIXTime
 
-getTxId :: LedgerSim ctx st e TxId
+getTxId :: (Monad m) => LedgerSimT ctx st e m TxId
 getTxId = gets $ genTxId . ls'currentTime
