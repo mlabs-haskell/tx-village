@@ -48,6 +48,7 @@ tx-bakery = { version = "0.1.0", path = ".extras/tx-bakery-0.1.0" }
 plutus-ledger-api = { version = "0.2.1", features = ["chrono", "serde"] }
 chrono = "0.4.38"
 url = "2.5.2"
+prettytable-rs = "0.10.0"
 
 [dev-dependencies]
 serial_test = "3.1.1"
