@@ -1,5 +1,8 @@
 use crate::utxo_db::error::UtxoIndexerError;
-use plutus_ledger_api::v2::transaction::{TransactionInput, TxInInfo};
+use plutus_ledger_api::v2::{
+    address::Address,
+    transaction::{TransactionInput, TxInInfo},
+};
 use sqlx::{FromRow, PgConnection};
 use strum_macros::Display;
 use tracing::{event, span, Instrument, Level};
@@ -8,6 +11,7 @@ use tx_indexer::database::plutus as db;
 #[derive(Debug, FromRow, PartialEq, Eq)]
 pub struct UtxosTable {
     pub utxo_ref: db::TransactionInput,
+    pub utxo: db::TxInInfo,
     pub value: db::Value,
     pub address: db::Address,
     pub datum: db::OutputDatum,
@@ -28,6 +32,7 @@ where
 impl UtxosTable {
     pub fn new(utxo: TxInInfo, created_at: u64) -> Result<Self, db::DBTypeConversionError> {
         Ok(Self {
+            utxo: utxo.clone().try_into()?,
             utxo_ref: utxo.reference.try_into()?,
             value: utxo.output.value.try_into()?,
             address: utxo.output.address.try_into()?,
@@ -38,17 +43,43 @@ impl UtxosTable {
         })
     }
 
+    pub async fn list_by_address(
+        address: Address,
+        conn: &mut PgConnection,
+    ) -> Result<Vec<Self>, UtxoIndexerError> {
+        let span = span!(Level::INFO, "Listing UTxOs by address", ?address);
+        async move {
+            sqlx::query_as::<_, Self>(
+                r#"
+                SELECT *
+                FROM utxos
+                WHERE address = $1
+                "#,
+            )
+            .bind(db::Address::try_from(address)?)
+            .fetch_all(&mut *conn)
+            .await
+            .map_err(|err| {
+                event!(Level::ERROR, label=%Event::SqlxError, ?err);
+                UtxoIndexerError::DbError(err)
+            })
+        }
+        .instrument(span)
+        .await
+    }
+
     pub async fn store(self, conn: &mut PgConnection) -> Result<(), UtxoIndexerError> {
         let utxo_ref = TransactionInput::from(self.utxo_ref.clone());
         let span = span!(Level::INFO, "StoringUTxO", ?utxo_ref);
         async move {
             sqlx::query(
                 r#"
-                INSERT INTO utxos (utxo_ref, value, address, datum, created_at)
-                VALUES ($1, $2, $3, $4, $5)
+                INSERT INTO utxos (utxo_ref, utxo, value, address, datum, created_at)
+                VALUES ($1, $2, $3, $4, $5, $6)
                 "#,
             )
             .bind(self.utxo_ref)
+            .bind(self.utxo)
             .bind(self.value)
             .bind(self.address)
             .bind(self.datum)

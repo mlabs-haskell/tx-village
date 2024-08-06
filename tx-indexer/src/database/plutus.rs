@@ -156,7 +156,7 @@ impl From<DatumHash> for pla::v2::datum::DatumHash {
 //////////////////////
 
 #[derive(sqlx::Type, Clone, Debug, PartialEq, Eq, PartialOrd, Ord)]
-#[sqlx(type_name = "Plutus.Slot")]
+#[sqlx(transparent)]
 pub struct Slot(pub i64);
 
 impl From<u64> for Slot {
@@ -462,7 +462,7 @@ impl From<AssetQuantity>
 //////////////////////
 
 #[derive(sqlx::Type, Clone, Debug, PartialEq, Eq)]
-#[sqlx(type_name = "Plutus.Value")]
+#[sqlx(type_name = "Plutus.AssetQuantity[]")]
 pub struct Value(pub Vec<AssetQuantity>);
 
 impl TryFrom<pla::v2::value::Value> for Value {

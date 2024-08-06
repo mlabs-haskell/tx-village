@@ -26,102 +26,55 @@ CREATE DOMAIN Slot AS BIGINT;
 
 CREATE DOMAIN PlutusData AS JSONB;
 
-CREATE TYPE Credential_ AS (
+CREATE TYPE Credential AS (
     pub_key_hash Ed25519PubKeyHash,
     script_hash ScriptHash
 );
 
-CREATE DOMAIN Credential AS Credential_ 
-    CHECK ((value) IS NULL OR (
-        ((value).pub_key_hash IS NULL AND NOT (value).script_hash IS NULL) OR
-        ((NOT (value).pub_key_hash IS NULL AND (value).script_hash IS NULL))
-    ));
-
-CREATE TYPE ChainPointer_ AS (
+CREATE TYPE ChainPointer AS (
     slot_num INTEGER,
     tx_idx INTEGER,
     cert_idx INTEGER
 );
 
-CREATE DOMAIN ChainPointer AS ChainPointer_ 
-    CHECK ((value) IS NULL OR (
-        NOT (value).slot_num IS NULL AND
-        NOT (value).tx_idx IS NULL AND
-        NOT (value).cert_idx IS NULL
-    ));
 
-CREATE TYPE StakingCredential_ AS (
+CREATE TYPE StakingCredential AS (
     staking_hash Credential,
     staking_ptr ChainPointer
 );
 
-CREATE DOMAIN StakingCredential AS StakingCredential_
-    CHECK ((value) IS NULL OR (
-        ((value).staking_hash IS NULL AND NOT (value).staking_ptr IS NULL) OR
-        (NOT (value).staking_hash IS NULL AND (value).staking_ptr IS NULL)
-    ));
-
-CREATE TYPE Address_ AS (
+CREATE TYPE Address AS (
     credential Credential,
     staking_credential StakingCredential
 );
 
-CREATE DOMAIN Address AS Address_
-    CHECK ((value) IS NULL OR (
-        NOT (value).credential IS NULL
-    ));
-
-CREATE TYPE AssetQuantity_ AS (
+CREATE TYPE AssetQuantity AS (
     currency_symbol CurrencySymbol,
     token_name TokenName,
     amount BIGINT
 );
 
-CREATE DOMAIN AssetQuantity AS AssetQuantity_
-    CHECK ((value) IS NULL OR (
-        NOT (value).currency_symbol IS NULL AND
-        NOT (value).token_name IS NULL AND
-        NOT (value).amount IS NULL
-    ));
-
 CREATE DOMAIN Value AS AssetQuantity[];
 
-CREATE TYPE TransactionInput_ AS (
+CREATE TYPE TransactionInput AS (
     tx_id TransactionHash,
     tx_idx BIGINT
 );
-
-CREATE DOMAIN TransactionInput AS TransactionInput_
-    CHECK ((value) IS NULL OR (
-        NOT (value).tx_id IS NULL AND
-        NOT (value).tx_idx IS NULL
-    ));
 
 CREATE TYPE OutputDatum AS (
     datum_hash DatumHash,
     inline_datum PlutusData
 );
 
-CREATE TYPE TransactionOutput_ AS (
+CREATE TYPE TransactionOutput AS (
     address Address,
-    assets Value,
+    assets AssetQuantity[],
     datum OutputDatum,
     reference_script ScriptHash
 );
 
-CREATE DOMAIN TransactionOutput AS TransactionOutput_
-    CHECK ((value) IS NULL OR (
-        NOT (value).address IS NULL AND
-        NOT (value).assets IS NULL
-    ));
-
-CREATE TYPE TxInInfo_ AS (
+CREATE TYPE TxInInfo AS (
     reference TransactionInput,
     output TransactionOutput
 );
 
-CREATE DOMAIN TxInInfo AS TxInInfo_
-    CHECK ((value) IS NULL OR (
-        NOT (value).reference IS NULL AND 
-        NOT (value).output IS NULL
-    ));
