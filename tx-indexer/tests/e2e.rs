@@ -210,10 +210,13 @@ mod e2e_tests {
             .find(|(_tx_in, tx_out)| tx_out.value.get_ada_amount() >= BigInt::from(5_000_000))
             .expect("Cannot find spendable input UTxO.");
 
-        let collateral = CollateralStrategy::Explicit(TxInInfo {
-            reference: collateral_utxo.0.clone(),
-            output: collateral_utxo.1.into(),
-        });
+        let collateral = CollateralStrategy::Explicit {
+            amount: 5_000_000,
+            utxo: TxInInfo {
+                reference: collateral_utxo.0.clone(),
+                output: collateral_utxo.1.into(),
+            },
+        };
 
         let tx_bakery = TxBakery::init(ogmios).await.unwrap();
 
