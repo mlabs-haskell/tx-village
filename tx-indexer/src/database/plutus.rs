@@ -20,11 +20,66 @@ pub enum DBTypeConversionError {
 }
 
 //////////////////////
+/// Hash28
+//////////////////////
+
+#[derive(sqlx::Encode, sqlx::Decode, Clone, Debug, PartialEq, Eq)]
+pub struct Hash28(pub Vec<u8>);
+
+impl From<pla::v2::crypto::LedgerBytes> for Hash28 {
+    fn from(item: pla::v2::crypto::LedgerBytes) -> Self {
+        Hash28(item.0)
+    }
+}
+
+impl From<Hash28> for pla::v2::crypto::LedgerBytes {
+    fn from(item: Hash28) -> Self {
+        pla::v2::crypto::LedgerBytes(item.0)
+    }
+}
+
+impl ::sqlx::Type<::sqlx::postgres::Postgres> for Hash28 {
+    fn type_info() -> ::sqlx::postgres::PgTypeInfo {
+        ::sqlx::postgres::PgTypeInfo::with_name("Plutus.Hash28")
+    }
+    fn compatible(ty: &sqlx::postgres::PgTypeInfo) -> ::std::primitive::bool {
+        Self::type_info() == *ty || <Vec<u8> as ::sqlx::Type<::sqlx::Postgres>>::compatible(ty)
+    }
+}
+
+//////////////////////
+/// Hash32
+//////////////////////
+
+#[derive(sqlx::Encode, sqlx::Decode, Clone, Debug, PartialEq, Eq)]
+pub struct Hash32(pub Vec<u8>);
+
+impl From<pla::v2::crypto::LedgerBytes> for Hash32 {
+    fn from(item: pla::v2::crypto::LedgerBytes) -> Self {
+        Hash32(item.0)
+    }
+}
+
+impl From<Hash32> for pla::v2::crypto::LedgerBytes {
+    fn from(item: Hash32) -> Self {
+        pla::v2::crypto::LedgerBytes(item.0)
+    }
+}
+
+impl ::sqlx::Type<::sqlx::postgres::Postgres> for Hash32 {
+    fn type_info() -> ::sqlx::postgres::PgTypeInfo {
+        ::sqlx::postgres::PgTypeInfo::with_name("Plutus.Hash32")
+    }
+    fn compatible(ty: &sqlx::postgres::PgTypeInfo) -> ::std::primitive::bool {
+        Self::type_info() == *ty || <Vec<u8> as ::sqlx::Type<::sqlx::Postgres>>::compatible(ty)
+    }
+}
+
+//////////////////////
 /// CurrencySymbol
 //////////////////////
 
-#[derive(sqlx::Type, Clone, Debug, PartialEq, Eq)]
-#[sqlx(type_name = "Plutus.CurrencySymbol")]
+#[derive(sqlx::Encode, sqlx::Decode, Clone, Debug, PartialEq, Eq)]
 pub struct CurrencySymbol(pub Vec<u8>);
 
 impl From<pla::v2::value::CurrencySymbol> for CurrencySymbol {
@@ -51,12 +106,20 @@ impl From<CurrencySymbol> for pla::v2::value::CurrencySymbol {
     }
 }
 
+impl ::sqlx::Type<::sqlx::postgres::Postgres> for CurrencySymbol {
+    fn type_info() -> ::sqlx::postgres::PgTypeInfo {
+        ::sqlx::postgres::PgTypeInfo::with_name("Plutus.CurrencySymbol")
+    }
+    fn compatible(ty: &sqlx::postgres::PgTypeInfo) -> ::std::primitive::bool {
+        Self::type_info() == *ty || <Vec<u8> as ::sqlx::Type<::sqlx::Postgres>>::compatible(ty)
+    }
+}
+
 //////////////////////
 /// TokenName
 //////////////////////
 
-#[derive(sqlx::Type, Clone, Debug, PartialEq, Eq)]
-#[sqlx(type_name = "Plutus.TokenName")]
+#[derive(sqlx::Encode, sqlx::Decode, Clone, Debug, PartialEq, Eq)]
 pub struct TokenName(pub Vec<u8>);
 
 impl From<pla::v2::value::TokenName> for TokenName {
@@ -71,23 +134,40 @@ impl From<TokenName> for pla::v2::value::TokenName {
     }
 }
 
+impl ::sqlx::Type<::sqlx::postgres::Postgres> for TokenName {
+    fn type_info() -> ::sqlx::postgres::PgTypeInfo {
+        ::sqlx::postgres::PgTypeInfo::with_name("Plutus.TokenName")
+    }
+    fn compatible(ty: &sqlx::postgres::PgTypeInfo) -> ::std::primitive::bool {
+        Self::type_info() == *ty || <Vec<u8> as ::sqlx::Type<::sqlx::Postgres>>::compatible(ty)
+    }
+}
+
 //////////////////////
 /// TransactionHash
 //////////////////////
 
-#[derive(sqlx::Type, Clone, Debug, PartialEq, Eq)]
-#[sqlx(type_name = "Plutus.TransactionHash")]
-pub struct TransactionHash(pub Vec<u8>);
+#[derive(sqlx::Encode, sqlx::Decode, Clone, Debug, PartialEq, Eq)]
+pub struct TransactionHash(pub Hash32);
 
 impl From<pla::v2::transaction::TransactionHash> for TransactionHash {
     fn from(item: pla::v2::transaction::TransactionHash) -> Self {
-        TransactionHash(item.0 .0)
+        TransactionHash(item.0.into())
     }
 }
 
 impl From<TransactionHash> for pla::v2::transaction::TransactionHash {
     fn from(item: TransactionHash) -> Self {
-        pla::v2::transaction::TransactionHash(pla::v2::crypto::LedgerBytes(item.0))
+        pla::v2::transaction::TransactionHash(item.0.into())
+    }
+}
+
+impl ::sqlx::Type<::sqlx::postgres::Postgres> for TransactionHash {
+    fn type_info() -> ::sqlx::postgres::PgTypeInfo {
+        ::sqlx::postgres::PgTypeInfo::with_name("Plutus.TransactionHash")
+    }
+    fn compatible(ty: &sqlx::postgres::PgTypeInfo) -> ::std::primitive::bool {
+        Self::type_info() == *ty || <Hash32 as ::sqlx::Type<::sqlx::Postgres>>::compatible(ty)
     }
 }
 
@@ -95,19 +175,27 @@ impl From<TransactionHash> for pla::v2::transaction::TransactionHash {
 /// Ed25519PubKeyHash
 //////////////////////
 
-#[derive(sqlx::Type, Clone, Debug, PartialEq, Eq)]
-#[sqlx(type_name = "Plutus.Ed25519PubKeyHash")]
-pub struct Ed25519PubKeyHash(pub Vec<u8>);
+#[derive(sqlx::Encode, sqlx::Decode, Clone, Debug, PartialEq, Eq)]
+pub struct Ed25519PubKeyHash(pub Hash28);
 
 impl From<pla::v2::crypto::Ed25519PubKeyHash> for Ed25519PubKeyHash {
     fn from(item: pla::v2::crypto::Ed25519PubKeyHash) -> Self {
-        Ed25519PubKeyHash(item.0 .0)
+        Ed25519PubKeyHash(item.0.into())
     }
 }
 
 impl From<Ed25519PubKeyHash> for pla::v2::crypto::Ed25519PubKeyHash {
     fn from(item: Ed25519PubKeyHash) -> Self {
-        pla::v2::crypto::Ed25519PubKeyHash(pla::v2::crypto::LedgerBytes(item.0))
+        pla::v2::crypto::Ed25519PubKeyHash(item.0.into())
+    }
+}
+
+impl ::sqlx::Type<::sqlx::postgres::Postgres> for Ed25519PubKeyHash {
+    fn type_info() -> ::sqlx::postgres::PgTypeInfo {
+        ::sqlx::postgres::PgTypeInfo::with_name("Plutus.Ed25519PubKeyHash")
+    }
+    fn compatible(ty: &sqlx::postgres::PgTypeInfo) -> ::std::primitive::bool {
+        Self::type_info() == *ty || <Hash28 as ::sqlx::Type<::sqlx::Postgres>>::compatible(ty)
     }
 }
 
@@ -115,19 +203,27 @@ impl From<Ed25519PubKeyHash> for pla::v2::crypto::Ed25519PubKeyHash {
 /// ScriptHash
 //////////////////////
 
-#[derive(sqlx::Type, Clone, Debug, PartialEq, Eq)]
-#[sqlx(type_name = "Plutus.ScriptHash")]
-pub struct ScriptHash(pub Vec<u8>);
+#[derive(sqlx::Encode, sqlx::Decode, Clone, Debug, PartialEq, Eq)]
+pub struct ScriptHash(pub Hash28);
 
 impl From<pla::v2::script::ScriptHash> for ScriptHash {
     fn from(item: pla::v2::script::ScriptHash) -> Self {
-        ScriptHash(item.0 .0)
+        ScriptHash(item.0.into())
     }
 }
 
 impl From<ScriptHash> for pla::v2::script::ScriptHash {
     fn from(item: ScriptHash) -> Self {
-        pla::v2::script::ScriptHash(pla::v2::crypto::LedgerBytes(item.0))
+        pla::v2::script::ScriptHash(item.0.into())
+    }
+}
+
+impl ::sqlx::Type<::sqlx::postgres::Postgres> for ScriptHash {
+    fn type_info() -> ::sqlx::postgres::PgTypeInfo {
+        ::sqlx::postgres::PgTypeInfo::with_name("Plutus.ScriptHash")
+    }
+    fn compatible(ty: &sqlx::postgres::PgTypeInfo) -> ::std::primitive::bool {
+        Self::type_info() == *ty || <Hash28 as ::sqlx::Type<::sqlx::Postgres>>::compatible(ty)
     }
 }
 
@@ -135,19 +231,27 @@ impl From<ScriptHash> for pla::v2::script::ScriptHash {
 /// DatumHash
 //////////////////////
 
-#[derive(sqlx::Type, Clone, Debug, PartialEq, Eq)]
-#[sqlx(type_name = "Plutus.DatumHash")]
-pub struct DatumHash(pub Vec<u8>);
+#[derive(sqlx::Encode, sqlx::Decode, Clone, Debug, PartialEq, Eq)]
+pub struct DatumHash(pub Hash32);
 
 impl From<pla::v2::datum::DatumHash> for DatumHash {
     fn from(item: pla::v2::datum::DatumHash) -> Self {
-        DatumHash(item.0 .0)
+        DatumHash(item.0.into())
     }
 }
 
 impl From<DatumHash> for pla::v2::datum::DatumHash {
     fn from(item: DatumHash) -> Self {
-        pla::v2::datum::DatumHash(pla::v2::crypto::LedgerBytes(item.0))
+        pla::v2::datum::DatumHash(item.0.into())
+    }
+}
+
+impl ::sqlx::Type<::sqlx::postgres::Postgres> for DatumHash {
+    fn type_info() -> ::sqlx::postgres::PgTypeInfo {
+        ::sqlx::postgres::PgTypeInfo::with_name("Plutus.DatumHash")
+    }
+    fn compatible(ty: &sqlx::postgres::PgTypeInfo) -> ::std::primitive::bool {
+        Self::type_info() == *ty || <Hash32 as ::sqlx::Type<::sqlx::Postgres>>::compatible(ty)
     }
 }
 
@@ -155,8 +259,7 @@ impl From<DatumHash> for pla::v2::datum::DatumHash {
 /// Slot
 //////////////////////
 
-#[derive(sqlx::Type, Clone, Debug, PartialEq, Eq, PartialOrd, Ord)]
-#[sqlx(transparent)]
+#[derive(sqlx::Encode, sqlx::Decode, Clone, Debug, PartialEq, Eq, PartialOrd, Ord)]
 pub struct Slot(pub i64);
 
 impl From<u64> for Slot {
@@ -168,6 +271,15 @@ impl From<u64> for Slot {
 impl From<&Slot> for u64 {
     fn from(item: &Slot) -> Self {
         item.0 as u64
+    }
+}
+
+impl ::sqlx::Type<::sqlx::postgres::Postgres> for Slot {
+    fn type_info() -> ::sqlx::postgres::PgTypeInfo {
+        ::sqlx::postgres::PgTypeInfo::with_name("Plutus.Slot")
+    }
+    fn compatible(ty: &sqlx::postgres::PgTypeInfo) -> ::std::primitive::bool {
+        Self::type_info() == *ty || <i64 as ::sqlx::Type<::sqlx::Postgres>>::compatible(ty)
     }
 }
 
@@ -187,8 +299,7 @@ pub enum PlutusDataEncodingError {
     TryFromCSLError(#[from] TryFromCSLError),
 }
 
-#[derive(sqlx::Type, Clone, Debug, PartialEq, Eq)]
-#[sqlx(type_name = "Plutus.PlutusData")]
+#[derive(sqlx::Encode, sqlx::Decode, Clone, Debug, PartialEq, Eq)]
 pub struct PlutusData(pub serde_json::Value);
 
 impl TryFrom<pla::plutus_data::PlutusData> for PlutusData {
@@ -217,6 +328,16 @@ impl TryFrom<PlutusData> for pla::plutus_data::PlutusData {
                 .try_to_pla()
                 .map_err(PlutusDataEncodingError::TryFromCSLError)?,
         )
+    }
+}
+
+impl ::sqlx::Type<::sqlx::postgres::Postgres> for PlutusData {
+    fn type_info() -> ::sqlx::postgres::PgTypeInfo {
+        ::sqlx::postgres::PgTypeInfo::with_name("Plutus.PlutusData")
+    }
+    fn compatible(ty: &sqlx::postgres::PgTypeInfo) -> ::std::primitive::bool {
+        Self::type_info() == *ty
+            || <serde_json::Value as ::sqlx::Type<::sqlx::Postgres>>::compatible(ty)
     }
 }
 
