@@ -23,10 +23,9 @@ and emit them as events.
 
 ## Features
 
-This is a thin layer built on top of Oura providing some additional features:
-
 - Plutus ledger types for PostgreSQL
-- sqlx bindings for the above
+- sqlx bindings for the above types
 - retry strategies based on error type
 - sync progress tracking
 - transaction events as plutus-ledger-api types
+- rollback handling

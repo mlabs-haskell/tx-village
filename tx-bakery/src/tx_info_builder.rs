@@ -125,6 +125,7 @@ impl TxScaffold {
     }
 
     /// Add a transaction output
+    /// Output order will be preserved
     pub fn add_output(mut self, output: TransactionOutput) -> Self {
         self.outputs.push(output);
         self

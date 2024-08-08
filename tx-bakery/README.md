@@ -18,7 +18,7 @@ The bakery has tools to do all the 3, but you can also easily delegate some
 stages to other components: for example you could build your TransactionInfo
 in Haskell, and let the last 2 stages be handled by the bakery.
 
-### 1. TransactionInfo building
+### 1. TransactionInfo building (kneading)
 
 In this step we compose a transaction without having to deal with network
 related data, costs and fees, etc. The `TxScaffold` will provide a way to
@@ -96,7 +96,7 @@ outputs. Those will also be sorted out in the baking stage.
 Also note that this function is pure, all side-effects were pushed out from the
 core component.
 
-### 2. Transaction building, signing and submitting
+### 2. Transaction building, signing and submitting (baking and delivering)
 
 Transaction building will convert our TransactionInfo into a valid, CBOR
 serialized unsigned transaction.
