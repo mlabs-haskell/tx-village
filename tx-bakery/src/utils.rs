@@ -1,8 +1,6 @@
 use std::collections::BTreeMap;
 
 pub mod key_wallet;
-pub mod ogmios;
-pub mod plutip;
 pub mod script;
 
 pub mod csl_to_pla;
