@@ -1,8 +1,11 @@
+//! Transaction Metadata
+
 use crate::{error::Error, utils::pla_to_csl::TryToCSLWithDef};
 use anyhow::anyhow;
 use cardano_serialization_lib as csl;
 use std::collections::BTreeMap;
 
+/// Top level transaction metadata (can only be a Map)
 #[derive(Debug, Clone)]
 pub struct TransactionMetadata(pub BTreeMap<u64, Metadata>);
 
@@ -31,6 +34,7 @@ impl<const N: usize> From<[(u64, Metadata); N]> for TransactionMetadata {
     }
 }
 
+/// Transaction Metadata
 #[derive(Debug, Clone, PartialOrd, Ord, PartialEq, Eq)]
 pub enum Metadata {
     Map(BTreeMap<Metadata, Metadata>),

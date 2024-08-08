@@ -1,3 +1,5 @@
+//! Transaction Bakery
+
 use crate::error::{Error, Result};
 use crate::metadata::TransactionMetadata;
 use crate::time::time_range_into_slots;
@@ -43,9 +45,10 @@ pub mod utils;
 pub mod wallet;
 
 /// Transaction builder
-/// The sole purpose of this component is to convert a raw TransactionInfo (dough) into a fully
-/// baked valid transaction
-/// TxBakery won't change it's internal state once initialized
+///
+/// The purpose of this component is to convert a raw TransactionInfo (dough) 
+/// into a fully baked valid transaction.
+/// TxBakery does not perform IO and won't change it's internal state once initialized.
 pub struct TxBakery {
     config: TransactionBuilderConfig,
     data_cost: csl::DataCost,
@@ -55,7 +58,7 @@ pub struct TxBakery {
     network_id: u8,
 }
 
-/// TransactionInfo with additional context required to build a valid transactions
+/// TransactionInfo with additional context required to build a valid transaction
 #[derive(Clone, Debug)]
 pub struct TxWithCtx<'a> {
     pub tx_info: &'a TransactionInfo,
@@ -94,11 +97,13 @@ impl<'a> TxWithCtx<'a> {
         }
     }
 
+    /// Attach transaction metadata to the context
     pub fn with_metadata(mut self, metadata: &'a TransactionMetadata) -> Self {
         self.metadata = Some(metadata);
         self
     }
 
+    /// Explicitly add execution units instead of running the ChainQuery evaluation
     pub fn with_ex_units(
         mut self,
         ex_units_map: &'a BTreeMap<
@@ -124,6 +129,7 @@ pub enum CollateralStrategy {
 
 impl TxBakery {
     /// Query all the parameters required to build a transaction and store it for later use.
+    /// This command will call the ChainQuery service to pull certain chain parameters
     pub async fn init(chain_query: &impl ChainQuery) -> Result<Self> {
         let protocol_params = chain_query.query_protocol_params().await?;
         let system_start = chain_query.query_system_start().await?;
@@ -134,6 +140,8 @@ impl TxBakery {
     }
 
     /// Init TxBakey with the required configurations
+    /// This allows to directly inject configurations, and handle them separately from the bakery
+    /// (for example prefetch and cache them)
     pub async fn init_with_config(
         network: &Network,
         protocol_params: &ProtocolParameters,
@@ -178,10 +186,12 @@ impl TxBakery {
         })
     }
 
+    /// Create a new CSL transaction builder
     fn create_tx_builder(&self) -> TransactionBuilder {
         TransactionBuilder::new(&self.config)
     }
 
+    /// Convert PLA TransactionInfo inputs, redeemers and datums to a CSL transaction input builder
     fn mk_inputs(
         &self,
         inputs: &Vec<TxInInfo>,
@@ -330,6 +340,7 @@ impl TxBakery {
             .collect::<std::result::Result<_, _>>()?)
     }
 
+    /// Convert PLA mints to CSL and pair them with their corresponding redeemers
     fn mk_mints(
         tx_mint: &Value,
         ref_inputs: &Vec<TxInInfo>,
@@ -449,6 +460,9 @@ impl TxBakery {
         Ok(tx_inputs_builder)
     }
 
+    /// Convert a PLA TransactionInfo into a CSL transaction builder.
+    /// The result is not yet balanced and witnesses are not added. This is useful for
+    /// some further manual processing of the transaction before finalising.
     pub fn mk_tx_builder(&self, tx: &TxWithCtx<'_>) -> Result<csl::tx_builder::TransactionBuilder> {
         let mut tx_builder = self.create_tx_builder();
 

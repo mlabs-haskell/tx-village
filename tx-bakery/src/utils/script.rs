@@ -1,3 +1,5 @@
+//! Plutus Script management
+
 use super::csl_to_pla::ToPLA;
 use crate::error::{Error, Result};
 use anyhow::anyhow;
@@ -13,9 +15,12 @@ pub enum Script {
     NativeScript(csl::NativeScript),
 }
 
+/// Plutus Script
 #[derive(Clone, Debug)]
 pub enum ScriptOrRef {
+    /// Script will be used from a reference input
     RefScript(TransactionInput, csl::plutus::PlutusScript),
+    /// Script will be added as script witness
     PlutusScript(csl::plutus::PlutusScript),
 }
 

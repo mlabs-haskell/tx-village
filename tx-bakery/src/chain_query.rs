@@ -1,3 +1,5 @@
+//! Trait for a Cardano chain query client
+
 use crate::utils::csl_to_pla::ToPLA;
 use crate::utils::script::Script;
 use cardano_serialization_lib as csl;
@@ -40,6 +42,7 @@ pub trait ChainQuery {
     ) -> impl Future<Output = Result<BTreeMap<TransactionInput, FullTransactionOutput>, ChainQueryError>>;
 }
 
+/// Cardano network discriminant
 #[derive(Debug, Clone, Deserialize)]
 pub enum Network {
     Testnet = 0b0000,

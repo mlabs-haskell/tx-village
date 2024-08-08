@@ -1,3 +1,5 @@
+//! Trait for a component capable of submitting transactions
+
 use cardano_serialization_lib as csl;
 use plutus_ledger_api::v2::transaction::TransactionHash;
 use std::collections::BTreeMap;
