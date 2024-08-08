@@ -4059,6 +4059,7 @@ dependencies = [
  "clap 4.5.7",
  "data-encoding",
  "frunk",
+ "futures",
  "log",
  "num-bigint",
  "num-derive 0.3.3",

@@ -3,7 +3,7 @@
     let
       commands = import ./commands.nix {
         inherit pkgs;
-        extraDDLs = [ ./db/utxo-indexer.sql ];
+        extraDDLs = [ ./db/utxo-indexer.sql ./db/testdb.sql ];
       };
 
       rustFlake =

@@ -1,5 +1,4 @@
 use anyhow::anyhow;
-use cardano_serialization_lib as csl;
 use data_encoding::HEXLOWER;
 use plutus_ledger_api::v2::{
     address::Address,
@@ -8,6 +7,7 @@ use plutus_ledger_api::v2::{
     value::CurrencySymbol,
 };
 use std::str::FromStr;
+use tx_bakery::csl;
 use tx_bakery::utils::csl_to_pla::TryToPLA;
 
 #[derive(Debug, Clone)]
@@ -33,7 +33,7 @@ impl FromStr for ParseAddress {
 
     fn from_str(s: &str) -> std::result::Result<Self, Self::Err> {
         Ok(ParseAddress(
-            csl::address::Address::from_bech32(s)
+            csl::Address::from_bech32(s)
                 .map_err(|err| anyhow!("Couldn't parse bech32 address: {}", err))?
                 .try_to_pla()
                 .map_err(|err| anyhow!("Couldn't convert address: {}", err))?,

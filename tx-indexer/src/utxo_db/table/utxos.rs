@@ -11,7 +11,6 @@ use tx_indexer::database::plutus as db;
 #[derive(Debug, FromRow, PartialEq, Eq)]
 pub struct UtxosTable {
     pub utxo_ref: db::TransactionInput,
-    pub utxo: db::TxInInfo,
     pub value: db::Value,
     pub address: db::Address,
     pub datum: db::OutputDatum,
@@ -32,7 +31,6 @@ where
 impl UtxosTable {
     pub fn new(utxo: TxInInfo, created_at: u64) -> Result<Self, db::DBTypeConversionError> {
         Ok(Self {
-            utxo: utxo.clone().try_into()?,
             utxo_ref: utxo.reference.try_into()?,
             value: utxo.output.value.try_into()?,
             address: utxo.output.address.try_into()?,
@@ -53,7 +51,6 @@ impl UtxosTable {
                 r#"
                 SELECT *
                 FROM utxos
-                WHERE address = $1
                 "#,
             )
             .bind(db::Address::try_from(address)?)
@@ -74,12 +71,11 @@ impl UtxosTable {
         async move {
             sqlx::query(
                 r#"
-                INSERT INTO utxos (utxo_ref, utxo, value, address, datum, created_at)
-                VALUES ($1, $2, $3, $4, $5, $6)
+                INSERT INTO utxos (utxo_ref, value, address, datum, created_at)
+                VALUES ($1, $2, $3, $4, $5)
                 "#,
             )
             .bind(self.utxo_ref)
-            .bind(self.utxo)
             .bind(self.value)
             .bind(self.address)
             .bind(self.datum)
