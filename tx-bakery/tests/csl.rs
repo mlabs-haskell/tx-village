@@ -9,7 +9,7 @@ mod csl_pla_roundtrip_tests {
             arb_slot, arb_token_name, arb_transaction_hash, arb_transaction_index,
             arb_transaction_input, arb_value,
         },
-        v2::{address::StakingCredential, value::Value},
+        v2::{address::StakingCredential, crypto::Ed25519PubKeyHash, value::Value},
     };
     use proptest::{prop_assert_eq, proptest, strategy::Strategy, test_runner::TestCaseError};
     use tx_bakery::utils::csl_to_pla::{FromCSL, TryFromCSL};
@@ -81,7 +81,7 @@ mod csl_pla_roundtrip_tests {
 
       #[test]
       fn test_ed25519_pub_key_hash(val in arb_ed25519_pub_key_hash()) {
-          try_to_from_prop(val)?
+          try_to_from_prop::<csl::crypto::Ed25519KeyHash, _>(val)?
       }
 
       #[test]
