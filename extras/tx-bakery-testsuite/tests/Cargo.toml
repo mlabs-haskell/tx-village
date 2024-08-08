@@ -1,0 +1,22 @@
+[package]
+name = "tx-bakery-tests"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+
+
+[dev-dependencies]
+proptest = "1.4.0"
+serial_test = "3.0.0"
+lbf-tx-bakery-tests-config-api = { path = ".extras/lbf-tx-bakery-tests-config-api-0.1.0" }
+lbf-tx-bakery-tests-plutus-api = { path = ".extras/lbf-tx-bakery-tests-plutus-api-0.1.0" }
+lbr-prelude = { version = "0.1.1", features = ["derive"] }
+lbf-prelude = { path = ".extras/lbf-prelude-0.1.0" }
+plutus-ledger-api = { version = "0.2.1", features = ["lbf", "chrono"] }
+tx-bakery = { version = "0.1.0", path = ".extras/tx-bakery-0.1.0" }
+tokio = { version = "1.24.2", features = ["full"] }
+chrono = "0.4.35"
+num-bigint = { version = "0.4.4", features = ["serde"] }
+url = "2.5.2"
+assertables = "7.0.1"

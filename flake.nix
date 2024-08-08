@@ -47,6 +47,7 @@
 
         # Extras
         ./extras/tx-bakery-testsuite/validation/build.nix
+        ./extras/tx-bakery-testsuite/tests/build.nix
       ];
       debug = true;
       systems = [ "x86_64-linux" "x86_64-darwin" ];
