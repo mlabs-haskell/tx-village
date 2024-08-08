@@ -1,3 +1,5 @@
+//! Conversion from plutus-ledger-api to cardano-serialization-lib
+
 use cardano_serialization_lib as csl;
 use num_bigint::{BigInt, TryFromBigIntError};
 use num_traits::sign::Signed;

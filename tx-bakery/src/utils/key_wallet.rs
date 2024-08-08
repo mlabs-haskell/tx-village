@@ -1,3 +1,5 @@
+//! Simple wallet reading the signing key(s) from disk
+
 use super::csl_to_pla::ToPLA;
 use crate::wallet::{Wallet, WalletError};
 use anyhow::anyhow;
@@ -40,6 +42,7 @@ struct TextEnvelope {
     cbor_hex: String,
 }
 
+/// Simple wallet reading the signing key(s) from disk
 pub struct KeyWallet {
     pay_priv_key: PrivateKey,
     pay_pkh: Ed25519PubKeyHash,
@@ -50,6 +53,7 @@ pub struct KeyWallet {
 }
 
 impl KeyWallet {
+    /// Initialise a base wallet by reading the signinig keys into memory
     pub async fn new(
         payment_skey: impl AsRef<Path>,
         staking_skey: Option<impl AsRef<Path>>,
@@ -80,13 +84,14 @@ impl KeyWallet {
         })
     }
 
+    /// Initialise an enterprise wallet by reading the signinig key into memory
     pub async fn new_enterprise(
         payment_skey: impl AsRef<Path>,
     ) -> Result<KeyWallet, KeyWalletError> {
         Self::new(payment_skey, None::<&str>).await
     }
 
-    /// Get the private key used by Plutip
+    /// Get the private key
     async fn read_priv_key(filepath: impl AsRef<Path>) -> Result<PrivateKey, KeyWalletError> {
         let skey_str = fs::read_to_string(&filepath)
             .await
