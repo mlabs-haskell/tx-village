@@ -39,6 +39,7 @@
 
         # Libraries
         ./tx-bakery/build.nix
+        ./tx-bakery-plutip/build.nix
         ./extras/tx-bakery-testsuite/api/build.nix
         ./tx-indexer/build.nix
         ./ledger-sim/build.nix
