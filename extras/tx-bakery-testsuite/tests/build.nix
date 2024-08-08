@@ -15,8 +15,8 @@
 
           extraSources = [
             config.packages.tx-bakery-rust-src
-            config.packages.tx-bakery-plutip-rust
-            config.packages.tx-bakery-ogmios-rust
+            config.packages.tx-bakery-plutip-rust-src
+            config.packages.tx-bakery-ogmios-rust-src
 
             # LB base schema and runtime libs
             inputs'.lbf.packages.lbf-prelude-rust

@@ -20,3 +20,5 @@ chrono = "0.4.35"
 num-bigint = { version = "0.4.4", features = ["serde"] }
 url = "2.5.2"
 assertables = "7.0.1"
+tx-bakery-ogmios = { path = ".extras/tx-bakery-ogmios-0.1.0" } 
+tx-bakery-plutip = { path = ".extras/tx-bakery-plutip-0.1.0" } 

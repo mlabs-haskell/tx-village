@@ -777,9 +777,9 @@ mod tests {
     use tx_bakery::chain_query::ChainQuery;
     use tx_bakery::error::Result;
     use tx_bakery::submitter::Submitter;
-    use tx_bakery::utils::ogmios::client::{OgmiosClient, OgmiosClientConfigBuilder};
-    use tx_bakery::utils::ogmios::launcher::{OgmiosLauncher, OgmiosLauncherConfigBuilder};
-    use tx_bakery::utils::plutip::{Plutip, PlutipConfigBuilder};
+    use tx_bakery_ogmios::client::{OgmiosClient, OgmiosClientConfigBuilder};
+    use tx_bakery_ogmios::launcher::{OgmiosLauncher, OgmiosLauncherConfigBuilder};
+    use tx_bakery_plutip::{Plutip, PlutipConfigBuilder};
     use tx_bakery::utils::script::ScriptOrRef;
     use tx_bakery::wallet::Wallet;
     use tx_bakery::TxBakery;

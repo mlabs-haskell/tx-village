@@ -48,28 +48,6 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "0c24e9d990669fbd16806bff449e4ac644fd9b1fca014760087732fe4102f131"
 
 [[package]]
-name = "async-stream"
-version = "0.3.5"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "cd56dd203fef61ac097dd65721a419ddccb106b2d2b70ba60a6b529f03961a51"
-dependencies = [
- "async-stream-impl",
- "futures-core",
- "pin-project-lite",
-]
-
-[[package]]
-name = "async-stream-impl"
-version = "0.3.5"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "16e62a023e7c117e27523144c5d2459f4397fcc3cab0085af8e2224f643a0193"
-dependencies = [
- "proc-macro2",
- "quote",
- "syn 2.0.72",
-]
-
-[[package]]
 name = "async-trait"
 version = "0.1.81"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -2017,19 +1995,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "tokio-test"
-version = "0.4.4"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "2468baabc3311435b55dd935f702f42cd1b8abb7e754fb7dfb16bd36aa88f9f7"
-dependencies = [
- "async-stream",
- "bytes",
- "futures-core",
- "tokio",
- "tokio-stream",
-]
-
-[[package]]
 name = "tokio-util"
 version = "0.7.11"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -2089,27 +2054,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "tower"
-version = "0.4.13"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "b8fa9be0de6cf49e536ce1851f987bd21a43b771b09473c3549a6c853db37c1c"
-dependencies = [
- "futures-core",
- "futures-util",
- "pin-project",
- "pin-project-lite",
- "tower-layer",
- "tower-service",
- "tracing",
-]
-
-[[package]]
-name = "tower-layer"
-version = "0.3.2"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "c20c8dbed6283a09604c3e69b4b7eeb54e298b8a600d4d5ecb5ad39de609f1d0"
-
-[[package]]
 name = "tower-service"
 version = "0.3.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -2121,7 +2065,6 @@ version = "0.1.40"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "c3523ab5a71916ccf420eebdf5521fcef02141234bbc0b8a49f2fdc4544364ef"
 dependencies = [
- "log",
  "pin-project-lite",
  "tracing-attributes",
  "tracing-core",
@@ -2180,23 +2123,57 @@ dependencies = [
  "data-encoding",
  "derive_builder",
  "futures",
+ "jsonrpsee",
+ "num-bigint",
+ "num-traits",
+ "plutus-ledger-api",
+ "serde",
+ "serde_json",
+ "thiserror",
+ "tokio",
+ "url",
+ "wait-timeout",
+]
+
+[[package]]
+name = "tx-bakery-ogmios"
+version = "0.1.0"
+dependencies = [
+ "anyhow",
+ "cardano-serialization-lib",
+ "cbor_event",
+ "chrono",
+ "data-encoding",
+ "derive_builder",
  "hex",
  "jsonrpsee",
- "linked-hash-map",
  "nix",
  "num-bigint",
- "num-integer",
- "num-traits",
  "plutus-ledger-api",
  "reqwest",
  "serde",
  "serde_json",
  "thiserror",
  "tokio",
- "tokio-test",
- "tower",
+ "tracing",
+ "tx-bakery",
  "url",
- "uuid",
+]
+
+[[package]]
+name = "tx-bakery-plutip"
+version = "0.1.0"
+dependencies = [
+ "anyhow",
+ "data-encoding",
+ "derive_builder",
+ "nix",
+ "plutus-ledger-api",
+ "serde",
+ "serde_json",
+ "thiserror",
+ "tokio",
+ "tx-bakery",
  "wait-timeout",
 ]
 
@@ -2216,6 +2193,8 @@ dependencies = [
  "serial_test",
  "tokio",
  "tx-bakery",
+ "tx-bakery-ogmios",
+ "tx-bakery-plutip",
  "url",
 ]
 
@@ -2267,15 +2246,6 @@ dependencies = [
  "form_urlencoded",
  "idna",
  "percent-encoding",
-]
-
-[[package]]
-name = "uuid"
-version = "1.10.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "81dfa00651efa65069b0b6b651f4aaa31ba9e3c3ce0137aaad053604ee7e0314"
-dependencies = [
- "getrandom",
 ]
 
 [[package]]
