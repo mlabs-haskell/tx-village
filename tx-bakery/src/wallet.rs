@@ -1,3 +1,5 @@
+//! Wallet trait
+
 use cardano_serialization_lib as csl;
 use plutus_ledger_api::v2::address::Address;
 use plutus_ledger_api::v2::crypto::Ed25519PubKeyHash;

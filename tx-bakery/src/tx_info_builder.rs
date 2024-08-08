@@ -1,3 +1,5 @@
+//! Transaction Info builder
+
 use num_bigint::BigInt;
 use plutus_ledger_api::v2::address::StakingCredential;
 use plutus_ledger_api::v2::assoc_map::AssocMap;

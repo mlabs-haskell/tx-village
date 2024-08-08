@@ -1,3 +1,5 @@
+//! Transaction Bakery
+
 use crate::error::{Error, Result};
 use crate::metadata::TransactionMetadata;
 use crate::time::time_range_into_slots;
@@ -43,9 +45,10 @@ pub mod utils;
 pub mod wallet;
 
 /// Transaction builder
-/// The sole purpose of this component is to convert a raw TransactionInfo (dough) into a fully
-/// baked valid transaction
-/// TxBakery won't change it's internal state once initialized
+///
+/// The purpose of this component is to convert a raw TransactionInfo (dough) 
+/// into a fully baked valid transaction.
+/// TxBakery does not perform IO and won't change it's internal state once initialized.
 pub struct TxBakery {
     config: TransactionBuilderConfig,
     data_cost: csl::DataCost,

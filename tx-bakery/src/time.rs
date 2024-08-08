@@ -1,3 +1,5 @@
+//! POSIX time to/from slot conversions
+
 use crate::chain_query::EraSummary;
 use crate::error::{Error, Result};
 use anyhow::anyhow;

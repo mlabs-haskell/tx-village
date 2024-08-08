@@ -1,3 +1,5 @@
+//! Transaction Metadata
+
 use crate::{error::Error, utils::pla_to_csl::TryToCSLWithDef};
 use anyhow::anyhow;
 use cardano_serialization_lib as csl;
