@@ -16,6 +16,8 @@
             inputs'.lbf.packages.lbf-plutus-rust
 
             config.packages.tx-bakery-rust-src
+            config.packages.tx-bakery-plutip-rust-src
+            config.packages.tx-bakery-ogmios-rust-src
           ];
 
           inherit (commands) devShellTools;

@@ -39,12 +39,15 @@
 
         # Libraries
         ./tx-bakery/build.nix
+        ./tx-bakery-plutip/build.nix
+        ./tx-bakery-ogmios/build.nix
         ./extras/tx-bakery-testsuite/api/build.nix
         ./tx-indexer/build.nix
         ./ledger-sim/build.nix
 
         # Extras
         ./extras/tx-bakery-testsuite/validation/build.nix
+        ./extras/tx-bakery-testsuite/tests/build.nix
       ];
       debug = true;
       systems = [ "x86_64-linux" "x86_64-darwin" ];

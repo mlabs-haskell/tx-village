@@ -10,7 +10,6 @@ use jsonrpsee::{
     core::client::ClientT,
     core::params::ObjectParams,
     rpc_params,
-    tracing::warn,
     ws_client::{WsClient, WsClientBuilder},
 };
 use plutus_ledger_api::v2::{
@@ -18,9 +17,10 @@ use plutus_ledger_api::v2::{
     transaction::{TransactionHash, TransactionInput},
 };
 use serde::Serialize;
+use tracing::warn;
 use url::Url;
 
-use crate::{
+use tx_bakery::{
     chain_query::{
         ChainQuery, ChainQueryError, ChainTip, EraSummary, FullTransactionOutput, Network,
         ProtocolParameters,

@@ -1,5 +1,3 @@
-use crate::chain_query::Network;
-use crate::wallet::WalletError;
 use anyhow::anyhow;
 use data_encoding::HEXLOWER;
 use derive_builder::Builder;
@@ -13,10 +11,12 @@ use std::time::{self, Duration};
 use thiserror::Error;
 use tokio;
 use tokio::fs;
+use tx_bakery::{
+    chain_query::Network,
+    utils::key_wallet::{KeyWallet, KeyWalletError},
+    wallet::WalletError,
+};
 use wait_timeout::ChildExt;
-
-use super::key_wallet::KeyWallet;
-use super::key_wallet::KeyWalletError;
 
 #[derive(Error, Debug)]
 pub enum PlutipError {

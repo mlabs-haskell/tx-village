@@ -1,12 +1,12 @@
-use crate::{
-    chain_query::ChainQueryError,
-    submitter::SubmitterError,
-    utils::{csl_to_pla::TryFromCSLError, pla_to_csl::TryFromPLAError},
-};
 use anyhow::anyhow;
 use serde::{Deserialize, Serialize};
 use serde_json::Value;
 use thiserror::Error;
+use tx_bakery::{
+    chain_query::ChainQueryError,
+    submitter::SubmitterError,
+    utils::{csl_to_pla::TryFromCSLError, pla_to_csl::TryFromPLAError},
+};
 
 pub type Result<T> = std::result::Result<T, OgmiosError>;
 

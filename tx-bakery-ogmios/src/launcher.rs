@@ -1,4 +1,4 @@
-use crate::chain_query::Network;
+use tx_bakery::chain_query::Network;
 use anyhow::anyhow;
 use derive_builder::Builder;
 use serde::Deserialize;
