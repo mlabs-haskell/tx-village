@@ -1,5 +1,5 @@
 {
-  hercules-ci.github-pages.branch = "connor/github-pages"; # FIXME
+  hercules-ci.github-pages.branch = "main";
 
   perSystem = { config, pkgs, ... }:
     let
