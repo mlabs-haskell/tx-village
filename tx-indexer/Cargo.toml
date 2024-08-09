@@ -51,6 +51,8 @@ url = "2.5.2"
 
 [dev-dependencies]
 serial_test = "3.1.1"
+tx-bakery-ogmios = { path = ".extras/tx-bakery-ogmios-0.1.0" }
+tx-bakery-plutip = { path = ".extras/tx-bakery-plutip-0.1.0" }
 
 [build-dependencies]
 tokio = { version = "1.24.2", features = ["full"] }

@@ -16,20 +16,15 @@ mod e2e_tests {
     use std::{collections::BTreeMap, sync::mpsc};
     use tracing::Level;
     use tx_bakery::{
-        chain_query::ChainQuery,
-        submitter::Submitter,
-        tx_info_builder::TxScaffold,
-        utils::{
-            ogmios::{
-                client::{OgmiosClient, OgmiosClientConfigBuilder},
-                launcher::{OgmiosLauncher, OgmiosLauncherConfigBuilder},
-            },
-            plutip::{Plutip, PlutipConfigBuilder},
-            script::ScriptOrRef,
-        },
-        wallet::Wallet,
-        ChangeStrategy, CollateralStrategy, TxBakery, TxWithCtx,
+        chain_query::ChainQuery, submitter::Submitter, tx_info_builder::TxScaffold,
+        utils::script::ScriptOrRef, wallet::Wallet, ChangeStrategy, CollateralStrategy, TxBakery,
+        TxWithCtx,
     };
+    use tx_bakery_ogmios::{
+        client::{OgmiosClient, OgmiosClientConfigBuilder},
+        launcher::{OgmiosLauncher, OgmiosLauncherConfigBuilder},
+    };
+    use tx_bakery_plutip::{Plutip, PlutipConfigBuilder};
     use tx_indexer::{
         config::{NetworkConfig, NetworkName, NodeAddress, TxIndexerConfig},
         error::{ErrorPolicy, ErrorPolicyProvider},
