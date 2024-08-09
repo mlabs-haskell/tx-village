@@ -1,0 +1,1 @@
+window.SIDEBAR_ITEMS = {"enum":["DBTypeConversionError","PlutusDataEncodingError"],"struct":["Address","AssetQuantity","ChainPointer","Credential","CurrencySymbol","DatumHash","Ed25519PubKeyHash","OutputDatum","PlutusData","ScriptHash","Slot","StakingCredential","TokenName","TransactionHash","TransactionInput","TransactionOutput","TxInInfo","Value"]};
