@@ -2,12 +2,14 @@ use crate::chain_query::Network;
 use anyhow::anyhow;
 use derive_builder::Builder;
 use serde::Deserialize;
+use url::Url;
 
 use std::path::PathBuf;
 use std::process::Stdio;
 use tokio::process::{Child, Command};
 use tokio::sync::Mutex;
 
+use super::client::{OgmiosClient, OgmiosClientConfigBuilder};
 use super::error::{OgmiosError, Result};
 
 #[derive(Debug, Builder, Clone, Deserialize)]
@@ -75,6 +77,16 @@ impl OgmiosLauncher {
 
     pub fn get_config(&self) -> &OgmiosLauncherConfig {
         &self.config
+    }
+
+    pub async fn get_client(&self, network: Network) -> Result<OgmiosClient> {
+        let ogmios_client_config = OgmiosClientConfigBuilder::default()
+            .network(network)
+            .url(Url::parse(&format!("http://{}:{}", self.config.host, self.config.port)).unwrap())
+            .build()
+            .unwrap();
+
+        OgmiosClient::connect(ogmios_client_config).await
     }
 
     /// Kill ogmios process
