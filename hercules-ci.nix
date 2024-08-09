@@ -1,6 +1,7 @@
 { inputs, ... }: {
   imports = [
     inputs.hci-effects.flakeModule # Adds hercules-ci and herculesCI options
+    ./github-pages.nix
   ];
 
   hercules-ci.flake-update = {
