@@ -1,0 +1,1 @@
+window.SIDEBAR_ITEMS = {"enum":["ChangeStrategy","CollateralStrategy"],"mod":["chain_query","error","metadata","submitter","time","tx_info_builder","utils","wallet"],"struct":["TxBakery","TxWithCtx"]};
