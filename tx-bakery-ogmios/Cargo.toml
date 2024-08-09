@@ -23,3 +23,7 @@ cardano-serialization-lib = "11.5.0"
 cbor_event = "2.4.0"
 hex = "0.4.3"
 url = "2.5.2"
+clap = { version = "4.5.14", features = ["derive"], optional = true }
+
+[features]
+clap = ["dep:clap"]
