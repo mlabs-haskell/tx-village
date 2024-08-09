@@ -36,6 +36,8 @@ use utils::pla_to_csl::{TransactionOutputExtraInfo, TryToCSL, TryToCSLWithDef};
 use utils::script::ScriptOrRef;
 
 pub mod chain_query;
+#[cfg(feature = "clap")]
+pub mod clap;
 pub mod error;
 pub mod metadata;
 pub mod submitter;
@@ -46,7 +48,7 @@ pub mod wallet;
 
 /// Transaction builder
 ///
-/// The purpose of this component is to convert a raw TransactionInfo (dough) 
+/// The purpose of this component is to convert a raw TransactionInfo (dough)
 /// into a fully baked valid transaction.
 /// TxBakery does not perform IO and won't change it's internal state once initialized.
 pub struct TxBakery {

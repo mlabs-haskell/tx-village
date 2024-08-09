@@ -31,6 +31,7 @@ num-traits = "0.2.18"
 assertables = "7.0.1"
 wait-timeout = "0.2.0"
 url = "2.5.2"
+clap = { version = "4.5.14", features = ["derive"], optional = true }
 
 [dev-dependencies]
 proptest = "1.4.0"
@@ -39,3 +40,6 @@ lbf-tx-bakery-tests-config-api = { path = ".extras/lbf-tx-bakery-tests-config-ap
 lbf-tx-bakery-tests-plutus-api = { path = ".extras/lbf-tx-bakery-tests-plutus-api-0.1.0" }
 lbr-prelude = { version = "0.1.1", features = ["derive"] }
 lbf-prelude = { path = ".extras/lbf-prelude-0.1.0" }
+
+[features]
+clap = ["dep:clap"]
