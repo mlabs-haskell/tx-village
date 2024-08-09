@@ -44,15 +44,15 @@ tracing-subscriber = "0.3"
 strum = "0.24"
 strum_macros = "0.24"
 frunk = "0.4.2"
-tx-bakery = { version = "0.1.0", path = ".extras/tx-bakery-0.1.0" }
+tx-bakery = { version = "0.1.0", path = ".extras/tx-bakery-v0" }
 plutus-ledger-api = { version = "0.2.1", features = ["chrono", "serde"] }
 chrono = "0.4.38"
 url = "2.5.2"
 
 [dev-dependencies]
 serial_test = "3.1.1"
-tx-bakery-ogmios = { path = ".extras/tx-bakery-ogmios-0.1.0" }
-tx-bakery-plutip = { path = ".extras/tx-bakery-plutip-0.1.0" }
+tx-bakery-ogmios = { path = ".extras/tx-bakery-ogmios-v0" }
+tx-bakery-plutip = { path = ".extras/tx-bakery-plutip-v0" }
 
 [build-dependencies]
 tokio = { version = "1.24.2", features = ["full"] }
