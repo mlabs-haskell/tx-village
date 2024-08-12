@@ -38,22 +38,39 @@ impl From<PlutipError> for WalletError {
 
 #[derive(Debug, Builder, Clone, Deserialize)]
 pub struct PlutipConfig {
+    /// Filepath, where the plutip info dump file will be created
     #[builder(default = r#""plutip-info.json".try_into().unwrap()"#, setter(skip))]
     dump_path: PathBuf,
+
+    /// Directory to store the wallet key files
     #[builder(default = r#"".wallets".try_into().unwrap()"#, setter(skip))]
     wallets_dir: PathBuf,
+
+    /// Return verbose logs
     #[builder(default = "false")]
     verbose: bool,
+
+    /// Wallets generated and funded by Plutip
     #[builder(default = "1")]
     wallets: u32,
+
+    /// Initial distribution (unused)
     #[builder(default = "1")]
     _ada: u32,
+
+    /// Initial distribution (unused)
     #[builder(default = "1")]
     _lovelace: u32,
+
+    /// Initial distribution (unused)
     #[builder(default = "1")]
     _utxos: u32,
+
+    /// Slot length configuration of the local cluster
     #[builder(default = "0.2")]
     slot_length: f32,
+
+    /// Epoch size configuration of the local cluster
     #[builder(default = "80")]
     epoch_size: u32,
 }
@@ -75,6 +92,8 @@ pub struct Plutip {
 impl Plutip {
     const NETWORK: Network = Network::Mainnet;
 
+    /// Launching the Plutip local cluster
+    /// Once the handler goes out of scope, the local cluster will be killed
     pub async fn start(config: PlutipConfig) -> Result<Self, PlutipError> {
         let handler = Command::new("local-cluster")
             .arg("--dump-info-json")
@@ -144,6 +163,7 @@ impl Plutip {
         ))
     }
 
+    /// Get a wallet by an index generated and funded by Plutip
     pub async fn get_wallet(&self, wallet_idx: usize) -> Result<KeyWallet, PlutipError> {
         let filename = format!(
             "signing-key-{}.skey",
@@ -154,6 +174,7 @@ impl Plutip {
         Ok(KeyWallet::new_enterprise(&path).await?)
     }
 
+    /// Get the first wallet generated and funded by Plutip
     pub async fn get_own_wallet(&self) -> Result<KeyWallet, PlutipError> {
         self.get_wallet(0).await
     }
@@ -163,6 +184,7 @@ impl Plutip {
         self.info.node_socket.clone().try_into().unwrap()
     }
 
+    /// Get the Cardano network discriminant
     pub fn get_network(&self) -> Network {
         Self::NETWORK
     }
