@@ -783,6 +783,8 @@ impl TryFrom<TxInInfo> for pla::v2::transaction::TxInInfo {
 
 #[cfg(test)]
 mod tests {
+    use pla::goldens::v1::sample_currency_symbol;
+    use plutus_ledger_api as pla;
     use plutus_ledger_api::generators::correct::v1::arb_currency_symbol;
     use proptest::{prelude::*, test_runner::TestRunner};
     use sqlx::{FromRow, PgConnection, PgPool};
@@ -858,24 +860,25 @@ mod tests {
         //     .await
     }
 
-    // #[sqlx::test]
-    // async fn currency_symbol(pool: PgPool) {
-    //     let mut runner = TestRunner::default();
-    //     runner
-    //         .run(&arb_currency_symbol(), |cur_sym| {
-    //             let handler = tokio::runtime::Handle::current();
-    //             handler.spawn(async {
-    //                 let mut conn = pool.acquire().await.unwrap();
-    //                 let mut testdb = TestDB::default();
-    //                 testdb.cur_sym = Some(cur_sym.try_into().unwrap());
+    #[sqlx::test]
+    async fn currency_symbol(pool: PgPool) {
+        // let mut runner = TestRunner::default();
+        // runner
+        //     .run(&arb_currency_symbol(), |cur_sym| {
+        //         let handler = tokio::runtime::Handle::current();
+        //         handler.spawn(async {
+        let mut conn = pool.acquire().await.unwrap();
+        let mut testdb = TestDB::default();
+        let cur_sym = sample_currency_symbol();
+        testdb.cur_sym = Some(cur_sym.try_into().unwrap());
 
-    //                 assert_eq!(
-    //                     testdb,
-    //                     write_read(testdb.clone(), &mut *conn).await.unwrap()
-    //                 );
-    //             });
-    //             Ok(())
-    //         })
-    //         .unwrap();
-    // }
+        assert_eq!(
+            testdb,
+            write_read(testdb.clone(), &mut *conn).await.unwrap()
+        );
+        // });
+        // Ok(())
+        // })
+        // .unwrap();
+    }
 }
