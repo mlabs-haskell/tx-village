@@ -17,7 +17,7 @@ use plutus_ledger_api::v2::{
     transaction::{TransactionHash, TransactionInput},
 };
 use serde::Serialize;
-use tracing::warn;
+use tracing::{debug, error, warn};
 use url::Url;
 
 use tx_bakery::{
@@ -166,10 +166,10 @@ impl OgmiosClient {
         U: serde::de::DeserializeOwned + Serialize,
         P: ToRpcParams + Send,
     {
-        self.client
-            .request(method, params)
-            .await
-            .map_err(|source| OgmiosError::JSONRpcError(source))
+        self.client.request(method, params).await.map_err(|err| {
+            debug!(%err, "Ogmios JSON RPC call error.");
+            OgmiosError::JSONRpcError(err)
+        })
     }
 
     pub async fn check_health(config: &OgmiosClientConfig) -> Result<OgmiosHealth> {
@@ -234,6 +234,7 @@ impl ChainQuery for OgmiosClient {
         address: &Address,
     ) -> std::result::Result<BTreeMap<TransactionInput, FullTransactionOutput>, ChainQueryError>
     {
+        debug!("Query UTxOs by address");
         let addr: csl::address::Address = address
             .try_to_csl_with(self.config.network.to_network_id())
             .map_err(|csl_err| OgmiosError::TryFromPLAError(csl_err))?;
@@ -306,11 +307,13 @@ impl Submitter for OgmiosClient {
         witness_set.set_plutus_scripts(&script_witnesses);
         witness_set.set_redeemers(&redeemer_witnesses);
 
-        let tx_body = tx_builder
-            .build()
-            .map_err(|err| SubmitterError(anyhow::anyhow!("Transaction builder error: {}", err)))?;
+        let tx_body = tx_builder.build().map_err(|err| {
+            error!(%err, "Transaction builder error.");
+            SubmitterError(anyhow::anyhow!("Transaction builder error: {}", err))
+        })?;
         let tx = csl::Transaction::new(&tx_body, &witness_set, None);
 
+        debug!("Evaluating transaction");
         let params = EvaluateTransactionParams {
             transaction: TransactionCbor { cbor: tx.to_hex() },
             additional_utxo: Vec::new(),
@@ -338,6 +341,7 @@ impl Submitter for OgmiosClient {
         &self,
         tx: &csl::Transaction,
     ) -> std::result::Result<TransactionHash, SubmitterError> {
+        debug!("Submitting transaction");
         let params = SubmitTransactionParams {
             transaction: TransactionCbor { cbor: tx.to_hex() },
             additional_utxo: Vec::new(),
@@ -353,6 +357,7 @@ impl Submitter for OgmiosClient {
         &self,
         tx_hash: &TransactionHash,
     ) -> std::result::Result<(), SubmitterError> {
+        debug!("Awaiting transaction confirmation.");
         let do_wait = || async {
             loop {
                 let _ = self.acquire_mempool().await?;

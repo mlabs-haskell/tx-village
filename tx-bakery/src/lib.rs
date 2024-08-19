@@ -32,6 +32,7 @@ use plutus_ledger_api::v2::transaction::{
 use plutus_ledger_api::v2::value::{CurrencySymbol, Value};
 use std::collections::BTreeMap;
 use submitter::Submitter;
+use tracing::{debug, info};
 use utils::pla_to_csl::{TransactionOutputExtraInfo, TryToCSL, TryToCSLWithDef};
 use utils::script::ScriptOrRef;
 
@@ -133,6 +134,7 @@ impl TxBakery {
     /// Query all the parameters required to build a transaction and store it for later use.
     /// This command will call the ChainQuery service to pull certain chain parameters
     pub async fn init(chain_query: &impl ChainQuery) -> Result<Self> {
+        debug!("Initialising Transaction Bakery");
         let protocol_params = chain_query.query_protocol_params().await?;
         let system_start = chain_query.query_system_start().await?;
         let era_summaries = chain_query.query_era_summaries().await?;
@@ -711,6 +713,7 @@ impl TxBakery {
         wit_datums: &Vec<csl::plutus::PlutusData>,
         wit_redeemers: &Vec<csl::plutus::Redeemer>,
     ) -> csl::tx_builder::TransactionBuilder {
+        debug!("Calculating script integrity hash");
         let mut redeemers = csl::plutus::Redeemers::new();
         wit_redeemers.iter().for_each(|red| redeemers.add(&red));
 
@@ -745,6 +748,7 @@ impl TxBakery {
             csl::plutus::ExUnits,
         >,
     ) -> Result<csl::plutus::Redeemer> {
+        debug!("Apply execution units.");
         let key = (redeemer.tag(), redeemer.index());
         let ex_units = ex_units_map.get(&key).ok_or(Error::MissingExUnits(key))?;
         Ok(csl::plutus::Redeemer::new(
@@ -763,6 +767,7 @@ impl TxBakery {
         wit_datums: &Vec<csl::plutus::PlutusData>,
         wit_redeemers: &Vec<csl::plutus::Redeemer>,
     ) -> Result<csl::TransactionBody> {
+        debug!("Balance transaction");
         let mut redeemers = csl::plutus::Redeemers::new();
         wit_redeemers.iter().for_each(|red| redeemers.add(&red));
 
@@ -807,6 +812,7 @@ impl TxBakery {
         submitter: &impl Submitter,
         tx: TxWithCtx<'_>,
     ) -> Result<csl::Transaction> {
+        info!("Bake balanced transaction.");
         let (datums, redeemers) = TxBakery::extract_witnesses(&tx.tx_info)?;
         let plutus_scripts = TxBakery::witness_scripts(&tx.tx_info, &tx.scripts)?;
 
@@ -822,13 +828,19 @@ impl TxBakery {
         let aux_data = aux_data?;
 
         let (tx_builder, ex_units) = match &tx.ex_units_map {
-            Some(ex_units_map) => (self.mk_tx_builder(&tx)?, (*ex_units_map).clone()),
+            Some(ex_units_map) => {
+                debug!("Using supplied execution units.");
+                (self.mk_tx_builder(&tx)?, (*ex_units_map).clone())
+            }
             None => {
+                debug!("Using Ogmios to calculate execution units.");
                 let tx_builder = self.mk_tx_builder(&tx)?;
 
                 let ex_units = submitter
                     .evaluate_transaction(&tx_builder, &plutus_scripts, &redeemers)
                     .await?;
+
+                debug!("Applying execution units to transaction.");
 
                 (
                     self.mk_tx_builder(&tx.clone().with_ex_units(&ex_units))?,
@@ -871,6 +883,7 @@ impl TxBakery {
         tx: TxWithCtx<'_>,
     ) -> Result<csl::Transaction> {
         let tx = self.bake_balanced_tx(submitter, tx).await?;
+        debug!("Signing transaction.");
         Ok(wallet.sign_transaction(&tx))
     }
 
@@ -884,6 +897,7 @@ impl TxBakery {
     ) -> Result<TransactionHash> {
         let tx = self.bake_signed_tx(submitter, wallet, tx).await?;
 
+        debug!("Submitting transaction.");
         Ok(submitter.submit_transaction(&tx).await?)
     }
 }
