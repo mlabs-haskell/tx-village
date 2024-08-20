@@ -17,7 +17,7 @@ use plutus_ledger_api::v2::{
     transaction::{TransactionHash, TransactionInput},
 };
 use serde::Serialize;
-use tracing::{debug, error, warn};
+use tracing::{debug, error, info, warn};
 use url::Url;
 
 use tx_bakery::{
@@ -357,7 +357,7 @@ impl Submitter for OgmiosClient {
         &self,
         tx_hash: &TransactionHash,
     ) -> std::result::Result<(), SubmitterError> {
-        debug!("Awaiting transaction confirmation.");
+        info!(?tx_hash, "Awaiting transaction confirmation.");
         let do_wait = || async {
             loop {
                 let _ = self.acquire_mempool().await?;
