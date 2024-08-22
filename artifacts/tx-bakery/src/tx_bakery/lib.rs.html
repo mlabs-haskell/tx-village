@@ -887,6 +887,8 @@
 <a href="#885" id="885">885</a>
 <a href="#886" id="886">886</a>
 <a href="#887" id="887">887</a>
+<a href="#888" id="888">888</a>
+<a href="#889" id="889">889</a>
 </pre></div><pre class="rust"><code><span class="doccomment">//! Transaction Bakery
 
 </span><span class="kw">use </span><span class="kw">crate</span>::error::{Error, <span class="prelude-ty">Result</span>};
@@ -925,6 +927,8 @@
 <span class="kw">use </span>utils::script::ScriptOrRef;
 
 <span class="kw">pub mod </span>chain_query;
+<span class="attr">#[cfg(feature = <span class="string">"clap"</span>)]
+</span><span class="kw">pub mod </span>clap;
 <span class="kw">pub mod </span>error;
 <span class="kw">pub mod </span>metadata;
 <span class="kw">pub mod </span>submitter;
@@ -935,7 +939,7 @@
 
 <span class="doccomment">/// Transaction builder
 ///
-/// The purpose of this component is to convert a raw TransactionInfo (dough) 
+/// The purpose of this component is to convert a raw TransactionInfo (dough)
 /// into a fully baked valid transaction.
 /// TxBakery does not perform IO and won't change it's internal state once initialized.
 </span><span class="kw">pub struct </span>TxBakery {

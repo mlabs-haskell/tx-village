@@ -4,7 +4,11 @@
 <a href="#2" id="2">2</a>
 <a href="#3" id="3">3</a>
 <a href="#4" id="4">4</a>
+<a href="#5" id="5">5</a>
+<a href="#6" id="6">6</a>
 </pre></div><pre class="rust"><code><span class="kw">mod </span>api;
+<span class="attr">#[cfg(feature = <span class="string">"clap"</span>)]
+</span><span class="kw">pub mod </span>clap;
 <span class="kw">pub mod </span>client;
 <span class="kw">pub mod </span>error;
 <span class="kw">pub mod </span>launcher;
