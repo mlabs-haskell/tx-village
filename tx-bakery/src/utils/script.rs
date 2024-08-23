@@ -66,6 +66,13 @@ impl ScriptOrRef {
         }
     }
 
+    pub fn get_script_size(&self) -> usize {
+        match self {
+            ScriptOrRef::RefScript(_, script) => script.bytes().len(),
+            ScriptOrRef::PlutusScript(script) => script.bytes().len(),
+        }
+    }
+
     pub fn get_version(self) -> csl::Language {
         match self {
             ScriptOrRef::RefScript(_, script) => script.language_version(),

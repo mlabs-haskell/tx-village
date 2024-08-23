@@ -101,6 +101,7 @@ pub struct EraParameters {
 pub struct ProtocolParameters {
     pub min_fee_coefficient: csl::Coin,
     pub min_fee_constant: csl::Coin,
+    pub min_fee_reference_scripts: Option<csl::UnitInterval>,
     pub min_utxo_deposit_coefficient: csl::Coin,
     pub min_utxo_deposit_constant: csl::Coin,
     // pub max_block_body_size: Bytes,
@@ -123,6 +124,7 @@ pub struct ProtocolParameters {
     pub script_execution_prices: Option<csl::ExUnitPrices>,
     // pub max_execution_units_per_transaction: Option<ExecutionUnits>,
     // pub max_execution_units_per_block: Option<ExecutionUnits>,
+    // pub max_reference_scripts_size: Bytes,
     // pub stake_pool_voting_thresholds: Option<StakePoolVotingThresholds>,
     // pub constitutional_committee_min_size: Option<u64>,
     // pub constitutional_committee_max_term_length: Option<u64>,

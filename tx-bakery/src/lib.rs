@@ -156,9 +156,14 @@ impl TxBakery {
             .ex_unit_prices(&protocol_params.script_execution_prices.clone().ok_or(
                 Error::MissingProtocolParameter("script_execution_prices".to_string()),
             )?)
-            .prefer_pure_change(true)
-            .build()
-            .unwrap();
+            .prefer_pure_change(true);
+
+        let config = match protocol_params.min_fee_reference_scripts {
+            None => config,
+            Some(ref unit_interval) => config.ref_script_coins_per_byte(unit_interval),
+        }
+        .build()
+        .unwrap();
 
         Ok(TxBakery {
             config,
@@ -253,7 +258,7 @@ impl TxBakery {
                                     &script_hash.try_to_csl()?,
                                     &ref_tx_in.try_to_csl()?,
                                     &script.language_version(),
-                                    script.to_bytes().len(),
+                                    script_or_ref.get_script_size(),
                                 )
                             }
                         };
@@ -393,7 +398,7 @@ impl TxBakery {
                                     &script_hash.try_to_csl()?,
                                     &ref_tx_in.try_to_csl()?,
                                     &script.language_version(),
-                                    script.to_bytes().len(),
+                                    script_or_ref.get_script_size(),
                                 )
                             }
                         };
@@ -517,15 +522,22 @@ impl TxBakery {
         tx.tx_info
             .reference_inputs
             .iter()
-            .map(
-                |TxInInfo {
-                     reference,
-                     output: _,
-                 }| {
-                    tx_builder.add_reference_input(&reference.try_to_csl()?);
-                    Ok(())
-                },
-            )
+            .map(|TxInInfo { reference, output }| {
+                match output.reference_script {
+                    None => tx_builder.add_reference_input(&reference.try_to_csl()?),
+                    Some(ref script_hash) => {
+                        let script_or_ref = tx
+                            .scripts
+                            .get(script_hash)
+                            .ok_or(Error::MissingScript(script_hash.clone()))?;
+                        tx_builder.add_script_reference_input(
+                            &reference.try_to_csl()?,
+                            script_or_ref.get_script_size(),
+                        )
+                    }
+                }
+                Ok(())
+            })
             .collect::<Result<()>>()?;
 
         tx_builder.set_mint_builder(&TxBakery::mk_mints(

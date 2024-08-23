@@ -19,7 +19,7 @@ pub enum Error {
     #[error("Unable to find redeemer for datum (hash: {0:?})")]
     MissingDatum(DatumHash),
 
-    #[error("Unable to find Plutus script (hash: {0:?})")]
+    #[error("Unable to find Plutus script in TxWithCtx (hash: {0:?})")]
     MissingScript(ScriptHash),
 
     #[error("Reference input containing script {0:?} is missing from the TransactionInfo reference input list.")]
