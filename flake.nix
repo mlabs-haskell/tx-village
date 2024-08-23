@@ -22,11 +22,8 @@
     # Plutarch (Plutus validation scripts)
     plutarch.follows = "lbf/plutarch";
 
-    # Plutip for spawning local Cardano networks
-    plutip.url = "github:mlabs-haskell/plutip";
-
     # Light-weight wrapper around cardano-node
-    ogmios.url = "github:mlabs-haskell/ogmios-nixos";
+    ogmios.url = "github:mlabs-haskell/ogmios-nix?ref=6.6.0";
 
   };
   outputs = inputs@{ flake-parts, ... }:
@@ -39,7 +36,6 @@
 
         # Libraries
         ./tx-bakery/build.nix
-        ./tx-bakery-plutip/build.nix
         ./tx-bakery-ogmios/build.nix
         ./extras/tx-bakery-testsuite/api/build.nix
         ./tx-indexer/build.nix

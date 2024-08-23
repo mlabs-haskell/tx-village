@@ -80,7 +80,7 @@ pub fn time_range_into_slots(
     era_summaries: &Vec<EraSummary>,
     sys_start: &DateTime<Utc>,
     interval: POSIXTimeRange,
-) -> Result<(Option<csl::utils::BigNum>, Option<csl::utils::BigNum>)> {
+) -> Result<(Option<csl::BigNum>, Option<csl::BigNum>)> {
     let PlutusInterval {
         from:
             LowerBound {
@@ -120,7 +120,7 @@ pub fn time_range_into_slots(
     };
 
     Ok((
-        lb_slots.map(csl::utils::to_bignum),
-        ub_slots.map(csl::utils::to_bignum),
+        lb_slots.map(csl::BigNum::from),
+        ub_slots.map(csl::BigNum::from),
     ))
 }

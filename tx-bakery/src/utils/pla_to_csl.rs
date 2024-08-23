@@ -24,10 +24,10 @@ use std::collections::BTreeMap;
 #[derive(Debug, thiserror::Error)]
 pub enum TryFromPLAError {
     #[error("{0}")]
-    CSLDeserializeError(csl::error::DeserializeError),
+    CSLDeserializeError(csl::DeserializeError),
 
     #[error("{0}")]
-    CSLJsError(csl::error::JsError),
+    CSLJsError(csl::JsError),
 
     #[error("Unable to cast BigInt {0} into type {1}: value is out of bound")]
     BigIntOutOfRange(BigInt, String),
@@ -112,17 +112,17 @@ where
     }
 }
 
-impl TryFromPLA<u64> for csl::utils::BigNum {
+impl TryFromPLA<u64> for csl::BigNum {
     type ExtraInfo<'a> = ();
 
     fn try_from_pla_with(val: &u64, _: ()) -> Result<Self, TryFromPLAError> {
         // BigNum(s) are u64 under the hood.
 
-        Ok(csl::utils::BigNum::from(*val))
+        Ok(csl::BigNum::from(*val))
     }
 }
 
-impl TryFromPLA<BigInt> for csl::utils::BigNum {
+impl TryFromPLA<BigInt> for csl::BigNum {
     type ExtraInfo<'a> = ();
 
     fn try_from_pla_with(val: &BigInt, _: ()) -> Result<Self, TryFromPLAError> {
@@ -138,7 +138,7 @@ impl TryFromPLA<BigInt> for csl::utils::BigNum {
     }
 }
 
-impl TryFromPLA<BigInt> for csl::utils::BigInt {
+impl TryFromPLA<BigInt> for csl::BigInt {
     type ExtraInfo<'a> = ();
 
     fn try_from_pla_with(val: &BigInt, _: ()) -> Result<Self, TryFromPLAError> {
@@ -146,55 +146,53 @@ impl TryFromPLA<BigInt> for csl::utils::BigInt {
     }
 }
 
-impl TryFromPLA<BigInt> for csl::utils::Int {
+impl TryFromPLA<BigInt> for csl::Int {
     type ExtraInfo<'a> = ();
 
     fn try_from_pla_with(val: &BigInt, _: ()) -> Result<Self, TryFromPLAError> {
         if val.is_negative() {
-            Ok(csl::utils::Int::new_negative(&(val.abs()).try_to_csl()?))
+            Ok(csl::Int::new_negative(&(val.abs()).try_to_csl()?))
         } else {
-            Ok(csl::utils::Int::new(&val.try_to_csl()?))
+            Ok(csl::Int::new(&val.try_to_csl()?))
         }
     }
 }
 
-impl TryFromPLA<i64> for csl::utils::Int {
+impl TryFromPLA<i64> for csl::Int {
     type ExtraInfo<'a> = ();
 
     fn try_from_pla_with(val: &i64, _: ()) -> Result<Self, TryFromPLAError> {
         if val.is_negative() {
-            Ok(csl::utils::Int::new_negative(&csl::utils::to_bignum(
-                val.abs() as u64,
-            )))
+            Ok(csl::Int::new_negative(&csl::BigNum::from(val.abs() as u64)))
         } else {
-            Ok(csl::utils::Int::new(&csl::utils::to_bignum(*val as u64)))
+            Ok(csl::Int::new(&csl::BigNum::from(*val as u64)))
         }
     }
 }
 
-impl TryFromPLA<Ed25519PubKeyHash> for csl::crypto::Ed25519KeyHash {
+impl TryFromPLA<Ed25519PubKeyHash> for csl::Ed25519KeyHash {
     type ExtraInfo<'a> = ();
 
     fn try_from_pla_with(val: &Ed25519PubKeyHash, _: ()) -> Result<Self, TryFromPLAError> {
-        csl::crypto::Ed25519KeyHash::from_bytes(val.0 .0.to_owned())
+        csl::Ed25519KeyHash::from_bytes(val.0 .0.to_owned())
             .map_err(TryFromPLAError::CSLDeserializeError)
     }
 }
 
-impl TryFromPLA<ScriptHash> for csl::crypto::ScriptHash {
+impl TryFromPLA<ScriptHash> for csl::ScriptHash {
     type ExtraInfo<'a> = ();
 
     fn try_from_pla_with(val: &ScriptHash, _: ()) -> Result<Self, TryFromPLAError> {
-        csl::crypto::ScriptHash::from_bytes(val.0 .0.to_owned())
+        csl::ScriptHash::from_bytes(val.0 .0.to_owned())
             .map_err(TryFromPLAError::CSLDeserializeError)
     }
 }
 
-impl TryFromPLA<TransactionHash> for csl::crypto::TransactionHash {
+impl TryFromPLA<TransactionHash> for csl::TransactionHash {
     type ExtraInfo<'a> = ();
 
     fn try_from_pla_with(val: &TransactionHash, _: ()) -> Result<Self, TryFromPLAError> {
-        csl::crypto::TransactionHash::from_bytes(val.0 .0.to_owned())
+        csl::TransactionHash::from_bytes(val.0 .0.to_owned())
             .map_err(TryFromPLAError::CSLDeserializeError)
     }
 }
@@ -247,7 +245,7 @@ impl TryFromPLA<TransactionOutput> for csl::TransactionOutput {
         val: &TransactionOutput,
         extra_info: TransactionOutputExtraInfo,
     ) -> Result<Self, TryFromPLAError> {
-        let mut output_builder = csl::output_builder::TransactionOutputBuilder::new()
+        let mut output_builder = csl::TransactionOutputBuilder::new()
             .with_address(&val.address.try_to_csl_with(extra_info.network_id)?);
 
         output_builder = match &val.datum {
@@ -281,7 +279,7 @@ impl TryFromPLA<TransactionOutput> for csl::TransactionOutput {
 
         let value_without_min_utxo = val.value.try_to_csl()?;
 
-        let mut calc = csl::utils::MinOutputAdaCalculator::new_empty(extra_info.data_cost)
+        let mut calc = csl::MinOutputAdaCalculator::new_empty(extra_info.data_cost)
             .map_err(TryFromPLAError::CSLJsError)?;
         calc.set_amount(&value_without_min_utxo);
         match &val.datum {
@@ -301,8 +299,8 @@ impl TryFromPLA<TransactionOutput> for csl::TransactionOutput {
         let coin = std::cmp::max(value_without_min_utxo.coin(), required_coin);
 
         let value = match value_without_min_utxo.multiasset() {
-            Some(multiasset) => csl::utils::Value::new_with_assets(&coin, &multiasset),
-            None => csl::utils::Value::new(&coin),
+            Some(multiasset) => csl::Value::new_with_assets(&coin, &multiasset),
+            None => csl::Value::new(&coin),
         };
 
         output_builder
@@ -353,21 +351,22 @@ impl TryFromPLA<BTreeMap<TokenName, BigInt>> for csl::MintAssets {
     ) -> Result<Self, TryFromPLAError> {
         val.iter()
             .try_fold(csl::MintAssets::new(), |mut acc, (k, v)| {
-                acc.insert(&k.try_to_csl()?, v.try_to_csl()?);
+                acc.insert(&k.try_to_csl()?, v.try_to_csl()?)
+                    .map_err(TryFromPLAError::CSLJsError)?;
                 Ok(acc)
             })
     }
 }
 
-impl TryFromPLA<Value> for csl::utils::Value {
+impl TryFromPLA<Value> for csl::Value {
     type ExtraInfo<'a> = ();
 
     fn try_from_pla_with(val: &Value, _: ()) -> Result<Self, TryFromPLAError> {
-        let coin: csl::utils::Coin = val
+        let coin: csl::Coin = val
             .0
             .get(&CurrencySymbol::Ada)
             .and_then(|m| m.get(&TokenName::ada()))
-            .map_or(Ok(csl::utils::BigNum::zero()), TryToCSLWithDef::try_to_csl)?;
+            .map_or(Ok(csl::BigNum::zero()), TryToCSLWithDef::try_to_csl)?;
 
         let m_ass = val
             .0
@@ -381,7 +380,7 @@ impl TryFromPLA<Value> for csl::utils::Value {
                 Ok(acc)
             })?;
 
-        let mut v = csl::utils::Value::new(&coin);
+        let mut v = csl::Value::new(&coin);
 
         v.set_multiasset(&m_ass);
 
@@ -389,35 +388,35 @@ impl TryFromPLA<Value> for csl::utils::Value {
     }
 }
 
-impl TryFromPLA<PlutusData> for csl::plutus::PlutusData {
+impl TryFromPLA<PlutusData> for csl::PlutusData {
     type ExtraInfo<'a> = ();
 
     fn try_from_pla_with(val: &PlutusData, _: ()) -> Result<Self, TryFromPLAError> {
         match val {
-            PlutusData::Constr(tag, args) => Ok(csl::plutus::PlutusData::new_constr_plutus_data(
-                &csl::plutus::ConstrPlutusData::new(&tag.try_to_csl()?, &args.try_to_csl()?),
+            PlutusData::Constr(tag, args) => Ok(csl::PlutusData::new_constr_plutus_data(
+                &csl::ConstrPlutusData::new(&tag.try_to_csl()?, &args.try_to_csl()?),
             )),
-            PlutusData::Map(l) => Ok(csl::plutus::PlutusData::new_map(&l.try_to_csl()?)),
-            PlutusData::List(l) => Ok(csl::plutus::PlutusData::new_list(&l.try_to_csl()?)),
-            PlutusData::Integer(i) => Ok(csl::plutus::PlutusData::new_integer(&i.try_to_csl()?)),
-            PlutusData::Bytes(b) => Ok(csl::plutus::PlutusData::new_bytes(b.to_owned())),
+            PlutusData::Map(l) => Ok(csl::PlutusData::new_map(&l.try_to_csl()?)),
+            PlutusData::List(l) => Ok(csl::PlutusData::new_list(&l.try_to_csl()?)),
+            PlutusData::Integer(i) => Ok(csl::PlutusData::new_integer(&i.try_to_csl()?)),
+            PlutusData::Bytes(b) => Ok(csl::PlutusData::new_bytes(b.to_owned())),
         }
     }
 }
 
-impl TryFromPLA<Vec<PlutusData>> for csl::plutus::PlutusList {
+impl TryFromPLA<Vec<PlutusData>> for csl::PlutusList {
     type ExtraInfo<'a> = ();
 
     fn try_from_pla_with(val: &Vec<PlutusData>, _: ()) -> Result<Self, TryFromPLAError> {
         val.iter()
             // traverse
             .map(|x| x.try_to_csl())
-            .collect::<Result<Vec<csl::plutus::PlutusData>, TryFromPLAError>>()
+            .collect::<Result<Vec<csl::PlutusData>, TryFromPLAError>>()
             .map(|x| x.into())
     }
 }
 
-impl TryFromPLA<Vec<(PlutusData, PlutusData)>> for csl::plutus::PlutusMap {
+impl TryFromPLA<Vec<(PlutusData, PlutusData)>> for csl::PlutusMap {
     type ExtraInfo<'a> = ();
 
     fn try_from_pla_with(
@@ -425,23 +424,27 @@ impl TryFromPLA<Vec<(PlutusData, PlutusData)>> for csl::plutus::PlutusMap {
         _: (),
     ) -> Result<Self, TryFromPLAError> {
         val.iter()
-            .try_fold(csl::plutus::PlutusMap::new(), |mut acc, (k, v)| {
-                acc.insert(&k.try_to_csl()?, &v.try_to_csl()?);
+            .try_fold(csl::PlutusMap::new(), |mut acc, (k, v)| {
+                let mut values = match acc.get(&k.try_to_csl()?) {
+                    Some(existing_values) => existing_values,
+                    None => csl::PlutusMapValues::new(),
+                };
+                values.add(&v.try_to_csl()?);
+                acc.insert(&k.try_to_csl()?, &values);
                 Ok(acc)
             })
     }
 }
 
-impl TryFromPLA<DatumHash> for csl::crypto::DataHash {
+impl TryFromPLA<DatumHash> for csl::DataHash {
     type ExtraInfo<'a> = ();
 
     fn try_from_pla_with(val: &DatumHash, _: ()) -> Result<Self, TryFromPLAError> {
-        csl::crypto::DataHash::from_bytes(val.0 .0.to_owned())
-            .map_err(TryFromPLAError::CSLDeserializeError)
+        csl::DataHash::from_bytes(val.0 .0.to_owned()).map_err(TryFromPLAError::CSLDeserializeError)
     }
 }
 
-impl TryFromPLA<Datum> for csl::plutus::PlutusData {
+impl TryFromPLA<Datum> for csl::PlutusData {
     type ExtraInfo<'a> = ();
 
     fn try_from_pla_with(val: &Datum, _: ()) -> Result<Self, TryFromPLAError> {
@@ -449,11 +452,11 @@ impl TryFromPLA<Datum> for csl::plutus::PlutusData {
     }
 }
 
-impl TryFromPLA<ChainPointer> for csl::address::Pointer {
+impl TryFromPLA<ChainPointer> for csl::Pointer {
     type ExtraInfo<'a> = ();
 
     fn try_from_pla_with(val: &ChainPointer, _: ()) -> Result<Self, TryFromPLAError> {
-        Ok(csl::address::Pointer::new_pointer(
+        Ok(csl::Pointer::new_pointer(
             &val.slot_number.try_to_csl()?,
             &val.transaction_index.try_to_csl()?,
             &val.certificate_index.try_to_csl()?,
@@ -461,7 +464,7 @@ impl TryFromPLA<ChainPointer> for csl::address::Pointer {
     }
 }
 
-impl TryFromPLA<Slot> for csl::utils::BigNum {
+impl TryFromPLA<Slot> for csl::BigNum {
     type ExtraInfo<'a> = ();
 
     fn try_from_pla_with(val: &Slot, _: ()) -> Result<Self, TryFromPLAError> {
@@ -469,7 +472,7 @@ impl TryFromPLA<Slot> for csl::utils::BigNum {
     }
 }
 
-impl TryFromPLA<TransactionIndex> for csl::utils::BigNum {
+impl TryFromPLA<TransactionIndex> for csl::BigNum {
     type ExtraInfo<'a> = ();
 
     fn try_from_pla_with(val: &TransactionIndex, _: ()) -> Result<Self, TryFromPLAError> {
@@ -477,7 +480,7 @@ impl TryFromPLA<TransactionIndex> for csl::utils::BigNum {
     }
 }
 
-impl TryFromPLA<CertificateIndex> for csl::utils::BigNum {
+impl TryFromPLA<CertificateIndex> for csl::BigNum {
     type ExtraInfo<'a> = ();
 
     fn try_from_pla_with(val: &CertificateIndex, _: ()) -> Result<Self, TryFromPLAError> {
@@ -485,22 +488,18 @@ impl TryFromPLA<CertificateIndex> for csl::utils::BigNum {
     }
 }
 
-impl TryFromPLA<Credential> for csl::address::StakeCredential {
+impl TryFromPLA<Credential> for csl::Credential {
     type ExtraInfo<'a> = ();
 
     fn try_from_pla_with(val: &Credential, _: ()) -> Result<Self, TryFromPLAError> {
         match val {
-            Credential::PubKey(pkh) => Ok(csl::address::StakeCredential::from_keyhash(
-                &pkh.try_to_csl()?,
-            )),
-            Credential::Script(sh) => Ok(csl::address::StakeCredential::from_scripthash(
-                &sh.0.try_to_csl()?,
-            )),
+            Credential::PubKey(pkh) => Ok(csl::Credential::from_keyhash(&pkh.try_to_csl()?)),
+            Credential::Script(sh) => Ok(csl::Credential::from_scripthash(&sh.0.try_to_csl()?)),
         }
     }
 }
 
-impl TryFromPLA<StakingCredential> for csl::address::StakeCredential {
+impl TryFromPLA<StakingCredential> for csl::Credential {
     type ExtraInfo<'a> = ();
 
     fn try_from_pla_with(val: &StakingCredential, _: ()) -> Result<Self, TryFromPLAError> {
@@ -513,39 +512,34 @@ impl TryFromPLA<StakingCredential> for csl::address::StakeCredential {
     }
 }
 
-impl TryFromPLA<Address> for csl::address::Address {
+impl TryFromPLA<Address> for csl::Address {
     type ExtraInfo<'a> = u8;
 
     fn try_from_pla_with(val: &Address, network_tag: u8) -> Result<Self, TryFromPLAError> {
         let payment = val.credential.try_to_csl()?;
 
         Ok(match val.staking_credential {
-            None => csl::address::EnterpriseAddress::new(network_tag, &payment).to_address(),
+            None => csl::EnterpriseAddress::new(network_tag, &payment).to_address(),
             Some(ref sc) => match sc {
                 StakingCredential::Hash(c) => {
-                    csl::address::BaseAddress::new(network_tag, &payment, &c.try_to_csl()?)
-                        .to_address()
+                    csl::BaseAddress::new(network_tag, &payment, &c.try_to_csl()?).to_address()
                 }
                 StakingCredential::Pointer(ptr) => {
-                    csl::address::PointerAddress::new(network_tag, &payment, &ptr.try_to_csl()?)
-                        .to_address()
+                    csl::PointerAddress::new(network_tag, &payment, &ptr.try_to_csl()?).to_address()
                 }
             },
         })
     }
 }
 
-impl TryFromPLA<StakingCredential> for csl::address::RewardAddress {
+impl TryFromPLA<StakingCredential> for csl::RewardAddress {
     type ExtraInfo<'a> = u8;
 
     fn try_from_pla_with(
         val: &StakingCredential,
         network_tag: u8,
     ) -> Result<Self, TryFromPLAError> {
-        Ok(csl::address::RewardAddress::new(
-            network_tag,
-            &val.try_to_csl()?,
-        ))
+        Ok(csl::RewardAddress::new(network_tag, &val.try_to_csl()?))
     }
 }
 
@@ -565,19 +559,19 @@ impl TryFromPLA<AssocMap<StakingCredential, BigInt>> for csl::Withdrawals {
     }
 }
 
-impl TryFromPLA<Redeemer> for csl::plutus::Redeemer {
-    type ExtraInfo<'a> = (&'a csl::plutus::RedeemerTag, u64);
+impl TryFromPLA<Redeemer> for csl::Redeemer {
+    type ExtraInfo<'a> = (&'a csl::RedeemerTag, u64);
 
     fn try_from_pla_with<'a>(
         pla_redeemer: &Redeemer,
         (red_tag, red_idx): Self::ExtraInfo<'a>,
-    ) -> Result<csl::plutus::Redeemer, TryFromPLAError> {
+    ) -> Result<csl::Redeemer, TryFromPLAError> {
         let Redeemer(plutus_data) = pla_redeemer;
-        Ok(csl::plutus::Redeemer::new(
+        Ok(csl::Redeemer::new(
             &red_tag,
             &red_idx.try_to_csl()?,
             &plutus_data.try_to_csl()?,
-            &csl::plutus::ExUnits::new(&csl::utils::to_bignum(0), &csl::utils::to_bignum(0)),
+            &csl::ExUnits::new(&csl::BigNum::from(0u64), &csl::BigNum::from(0u64)),
         ))
     }
 }

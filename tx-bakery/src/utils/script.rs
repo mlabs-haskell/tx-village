@@ -11,7 +11,7 @@ use plutus_ledger_api::v2::{
 
 #[derive(Clone, Debug)]
 pub enum Script {
-    PlutusScript(csl::plutus::PlutusScript),
+    PlutusScript(csl::PlutusScript),
     NativeScript(csl::NativeScript),
 }
 
@@ -19,9 +19,9 @@ pub enum Script {
 #[derive(Clone, Debug)]
 pub enum ScriptOrRef {
     /// Script will be used from a reference input
-    RefScript(TransactionInput, csl::plutus::PlutusScript),
+    RefScript(TransactionInput, csl::PlutusScript),
     /// Script will be added as script witness
-    PlutusScript(csl::plutus::PlutusScript),
+    PlutusScript(csl::PlutusScript),
 }
 
 impl ScriptOrRef {
@@ -31,7 +31,7 @@ impl ScriptOrRef {
         serializer.write_bytes(bytes).unwrap();
         let script_bytes = serializer.finalize();
 
-        let script = csl::plutus::PlutusScript::from_bytes_v2(script_bytes)
+        let script = csl::PlutusScript::from_bytes_v2(script_bytes)
             .map_err(|source| Error::ConversionError(anyhow!(source)))?;
         Ok(ScriptOrRef::PlutusScript(script))
     }
@@ -52,7 +52,7 @@ impl ScriptOrRef {
         }
     }
 
-    pub fn get_script(self) -> csl::plutus::PlutusScript {
+    pub fn get_script(self) -> csl::PlutusScript {
         match self {
             ScriptOrRef::RefScript(_, script) => script,
             ScriptOrRef::PlutusScript(script) => script,
@@ -66,7 +66,7 @@ impl ScriptOrRef {
         }
     }
 
-    pub fn get_version(self) -> csl::plutus::Language {
+    pub fn get_version(self) -> csl::Language {
         match self {
             ScriptOrRef::RefScript(_, script) => script.language_version(),
             ScriptOrRef::PlutusScript(script) => script.language_version(),

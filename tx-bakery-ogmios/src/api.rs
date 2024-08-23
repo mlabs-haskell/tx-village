@@ -348,12 +348,11 @@ impl TryFrom<&Utxo> for FullTransactionOutput {
                 pla::v2::crypto::LedgerBytes(bytes),
             ))
         } else if let Some(d) = &utxo.datum {
-            let plutus_data = &csl::plutus::PlutusData::from_hex(&d).map_err(|source| {
-                OgmiosError::ConversionError {
+            let plutus_data =
+                &csl::PlutusData::from_hex(&d).map_err(|source| OgmiosError::ConversionError {
                     label: "PlutusData".to_string(),
                     source: anyhow!(source),
-                }
-            })?;
+                })?;
             pla::v2::datum::OutputDatum::InlineDatum(pla::v2::datum::Datum(
                 plutus_data.try_to_pla()?,
             ))
@@ -378,8 +377,8 @@ impl TryFrom<&Utxo> for FullTransactionOutput {
                     }
                     Script::Plutus { cbor, language } => {
                         let plutus_version = match &language[..] {
-                            "plutus:v1" => csl::plutus::Language::new_plutus_v1(),
-                            "plutus:v2" => csl::plutus::Language::new_plutus_v2(),
+                            "plutus:v1" => csl::Language::new_plutus_v1(),
+                            "plutus:v2" => csl::Language::new_plutus_v2(),
                             _ => Err(OgmiosError::ConversionError {
                                 label: "Plutus language".to_string(),
                                 source: anyhow!("Couldn't parse Plutus language version."),
@@ -399,7 +398,7 @@ impl TryFrom<&Utxo> for FullTransactionOutput {
                         serializer.write_bytes(flat_bytes).unwrap();
                         let script_bytes = serializer.finalize();
 
-                        let script = csl::plutus::PlutusScript::from_bytes_with_version(
+                        let script = csl::PlutusScript::from_bytes_with_version(
                             script_bytes,
                             &plutus_version,
                         )
@@ -417,7 +416,7 @@ impl TryFrom<&Utxo> for FullTransactionOutput {
             .transpose()?;
 
         Ok(FullTransactionOutput {
-            address: csl::address::Address::from_bech32(&utxo.address)
+            address: csl::Address::from_bech32(&utxo.address)
                 .map_err(|source| OgmiosError::ConversionError {
                     label: "Address".to_string(),
                     source: anyhow!(source),
@@ -652,32 +651,30 @@ impl TryFrom<ProtocolParameters> for chain_query::ProtocolParameters {
             Some(ex_prices) => {
                 let mem_prices = parse_ratio(ex_prices.memory)?;
                 let cpu_prices = parse_ratio(ex_prices.cpu)?;
-                Some(csl::plutus::ExUnitPrices::new(
+                Some(csl::ExUnitPrices::new(
                     &csl::UnitInterval::new(
-                        &csl::utils::to_bignum(mem_prices.0),
-                        &csl::utils::to_bignum(mem_prices.1),
+                        &csl::BigNum::from(mem_prices.0),
+                        &csl::BigNum::from(mem_prices.1),
                     ),
                     &csl::UnitInterval::new(
-                        &csl::utils::to_bignum(cpu_prices.0),
-                        &csl::utils::to_bignum(cpu_prices.1),
+                        &csl::BigNum::from(cpu_prices.0),
+                        &csl::BigNum::from(cpu_prices.1),
                     ),
                 ))
             }
         };
 
         Ok(chain_query::ProtocolParameters {
-            min_fee_coefficient: csl::utils::to_bignum(pparams.min_fee_coefficient as u64),
-            min_fee_constant: csl::utils::to_bignum(pparams.min_fee_constant.ada.lovelace as u64),
-            min_utxo_deposit_coefficient: csl::utils::to_bignum(
+            min_fee_coefficient: csl::BigNum::from(pparams.min_fee_coefficient as u64),
+            min_fee_constant: csl::BigNum::from(pparams.min_fee_constant.ada.lovelace as u64),
+            min_utxo_deposit_coefficient: csl::BigNum::from(
                 pparams.min_utxo_deposit_coefficient as u64,
             ),
-            min_utxo_deposit_constant: csl::utils::to_bignum(
+            min_utxo_deposit_constant: csl::BigNum::from(
                 pparams.min_utxo_deposit_constant.ada.lovelace as u64,
             ),
-            stake_pool_deposit: csl::utils::to_bignum(
-                pparams.stake_pool_deposit.ada.lovelace as u64,
-            ),
-            stake_credential_deposit: csl::utils::to_bignum(
+            stake_pool_deposit: csl::BigNum::from(pparams.stake_pool_deposit.ada.lovelace as u64),
+            stake_credential_deposit: csl::BigNum::from(
                 pparams.stake_credential_deposit.ada.lovelace as u64,
             ),
             max_value_size: pparams.max_value_size.map(|x| x.bytes as u32),
@@ -710,17 +707,17 @@ fn parse_ratio(ratio: Ratio) -> Result<(u64, u64)> {
     ))
 }
 
-fn to_costmdls(cost_models: CostModels) -> csl::plutus::Costmdls {
-    let mut costmdls = csl::plutus::Costmdls::new();
+fn to_costmdls(cost_models: CostModels) -> csl::Costmdls {
+    let mut costmdls = csl::Costmdls::new();
 
     cost_models.iter().for_each(|(lang, costs)| {
-        let mut cost_model = csl::plutus::CostModel::new();
+        let mut cost_model = csl::CostModel::new();
         costs.iter().enumerate().for_each(|(index, model)| {
             let _ = cost_model.set(index, &model.try_to_csl().unwrap());
         });
         let language = match &lang[..] {
-            "plutus:v1" => csl::plutus::Language::new_plutus_v1(),
-            "plutus:v2" => csl::plutus::Language::new_plutus_v2(),
+            "plutus:v1" => csl::Language::new_plutus_v1(),
+            "plutus:v2" => csl::Language::new_plutus_v2(),
             _ => panic!("Unknown Plutus language version"),
         };
         costmdls.insert(&language, &cost_model);
@@ -728,12 +725,12 @@ fn to_costmdls(cost_models: CostModels) -> csl::plutus::Costmdls {
     costmdls
 }
 
-pub fn to_redeemer_tag(str: &str) -> Result<csl::plutus::RedeemerTag> {
+pub fn to_redeemer_tag(str: &str) -> Result<csl::RedeemerTag> {
     match str {
-        "spend" => Ok(csl::plutus::RedeemerTag::new_spend()),
-        "certificate" => Ok(csl::plutus::RedeemerTag::new_cert()),
-        "mint" => Ok(csl::plutus::RedeemerTag::new_mint()),
-        "withdrawal" => Ok(csl::plutus::RedeemerTag::new_reward()),
+        "spend" => Ok(csl::RedeemerTag::new_spend()),
+        "certificate" => Ok(csl::RedeemerTag::new_cert()),
+        "mint" => Ok(csl::RedeemerTag::new_mint()),
+        "withdrawal" => Ok(csl::RedeemerTag::new_reward()),
         _ => Err(OgmiosError::ConversionError {
             label: "RedeemerTag".to_string(),
             source: anyhow!("Invalid RedeemerTag"),

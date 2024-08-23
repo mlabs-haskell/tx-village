@@ -32,7 +32,7 @@ pub enum Error {
     MissingChangeOutput,
 
     #[error("Execution units was not calculated for {0:?}.")]
-    MissingExUnits((csl::plutus::RedeemerTag, csl::utils::BigNum)),
+    MissingExUnits((csl::RedeemerTag, csl::BigNum)),
 
     #[error("Protocol parameter {0} is missing")]
     MissingProtocolParameter(String),

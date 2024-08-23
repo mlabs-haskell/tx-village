@@ -234,7 +234,7 @@ impl ChainQuery for OgmiosClient {
         address: &Address,
     ) -> std::result::Result<BTreeMap<TransactionInput, FullTransactionOutput>, ChainQueryError>
     {
-        let addr: csl::address::Address = address
+        let addr: csl::Address = address
             .try_to_csl_with(self.config.network.to_network_id())
             .map_err(|csl_err| OgmiosError::TryFromPLAError(csl_err))?;
 
@@ -278,26 +278,24 @@ impl Submitter for OgmiosClient {
     /// Evaluate a transaction and return execution budgets for each script
     async fn evaluate_transaction(
         &self,
-        tx_builder: &csl::tx_builder::TransactionBuilder,
-        plutus_scripts: &Vec<csl::plutus::PlutusScript>,
-        redeemers: &Vec<csl::plutus::Redeemer>,
-    ) -> std::result::Result<
-        BTreeMap<(csl::plutus::RedeemerTag, csl::utils::BigNum), csl::plutus::ExUnits>,
-        SubmitterError,
-    > {
+        tx_builder: &csl::TransactionBuilder,
+        plutus_scripts: &Vec<csl::PlutusScript>,
+        redeemers: &Vec<csl::Redeemer>,
+    ) -> std::result::Result<BTreeMap<(csl::RedeemerTag, csl::BigNum), csl::ExUnits>, SubmitterError>
+    {
         let mut tx_builder = tx_builder.clone();
 
-        tx_builder.set_fee(&csl::utils::to_bignum(0));
+        tx_builder.set_fee(&csl::BigNum::from(0u64));
 
         let mut witness_set = csl::TransactionWitnessSet::new();
 
-        let mut script_witnesses = csl::plutus::PlutusScripts::new();
+        let mut script_witnesses = csl::PlutusScripts::new();
 
         plutus_scripts
             .iter()
             .for_each(|script| script_witnesses.add(script));
 
-        let mut redeemer_witnesses = csl::plutus::Redeemers::new();
+        let mut redeemer_witnesses = csl::Redeemers::new();
 
         redeemers
             .iter()
@@ -323,11 +321,11 @@ impl Submitter for OgmiosClient {
                 Ok((
                     (
                         to_redeemer_tag(&budgets.validator.purpose)?,
-                        csl::utils::to_bignum(budgets.validator.index),
+                        csl::BigNum::from(budgets.validator.index),
                     ),
-                    csl::plutus::ExUnits::new(
-                        &csl::utils::to_bignum(budgets.budget.memory),
-                        &csl::utils::to_bignum(budgets.budget.cpu),
+                    csl::ExUnits::new(
+                        &csl::BigNum::from(budgets.budget.memory),
+                        &csl::BigNum::from(budgets.budget.cpu),
                     ),
                 ))
             })

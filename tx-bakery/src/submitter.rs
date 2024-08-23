@@ -10,14 +10,11 @@ use thiserror::Error;
 pub trait Submitter {
     fn evaluate_transaction(
         &self,
-        tx_builder: &csl::tx_builder::TransactionBuilder,
-        plutus_scripts: &Vec<csl::plutus::PlutusScript>,
-        redeemers: &Vec<csl::plutus::Redeemer>,
+        tx_builder: &csl::TransactionBuilder,
+        plutus_scripts: &Vec<csl::PlutusScript>,
+        redeemers: &Vec<csl::Redeemer>,
     ) -> impl Future<
-        Output = Result<
-            BTreeMap<(csl::plutus::RedeemerTag, csl::utils::BigNum), csl::plutus::ExUnits>,
-            SubmitterError,
-        >,
+        Output = Result<BTreeMap<(csl::RedeemerTag, csl::BigNum), csl::ExUnits>, SubmitterError>,
     >;
 
     /// Submit a fully build and balanced tranasaction

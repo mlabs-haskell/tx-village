@@ -9,17 +9,17 @@ use std::collections::BTreeMap;
 #[derive(Debug, Clone)]
 pub struct TransactionMetadata(pub BTreeMap<u64, Metadata>);
 
-impl TryFrom<&TransactionMetadata> for csl::metadata::GeneralTransactionMetadata {
+impl TryFrom<&TransactionMetadata> for csl::GeneralTransactionMetadata {
     type Error = Error;
 
     fn try_from(tx_metadata: &TransactionMetadata) -> Result<Self, Self::Error> {
-        let mut csl_tx_metadata = csl::metadata::GeneralTransactionMetadata::new();
+        let mut csl_tx_metadata = csl::GeneralTransactionMetadata::new();
 
         tx_metadata
             .0
             .iter()
             .map(|(key, value)| {
-                let _ = csl_tx_metadata.insert(&csl::utils::to_bignum(*key), &value.try_into()?);
+                let _ = csl_tx_metadata.insert(&csl::BigNum::from(*key), &value.try_into()?);
                 Ok(())
             })
             .collect::<Result<_, Self::Error>>()?;
@@ -44,13 +44,13 @@ pub enum Metadata {
     Text(String),
 }
 
-impl TryFrom<&Metadata> for csl::metadata::TransactionMetadatum {
+impl TryFrom<&Metadata> for csl::TransactionMetadatum {
     type Error = Error;
 
     fn try_from(metadata: &Metadata) -> Result<Self, Self::Error> {
         match metadata {
             Metadata::Map(metadata_map) => {
-                let mut csl_metadata_map = csl::metadata::MetadataMap::new();
+                let mut csl_metadata_map = csl::MetadataMap::new();
 
                 metadata_map
                     .iter()
@@ -60,13 +60,11 @@ impl TryFrom<&Metadata> for csl::metadata::TransactionMetadatum {
                     })
                     .collect::<Result<_, Self::Error>>()?;
 
-                Ok(csl::metadata::TransactionMetadatum::new_map(
-                    &csl_metadata_map,
-                ))
+                Ok(csl::TransactionMetadatum::new_map(&csl_metadata_map))
             }
 
             Metadata::List(metadata_list) => {
-                let mut csl_metadata_list = csl::metadata::MetadataList::new();
+                let mut csl_metadata_list = csl::MetadataList::new();
 
                 metadata_list
                     .iter()
@@ -76,31 +74,27 @@ impl TryFrom<&Metadata> for csl::metadata::TransactionMetadatum {
                     })
                     .collect::<Result<_, Self::Error>>()?;
 
-                Ok(csl::metadata::TransactionMetadatum::new_list(
-                    &csl_metadata_list,
-                ))
+                Ok(csl::TransactionMetadatum::new_list(&csl_metadata_list))
             }
 
-            Metadata::Int(int) => Ok(csl::metadata::TransactionMetadatum::new_int(
-                &int.try_to_csl()?,
-            )),
+            Metadata::Int(int) => Ok(csl::TransactionMetadatum::new_int(&int.try_to_csl()?)),
 
-            Metadata::Bytes(bytes) => {
-                csl::metadata::TransactionMetadatum::new_bytes(bytes.to_owned()).map_err(|source| {
+            Metadata::Bytes(bytes) => csl::TransactionMetadatum::new_bytes(bytes.to_owned())
+                .map_err(|source| {
                     Error::ConversionError(anyhow!(
                         "Metadata::Bytes could not be converted: {}",
                         source
                     ))
-                })
-            }
+                }),
 
-            Metadata::Text(str) => csl::metadata::TransactionMetadatum::new_text(str.to_owned())
-                .map_err(|source| {
+            Metadata::Text(str) => {
+                csl::TransactionMetadatum::new_text(str.to_owned()).map_err(|source| {
                     Error::ConversionError(anyhow!(
                         "Metadata::Text could not be converted: {}",
                         source
                     ))
-                }),
+                })
+            }
         }
     }
 }

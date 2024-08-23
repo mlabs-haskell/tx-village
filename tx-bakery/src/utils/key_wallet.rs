@@ -3,10 +3,7 @@
 use super::csl_to_pla::ToPLA;
 use crate::wallet::{Wallet, WalletError};
 use anyhow::anyhow;
-use cardano_serialization_lib::crypto::PrivateKey;
-use cardano_serialization_lib::crypto::Vkeywitnesses;
-use cardano_serialization_lib::utils::{hash_transaction, make_vkey_witness};
-use cardano_serialization_lib::Transaction;
+use cardano_serialization_lib as csl;
 use data_encoding::HEXLOWER;
 use futures::future::OptionFuture;
 use plutus_ledger_api::v2::address::{Address, Credential, StakingCredential};
@@ -44,7 +41,7 @@ struct TextEnvelope {
 
 /// Simple wallet reading the signing key(s) from disk
 pub struct KeyWallet {
-    pay_priv_key: PrivateKey,
+    pay_priv_key: csl::PrivateKey,
     pay_pkh: Ed25519PubKeyHash,
     // TODO: Use these to implement staking features
     // stk_priv_key: Option<PrivateKey>,
@@ -92,7 +89,7 @@ impl KeyWallet {
     }
 
     /// Get the private key
-    async fn read_priv_key(filepath: impl AsRef<Path>) -> Result<PrivateKey, KeyWalletError> {
+    async fn read_priv_key(filepath: impl AsRef<Path>) -> Result<csl::PrivateKey, KeyWalletError> {
         let skey_str = fs::read_to_string(&filepath)
             .await
             .map_err(KeyWalletError::PrivateKeyReadError)?;
@@ -107,26 +104,26 @@ impl KeyWallet {
         ));
         let bytes: Vec<u8> = raw.bytes().unwrap();
 
-        PrivateKey::from_normal_bytes(&bytes)
+        csl::PrivateKey::from_normal_bytes(&bytes)
             .map_err(|err| KeyWalletError::PrivateKeyParseError(anyhow!(err)))
     }
 }
 
 impl Wallet for KeyWallet {
-    fn sign_transaction(&self, tx: &Transaction) -> Transaction {
+    fn sign_transaction(&self, tx: &csl::Transaction) -> csl::Transaction {
         let tx_body = tx.body();
         let mut witness_set = tx.witness_set();
         let aux_data = tx.auxiliary_data();
 
-        let mut vkey_witnesses = witness_set.vkeys().unwrap_or(Vkeywitnesses::new());
-        vkey_witnesses.add(&make_vkey_witness(
-            &hash_transaction(&tx_body),
+        let mut vkey_witnesses = witness_set.vkeys().unwrap_or(csl::Vkeywitnesses::new());
+        vkey_witnesses.add(&csl::make_vkey_witness(
+            &csl::hash_transaction(&tx_body),
             &self.pay_priv_key,
         ));
 
         witness_set.set_vkeys(&vkey_witnesses);
 
-        Transaction::new(&tx_body, &witness_set, aux_data)
+        csl::Transaction::new(&tx_body, &witness_set, aux_data)
     }
 
     fn get_change_pkh(&self) -> Ed25519PubKeyHash {
