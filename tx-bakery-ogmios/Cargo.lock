@@ -2268,6 +2268,7 @@ dependencies = [
  "hex",
  "jsonrpsee",
  "nix",
+ "num",
  "num-bigint",
  "plutus-ledger-api",
  "reqwest",
