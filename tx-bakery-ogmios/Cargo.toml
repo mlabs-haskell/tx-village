@@ -19,7 +19,6 @@ serde_json = "1.0.122"
 reqwest = { version = "0.11.23", features = ["json"] }
 jsonrpsee = { version = "0.22.2", features = ["ws-client", "macros"] }
 num-bigint = "0.4.6"
-cardano-serialization-lib = "12.0.0-beta.9"
 cbor_event = "2.4.0"
 hex = "0.4.3"
 url = "2.5.2"

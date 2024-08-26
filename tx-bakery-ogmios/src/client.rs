@@ -2,7 +2,6 @@ use std::collections::BTreeMap;
 use std::time;
 
 use anyhow::anyhow;
-use cardano_serialization_lib as csl;
 use chrono::{DateTime, Utc};
 use derive_builder::Builder;
 use jsonrpsee::core::traits::ToRpcParams;
@@ -18,6 +17,7 @@ use plutus_ledger_api::v2::{
 };
 use serde::Serialize;
 use tracing::{debug, error, info, warn};
+use tx_bakery::csl;
 use url::Url;
 
 use tx_bakery::{

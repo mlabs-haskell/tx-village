@@ -1,5 +1,4 @@
 use anyhow::anyhow;
-use cardano_serialization_lib as csl;
 use chrono::Duration;
 use data_encoding::HEXLOWER;
 use jsonrpsee::core::traits::ToRpcParams;
@@ -9,6 +8,7 @@ use serde::{Deserialize, Serialize};
 use serde_json::value::{RawValue, Value as JsonValue};
 use std::collections::BTreeMap;
 use std::str::FromStr;
+use tx_bakery::csl;
 use tx_bakery::{
     chain_query::{self, FullTransactionOutput},
     utils::{csl_to_pla::TryToPLA, pla_to_csl::TryToCSLWithDef},

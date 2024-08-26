@@ -2250,6 +2250,7 @@ dependencies = [
  "serde_json",
  "thiserror",
  "tokio",
+ "tracing",
  "url",
  "wait-timeout",
 ]
@@ -2259,7 +2260,6 @@ name = "tx-bakery-ogmios"
 version = "0.1.0"
 dependencies = [
  "anyhow",
- "cardano-serialization-lib",
  "cbor_event",
  "chrono",
  "clap",

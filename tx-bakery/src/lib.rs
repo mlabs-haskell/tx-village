@@ -5,7 +5,7 @@ use crate::metadata::TransactionMetadata;
 use crate::time::time_range_into_slots;
 use crate::wallet::Wallet;
 use anyhow::anyhow;
-use cardano_serialization_lib as csl;
+pub use cardano_serialization_lib as csl;
 use chain_query::{ChainQuery, EraSummary, Network, ProtocolParameters};
 use chrono::{DateTime, Utc};
 use num_bigint::BigInt;
