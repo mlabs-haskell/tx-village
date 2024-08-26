@@ -16,7 +16,6 @@
             inputs'.lbf.packages.lbf-plutus-rust
 
             config.packages.tx-bakery-rust-src
-            config.packages.tx-bakery-plutip-rust-src
             config.packages.tx-bakery-ogmios-rust-src
           ];
 
@@ -25,7 +24,6 @@
           devShellHook = config.settings.shell.hook;
 
           testTools = with inputs'; [
-            plutip.packages."plutip-core:exe:local-cluster"
             ogmios.packages."ogmios:exe:ogmios"
           ];
         };
