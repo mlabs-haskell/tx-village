@@ -6,10 +6,6 @@
         {
           src = ./.;
           crateName = "tx-bakery";
-          testTools = [
-            inputs'.plutip.packages."plutip-core:exe:local-cluster"
-            inputs'.ogmios.packages."ogmios:exe:ogmios"
-          ];
           cargoNextestExtraArgs = "--no-capture";
 
           extraSources = [
