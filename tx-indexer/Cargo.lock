@@ -2403,9 +2403,9 @@ checksum = "d231b230927b5e4ad203db57bbcbee2802f6bce620b1e4a9024a07d94e2907ec"
 
 [[package]]
 name = "plutus-ledger-api"
-version = "0.2.1"
+version = "1.0.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "99a95c54db86ffe33293a6977ea5b865c69391b6e30fa609d0f1bb49a3832553"
+checksum = "4225e8c82a1cf6f7f4cec08669f7cfb2712f724de097471ad20152fc483e4a8b"
 dependencies = [
  "chrono",
  "data-encoding",
@@ -3905,7 +3905,7 @@ dependencies = [
 
 [[package]]
 name = "tx-bakery"
-version = "0.1.0"
+version = "2.0.0-beta.1"
 dependencies = [
  "anyhow",
  "assertables",
@@ -3930,7 +3930,7 @@ dependencies = [
 
 [[package]]
 name = "tx-bakery-ogmios"
-version = "0.1.0"
+version = "2.0.0-beta.1"
 dependencies = [
  "anyhow",
  "cbor_event",
