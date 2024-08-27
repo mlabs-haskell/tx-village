@@ -916,7 +916,7 @@ name = "lbf-plutus"
 version = "0.1.0"
 dependencies = [
  "lbf-prelude",
- "plutus-ledger-api",
+ "plutus-ledger-api 0.2.1",
 ]
 
 [[package]]
@@ -944,7 +944,7 @@ dependencies = [
  "lbf-prelude",
  "lbr-prelude",
  "num-bigint",
- "plutus-ledger-api",
+ "plutus-ledger-api 0.2.1",
  "serde_json",
 ]
 
@@ -1227,6 +1227,23 @@ name = "plutus-ledger-api"
 version = "0.2.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "99a95c54db86ffe33293a6977ea5b865c69391b6e30fa609d0f1bb49a3832553"
+dependencies = [
+ "data-encoding",
+ "impl_ops",
+ "lbr-prelude",
+ "linked-hash-map",
+ "num-bigint",
+ "num-traits",
+ "proptest",
+ "serde_json",
+ "thiserror",
+]
+
+[[package]]
+name = "plutus-ledger-api"
+version = "1.0.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "4225e8c82a1cf6f7f4cec08669f7cfb2712f724de097471ad20152fc483e4a8b"
 dependencies = [
  "chrono",
  "data-encoding",
@@ -2031,7 +2048,7 @@ dependencies = [
  "lbr-prelude",
  "num-bigint",
  "num-traits",
- "plutus-ledger-api",
+ "plutus-ledger-api 1.0.0",
  "proptest",
  "serde",
  "serde_json",

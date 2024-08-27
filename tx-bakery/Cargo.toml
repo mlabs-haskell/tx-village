@@ -8,7 +8,7 @@ repository = "https://github.com/mlabs-haskell/tx-village"
 
 [dependencies]
 cardano-serialization-lib = "12.0.0-beta.9"
-plutus-ledger-api = { version = "0.2.1", features = ["lbf", "chrono"] }
+plutus-ledger-api = { version = "1.0.0", features = ["lbf", "chrono"] }
 num-bigint = { version = "0.4.4", features = ["serde"] }
 serde_json = { version = "1.0.111", features = ["raw_value"] }
 serde = "1.0.195"
