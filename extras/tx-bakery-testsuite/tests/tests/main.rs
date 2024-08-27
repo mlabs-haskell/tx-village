@@ -138,14 +138,14 @@ mod claim_eq_datum {
             .iter()
             .find(|(_, tx_out)| {
                 if let OutputDatum::InlineDatum(Datum(inline_datum)) = &tx_out.datum {
-                    EqDatum::from_plutus_data(&inline_datum).unwrap() == *datum
+                    EqDatum::from_plutus_data(inline_datum).unwrap() == *datum
                 } else {
                     false
                 }
             })
             .expect("Utxo with inline datum not found");
 
-        let tx_info = mk_tx_info(&wallet.get_change_addr(), &utxos, tx_in, &eq_redeemer);
+        let tx_info = mk_tx_info(&wallet.get_change_addr(), &utxos, tx_in, eq_redeemer);
 
         let scripts = BTreeMap::from([eq_validator.1.with_script_hash()]);
 
@@ -389,7 +389,7 @@ mod mint_with_ref_input {
             .iter()
             .find(|(_, tx_out)| {
                 if let OutputDatum::InlineDatum(Datum(inline_datum)) = &tx_out.datum {
-                    EqDatum::from_plutus_data(&inline_datum).unwrap() == *datum
+                    EqDatum::from_plutus_data(inline_datum).unwrap() == *datum
                 } else {
                     false
                 }
@@ -599,17 +599,18 @@ mod use_ref_script {
 
         let (script_ref, ref_script) = utxos
             .iter()
-            .find_map(|(tx_in, tx_out)| match tx_out.reference_script {
-                Some(ref script) => Some((
-                    TxInInfo {
-                        reference: tx_in.clone(),
-                        output: tx_out.into(),
-                    },
-                    tx_bakery::utils::script::ScriptOrRef::from_script(script.clone())
-                        .unwrap()
-                        .into_ref_script(tx_in.clone()),
-                )),
-                _ => None,
+            .find_map(|(tx_in, tx_out)| {
+                tx_out.reference_script.as_ref().map(|script| {
+                    (
+                        TxInInfo {
+                            reference: tx_in.clone(),
+                            output: tx_out.into(),
+                        },
+                        tx_bakery::utils::script::ScriptOrRef::from_script(script.clone())
+                            .unwrap()
+                            .into_ref_script(tx_in.clone()),
+                    )
+                })
             })
             .expect("Couldn't find UTxO with reference script");
 
@@ -786,7 +787,7 @@ mod tests {
 
         fn ogmios_client(&self) -> &OgmiosClient {
             match self {
-                TestRuntime::Testnet { ogmios_client } => &ogmios_client,
+                TestRuntime::Testnet { ogmios_client } => ogmios_client,
             }
         }
     }
@@ -819,7 +820,10 @@ mod tests {
     use tx_bakery_ogmios::client::{OgmiosClient, OgmiosClientConfigBuilder};
     use url::Url;
 
+    // TODO(szg251): Un-ignore all tests once we have a replacement for Plutip
+
     #[tokio::test]
+    #[ignore]
     #[serial]
     async fn init_tx_bakery() -> Result<()> {
         let test_runtime = TestRuntime::setup_testnet().await;
@@ -828,6 +832,7 @@ mod tests {
     }
 
     #[tokio::test]
+    #[ignore]
     #[serial]
     async fn time_test() -> Result<()> {
         let test_runtime = TestRuntime::setup_testnet().await;
@@ -858,6 +863,7 @@ mod tests {
     }
 
     #[tokio::test]
+    #[ignore]
     #[serial]
     async fn test_is_eq_validator() -> Result<()> {
         let config = read_config("data/tx-bakery-test-scripts-config.json");
@@ -900,8 +906,8 @@ mod tests {
                     }
                 ])
                 .await?
-                .into_iter()
-                .map(|(r, _)| r.index)
+                .into_keys()
+                .map(|r| r.index)
                 .collect::<Vec<_>>(),
             vec![0.into(), 1.into()],
         );
@@ -921,6 +927,7 @@ mod tests {
     }
 
     #[tokio::test]
+    #[ignore]
     #[serial]
     async fn test_mint() -> Result<()> {
         let config = read_config("data/tx-bakery-test-scripts-config.json");
@@ -948,6 +955,7 @@ mod tests {
     }
 
     #[tokio::test]
+    #[ignore]
     #[serial]
     async fn test_ref_input() -> Result<()> {
         let config = read_config("data/tx-bakery-test-scripts-config.json");
@@ -990,6 +998,7 @@ mod tests {
     }
 
     #[tokio::test]
+    #[ignore]
     #[serial]
     async fn test_zero_ada_mint() -> Result<()> {
         let config = read_config("data/tx-bakery-test-scripts-config.json");
@@ -1010,6 +1019,7 @@ mod tests {
     }
 
     #[tokio::test]
+    #[ignore]
     #[serial]
     async fn test_ref_script() -> Result<()> {
         let config = read_config("data/tx-bakery-test-scripts-config.json");
@@ -1036,6 +1046,7 @@ mod tests {
     }
 
     #[tokio::test]
+    #[ignore]
     #[serial]
     async fn test_with_metadata() -> Result<()> {
         let test_runtime = TestRuntime::setup_testnet().await;
@@ -1051,6 +1062,7 @@ mod tests {
     }
 
     #[tokio::test]
+    #[ignore]
     #[serial]
     async fn test_with_last_output_change() -> Result<()> {
         let (example_eq_datum_a, _) = setup_test_data();
@@ -1072,10 +1084,7 @@ mod tests {
 
         assert_eq!(utxos.len(), 1);
 
-        let change_has_datum = match utxos.values().nth(0).unwrap().datum {
-            OutputDatum::None => false,
-            _ => true,
-        };
+        let change_has_datum = !matches!(utxos.values().next().unwrap().datum, OutputDatum::None);
 
         assert!(change_has_datum);
 
@@ -1129,14 +1138,18 @@ mod tests {
     }
 
     fn read_config(path: impl AsRef<Path>) -> Config {
-        let conf_str = fs::read_to_string(&path).expect(&format!(
-            "Couldn't read plutarch config JSON file at {}.",
-            path.as_ref().display()
-        ));
+        let conf_str = fs::read_to_string(&path).unwrap_or_else(|_| {
+            panic!(
+                "Couldn't read plutarch config JSON file at {}.",
+                path.as_ref().display()
+            )
+        });
 
-        Json::from_json_string(&conf_str).expect(&format!(
-            "Couldn't deserialize JSON data of file {}",
-            path.as_ref().display()
-        ))
+        Json::from_json_string(&conf_str).unwrap_or_else(|_| {
+            panic!(
+                "Couldn't deserialize JSON data of file {}",
+                path.as_ref().display()
+            )
+        })
     }
 }

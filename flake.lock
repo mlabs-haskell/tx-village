@@ -11934,11 +11934,11 @@
         "proto-nix": "proto-nix"
       },
       "locked": {
-        "lastModified": 1722584662,
-        "narHash": "sha256-AxcS6cwW5X/JZwtTzxCqwk3uPRf99V3NDQpD8m6K3+E=",
+        "lastModified": 1724761187,
+        "narHash": "sha256-6okjD/HBqixhjecwrIapJrxYzOixEsFA5/+LhYR4eMw=",
         "owner": "mlabs-haskell",
         "repo": "lambda-buffers",
-        "rev": "261c2f48c519f2c131757c929585b269e2552572",
+        "rev": "8bb76339271307cdc98e155a7a05d66c7c18d922",
         "type": "github"
       },
       "original": {
