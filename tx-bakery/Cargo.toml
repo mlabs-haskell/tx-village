@@ -1,14 +1,14 @@
 [package]
 name = "tx-bakery"
-version = "0.1.0"
+version = "2.0.0-beta.1"
 edition = "2021"
 license = "Apache-2.0"
 description = "Cardano transaction builder"
 repository = "https://github.com/mlabs-haskell/tx-village"
 
 [dependencies]
-cardano-serialization-lib = "11.5.0"
-plutus-ledger-api = { version = "0.2.1", features = ["lbf", "chrono"] }
+cardano-serialization-lib = "12.0.0-beta.9"
+plutus-ledger-api = { version = "1.0.0", features = ["lbf", "chrono"] }
 num-bigint = { version = "0.4.4", features = ["serde"] }
 serde_json = { version = "1.0.111", features = ["raw_value"] }
 serde = "1.0.195"
@@ -32,6 +32,7 @@ assertables = "7.0.1"
 wait-timeout = "0.2.0"
 url = "2.5.2"
 clap = { version = "4.5.14", features = ["derive"], optional = true }
+tracing = "0.1.40"
 
 [dev-dependencies]
 proptest = "1.4.0"

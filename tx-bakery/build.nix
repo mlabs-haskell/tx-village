@@ -5,11 +5,8 @@
       rustFlake = inputs.flake-lang.lib."${system}".rustFlake
         {
           src = ./.;
+          version = "v2";
           crateName = "tx-bakery";
-          testTools = [
-            inputs'.plutip.packages."plutip-core:exe:local-cluster"
-            inputs'.ogmios.packages."ogmios:exe:ogmios"
-          ];
           cargoNextestExtraArgs = "--no-capture";
 
           extraSources = [

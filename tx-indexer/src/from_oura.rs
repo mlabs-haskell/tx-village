@@ -1,6 +1,5 @@
 use ::oura::model::{MintRecord, OutputAssetRecord};
 use anyhow::Context;
-use cardano_serialization_lib as csl;
 use data_encoding::HEXLOWER;
 use num_bigint::BigInt;
 use plutus_ledger_api::v2::{
@@ -12,6 +11,7 @@ use plutus_ledger_api::v2::{
     value::{CurrencySymbol, TokenName, Value},
 };
 use std::fmt::Debug;
+use tx_bakery::csl;
 use tx_bakery::utils::csl_to_pla::TryToPLA;
 
 #[derive(thiserror::Error, Debug)]
@@ -78,11 +78,9 @@ impl FromOura<String> for TokenName {
 
 impl FromOura<serde_json::Value> for Datum {
     fn from_oura(value: serde_json::Value) -> Result<Self, OuraParseError> {
-        let csl_plutus_data = csl::plutus::encode_json_value_to_plutus_datum(
-            value,
-            csl::plutus::PlutusDatumSchema::DetailedSchema,
-        )
-        .with_context(|| "Parsing Datum from Oura")?;
+        let csl_plutus_data =
+            csl::encode_json_value_to_plutus_datum(value, csl::PlutusDatumSchema::DetailedSchema)
+                .with_context(|| "Parsing Datum from Oura")?;
 
         Ok(Datum(
             csl_plutus_data
@@ -94,10 +92,9 @@ impl FromOura<serde_json::Value> for Datum {
 
 impl FromOura<String> for Address {
     fn from_oura(value: String) -> Result<Self, OuraParseError> {
-        let csl_addr = csl::address::Address::from_bech32(&value)
+        let csl_addr = csl::Address::from_bech32(&value)
             .or_else(|_| {
-                csl::address::ByronAddress::from_base58(&value)
-                    .map(|byron_addr| byron_addr.to_address())
+                csl::ByronAddress::from_base58(&value).map(|byron_addr| byron_addr.to_address())
             })
             .with_context(|| "Parsing Address from Oura")?;
 

@@ -5,6 +5,7 @@
       rustFlake = inputs.flake-lang.lib."${system}".rustFlake
         {
           src = ./.;
+          version = "v2";
           crateName = "tx-bakery-ogmios";
           cargoNextestExtraArgs = "--no-capture";
 

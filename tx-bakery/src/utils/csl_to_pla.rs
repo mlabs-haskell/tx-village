@@ -32,12 +32,18 @@ use std::{collections::BTreeMap, ops::Neg, str::FromStr};
 pub enum TryFromCSLError {
     #[error("Unable to parse BigInt: {0}")]
     InvalidBigInt(ParseBigIntError),
+
     #[error("Unable to represent CSL value in PLA: {0}")]
     ImpossibleConversion(String),
+
     #[error("Unable to find utxo with reference: {0:?}")]
     UtxoNotFound(TransactionInput),
+
     #[error("Unable to convert slot to POSIX ttime: {0}")]
     InvalidSlot(String),
+
+    #[error("This data cannot be converted into Plutus ledger API type: {0}")]
+    Unsupported(String),
 }
 
 /// Convert a cardano-serialization-lib type to its plutus-ledger-api counterpart
@@ -70,9 +76,9 @@ pub trait TryFromCSL<T> {
 pub trait TryFromCSLWith<T> {
     type ExtraInfo<'a>;
 
-    fn try_from_csl_with<'a>(
+    fn try_from_csl_with(
         value: &T,
-        extra_info: Self::ExtraInfo<'a>,
+        extra_info: Self::ExtraInfo<'_>,
     ) -> Result<Self, TryFromCSLError>
     where
         Self: Sized;
@@ -94,7 +100,7 @@ where
 pub trait TryToPLAWith<T> {
     type ExtraInfo<'a>;
 
-    fn try_to_pla_with<'a>(&self, extra_info: Self::ExtraInfo<'a>) -> Result<T, TryFromCSLError>;
+    fn try_to_pla_with(&self, extra_info: Self::ExtraInfo<'_>) -> Result<T, TryFromCSLError>;
 }
 
 impl<T, U> TryToPLAWith<U> for T
@@ -103,8 +109,8 @@ where
 {
     type ExtraInfo<'a> = U::ExtraInfo<'a>;
 
-    fn try_to_pla_with<'a>(&self, extra_info: Self::ExtraInfo<'a>) -> Result<U, TryFromCSLError> {
-        U::try_from_csl_with(&self, extra_info)
+    fn try_to_pla_with(&self, extra_info: Self::ExtraInfo<'_>) -> Result<U, TryFromCSLError> {
+        U::try_from_csl_with(self, extra_info)
     }
 }
 
@@ -120,8 +126,8 @@ impl FromCSL<csl::PolicyID> for MintingPolicyHash {
     }
 }
 
-impl FromCSL<csl::utils::Value> for Value {
-    fn from_csl(value: &csl::utils::Value) -> Self {
+impl FromCSL<csl::Value> for Value {
+    fn from_csl(value: &csl::Value) -> Self {
         let lovelaces = BigInt::from_csl(&value.coin());
         let mut pla_value = Value::ada_value(&lovelaces);
         if let Some(multi_asset) = value.multiasset() {
@@ -131,8 +137,8 @@ impl FromCSL<csl::utils::Value> for Value {
     }
 }
 
-impl FromCSL<csl::utils::BigNum> for BigInt {
-    fn from_csl(value: &csl::utils::BigNum) -> Self {
+impl FromCSL<csl::BigNum> for BigInt {
+    fn from_csl(value: &csl::BigNum) -> Self {
         let x: u64 = From::from(*value);
         BigInt::from(x)
     }
@@ -177,14 +183,14 @@ impl FromCSL<u32> for BigInt {
     }
 }
 
-impl TryFromCSL<csl::utils::BigInt> for BigInt {
-    fn try_from_csl(value: &csl::utils::BigInt) -> Result<Self, TryFromCSLError> {
+impl TryFromCSL<csl::BigInt> for BigInt {
+    fn try_from_csl(value: &csl::BigInt) -> Result<Self, TryFromCSLError> {
         BigInt::from_str(&value.to_str()).map_err(TryFromCSLError::InvalidBigInt)
     }
 }
 
-impl FromCSL<csl::utils::Int> for BigInt {
-    fn from_csl(value: &csl::utils::Int) -> Self {
+impl FromCSL<csl::Int> for BigInt {
+    fn from_csl(value: &csl::Int) -> Self {
         if value.is_positive() {
             BigInt::from_csl(&value.as_positive().unwrap())
         } else {
@@ -193,8 +199,8 @@ impl FromCSL<csl::utils::Int> for BigInt {
     }
 }
 
-impl FromCSL<csl::crypto::TransactionHash> for TransactionHash {
-    fn from_csl(value: &csl::crypto::TransactionHash) -> Self {
+impl FromCSL<csl::TransactionHash> for TransactionHash {
+    fn from_csl(value: &csl::TransactionHash) -> Self {
         TransactionHash(LedgerBytes(value.to_bytes()))
     }
 }
@@ -216,63 +222,63 @@ impl FromCSL<csl::TransactionInputs> for Vec<TransactionInput> {
     }
 }
 
-impl FromCSL<csl::crypto::Ed25519KeyHash> for Ed25519PubKeyHash {
-    fn from_csl(value: &csl::crypto::Ed25519KeyHash) -> Self {
+impl FromCSL<csl::Ed25519KeyHash> for Ed25519PubKeyHash {
+    fn from_csl(value: &csl::Ed25519KeyHash) -> Self {
         Ed25519PubKeyHash(LedgerBytes(value.to_bytes()))
     }
 }
 
-impl FromCSL<csl::crypto::ScriptHash> for ScriptHash {
-    fn from_csl(value: &csl::crypto::ScriptHash) -> Self {
+impl FromCSL<csl::ScriptHash> for ScriptHash {
+    fn from_csl(value: &csl::ScriptHash) -> Self {
         ScriptHash(LedgerBytes(value.to_bytes()))
     }
 }
 
-impl FromCSL<csl::crypto::ScriptHash> for ValidatorHash {
-    fn from_csl(value: &csl::crypto::ScriptHash) -> Self {
+impl FromCSL<csl::ScriptHash> for ValidatorHash {
+    fn from_csl(value: &csl::ScriptHash) -> Self {
         ValidatorHash(ScriptHash::from_csl(value))
     }
 }
 
-impl FromCSL<csl::address::StakeCredential> for StakingCredential {
-    fn from_csl(value: &csl::address::StakeCredential) -> Self {
+impl FromCSL<csl::Credential> for StakingCredential {
+    fn from_csl(value: &csl::Credential) -> Self {
         StakingCredential::Hash(Credential::from_csl(value))
     }
 }
 
-impl FromCSL<csl::address::StakeCredential> for Credential {
-    fn from_csl(value: &csl::address::StakeCredential) -> Self {
+impl FromCSL<csl::Credential> for Credential {
+    fn from_csl(value: &csl::Credential) -> Self {
         match value.kind() {
-            csl::address::StakeCredKind::Key => {
+            csl::CredKind::Key => {
                 Credential::PubKey(Ed25519PubKeyHash::from_csl(&value.to_keyhash().unwrap()))
             }
-            csl::address::StakeCredKind::Script => {
+            csl::CredKind::Script => {
                 Credential::Script(ValidatorHash::from_csl(&value.to_scripthash().unwrap()))
             }
         }
     }
 }
 
-impl FromCSL<csl::utils::BigNum> for Slot {
-    fn from_csl(value: &csl::utils::BigNum) -> Self {
+impl FromCSL<csl::BigNum> for Slot {
+    fn from_csl(value: &csl::BigNum) -> Self {
         Slot(BigInt::from_csl(value))
     }
 }
 
-impl FromCSL<csl::utils::BigNum> for TransactionIndex {
-    fn from_csl(value: &csl::utils::BigNum) -> Self {
+impl FromCSL<csl::BigNum> for TransactionIndex {
+    fn from_csl(value: &csl::BigNum) -> Self {
         TransactionIndex(BigInt::from_csl(value))
     }
 }
 
-impl FromCSL<csl::utils::BigNum> for CertificateIndex {
-    fn from_csl(value: &csl::utils::BigNum) -> Self {
+impl FromCSL<csl::BigNum> for CertificateIndex {
+    fn from_csl(value: &csl::BigNum) -> Self {
         CertificateIndex(BigInt::from_csl(value))
     }
 }
 
-impl FromCSL<csl::address::Pointer> for ChainPointer {
-    fn from_csl(value: &csl::address::Pointer) -> Self {
+impl FromCSL<csl::Pointer> for ChainPointer {
+    fn from_csl(value: &csl::Pointer) -> Self {
         ChainPointer {
             slot_number: Slot::from_csl(&value.slot_bignum()),
             transaction_index: TransactionIndex::from_csl(&value.tx_index_bignum()),
@@ -281,24 +287,24 @@ impl FromCSL<csl::address::Pointer> for ChainPointer {
     }
 }
 
-impl FromCSL<csl::address::Pointer> for StakingCredential {
-    fn from_csl(value: &csl::address::Pointer) -> Self {
+impl FromCSL<csl::Pointer> for StakingCredential {
+    fn from_csl(value: &csl::Pointer) -> Self {
         StakingCredential::Pointer(ChainPointer::from_csl(value))
     }
 }
-impl TryFromCSL<csl::address::Address> for Address {
-    fn try_from_csl(value: &csl::address::Address) -> Result<Self, TryFromCSLError> {
-        if let Some(addr) = csl::address::BaseAddress::from_address(value) {
+impl TryFromCSL<csl::Address> for Address {
+    fn try_from_csl(value: &csl::Address) -> Result<Self, TryFromCSLError> {
+        if let Some(addr) = csl::BaseAddress::from_address(value) {
             Ok(Address {
                 credential: Credential::from_csl(&addr.payment_cred()),
                 staking_credential: Some(StakingCredential::from_csl(&addr.stake_cred())),
             })
-        } else if let Some(addr) = csl::address::PointerAddress::from_address(value) {
+        } else if let Some(addr) = csl::PointerAddress::from_address(value) {
             Ok(Address {
                 credential: Credential::from_csl(&addr.payment_cred()),
                 staking_credential: Some(StakingCredential::from_csl(&addr.stake_pointer())),
             })
-        } else if let Some(addr) = csl::address::EnterpriseAddress::from_address(value) {
+        } else if let Some(addr) = csl::EnterpriseAddress::from_address(value) {
             Ok(Address {
                 credential: Credential::from_csl(&addr.payment_cred()),
                 staking_credential: None,
@@ -312,52 +318,54 @@ impl TryFromCSL<csl::address::Address> for Address {
     }
 }
 
-impl TryFromCSL<csl::plutus::PlutusData> for PlutusData {
-    fn try_from_csl(value: &csl::plutus::PlutusData) -> Result<Self, TryFromCSLError> {
+impl TryFromCSL<csl::PlutusData> for PlutusData {
+    fn try_from_csl(value: &csl::PlutusData) -> Result<Self, TryFromCSLError> {
         Ok(match value.kind() {
-            csl::plutus::PlutusDataKind::ConstrPlutusData => {
+            csl::PlutusDataKind::ConstrPlutusData => {
                 let constr_data = value.as_constr_plutus_data().unwrap();
                 let tag = BigInt::from_csl(&constr_data.alternative());
                 let args = constr_data.data().try_to_pla()?;
                 PlutusData::Constr(tag, args)
             }
-            csl::plutus::PlutusDataKind::Map => {
-                PlutusData::Map(value.as_map().unwrap().try_to_pla()?)
-            }
-            csl::plutus::PlutusDataKind::List => {
-                PlutusData::List(value.as_list().unwrap().try_to_pla()?)
-            }
-            csl::plutus::PlutusDataKind::Integer => {
+            csl::PlutusDataKind::Map => PlutusData::Map(value.as_map().unwrap().try_to_pla()?),
+            csl::PlutusDataKind::List => PlutusData::List(value.as_list().unwrap().try_to_pla()?),
+            csl::PlutusDataKind::Integer => {
                 PlutusData::Integer(value.as_integer().unwrap().try_to_pla()?)
             }
-            csl::plutus::PlutusDataKind::Bytes => PlutusData::Bytes(value.as_bytes().unwrap()),
+            csl::PlutusDataKind::Bytes => PlutusData::Bytes(value.as_bytes().unwrap()),
         })
     }
 }
 
-impl TryFromCSL<csl::plutus::PlutusList> for Vec<PlutusData> {
-    fn try_from_csl(value: &csl::plutus::PlutusList) -> Result<Self, TryFromCSLError> {
+impl TryFromCSL<csl::PlutusList> for Vec<PlutusData> {
+    fn try_from_csl(value: &csl::PlutusList) -> Result<Self, TryFromCSLError> {
         (0..value.len())
             .map(|idx| value.get(idx).try_to_pla())
             .collect()
     }
 }
 
-impl TryFromCSL<csl::plutus::PlutusMap> for Vec<(PlutusData, PlutusData)> {
-    fn try_from_csl(c_map: &csl::plutus::PlutusMap) -> Result<Self, TryFromCSLError> {
+impl TryFromCSL<csl::PlutusMap> for Vec<(PlutusData, PlutusData)> {
+    fn try_from_csl(c_map: &csl::PlutusMap) -> Result<Self, TryFromCSLError> {
         let keys = c_map.keys();
-        (0..keys.len())
-            .map(|idx| {
-                let key = keys.get(idx);
-                let value = c_map.get(&key).unwrap();
-                Ok((key.try_to_pla()?, value.try_to_pla()?))
-            })
-            .collect()
+        (0..keys.len()).try_fold(Vec::new(), |mut vector, idx| {
+            let key = keys.get(idx);
+            let values = c_map.get(&key).unwrap();
+
+            for value_idx in 0..values.len() {
+                vector.push((
+                    key.clone().try_to_pla()?,
+                    values.get(value_idx).unwrap().try_to_pla()?,
+                ))
+            }
+
+            Ok(vector)
+        })
     }
 }
 
-impl FromCSL<csl::crypto::DataHash> for DatumHash {
-    fn from_csl(value: &csl::crypto::DataHash) -> Self {
+impl FromCSL<csl::DataHash> for DatumHash {
+    fn from_csl(value: &csl::DataHash) -> Self {
         DatumHash(LedgerBytes(value.to_bytes()))
     }
 }
@@ -449,7 +457,7 @@ impl FromCSL<csl::Mint> for Value {
             (0..keys.len())
                 .map(|idx| {
                     let sh = keys.get(idx);
-                    let ass = mint.get_all(&sh).unwrap_or(csl::MintsAssets::new());
+                    let ass = mint.get(&sh).unwrap_or(csl::MintsAssets::new());
                     (
                         CurrencySymbol::NativeToken(MintingPolicyHash::from_csl(&sh)),
                         BTreeMap::from_csl(&ass),
@@ -474,14 +482,14 @@ impl FromCSL<csl::NativeScripts> for Vec<csl::NativeScript> {
     }
 }
 
-impl FromCSL<csl::plutus::PlutusScripts> for Vec<csl::plutus::PlutusScript> {
-    fn from_csl(value: &csl::plutus::PlutusScripts) -> Self {
+impl FromCSL<csl::PlutusScripts> for Vec<csl::PlutusScript> {
+    fn from_csl(value: &csl::PlutusScripts) -> Self {
         (0..value.len()).map(|idx| value.get(idx)).collect()
     }
 }
 
-impl FromCSL<csl::address::RewardAddress> for StakingCredential {
-    fn from_csl(value: &csl::address::RewardAddress) -> Self {
+impl FromCSL<csl::RewardAddress> for StakingCredential {
+    fn from_csl(value: &csl::RewardAddress) -> Self {
         value.payment_cred().to_pla()
     }
 }
@@ -503,65 +511,97 @@ impl FromCSL<csl::Withdrawals> for AssocMap<StakingCredential, BigInt> {
     }
 }
 
-impl FromCSL<csl::Certificate> for DCert {
-    fn from_csl(value: &csl::Certificate) -> Self {
+// TODO(szg251): change to FromCSL after Conway support is complete
+impl TryFromCSL<csl::Certificate> for DCert {
+    fn try_from_csl(value: &csl::Certificate) -> Result<Self, TryFromCSLError> {
         match value.kind() {
             csl::CertificateKind::StakeRegistration => {
                 let stk_reg = value.as_stake_registration().unwrap();
-                Self::DelegRegKey(stk_reg.stake_credential().to_pla())
+                Ok(Self::DelegRegKey(stk_reg.stake_credential().to_pla()))
             }
             csl::CertificateKind::StakeDeregistration => {
                 let stk_dereg = value.as_stake_deregistration().unwrap();
-                Self::DelegDeRegKey(stk_dereg.stake_credential().to_pla())
+                Ok(Self::DelegDeRegKey(stk_dereg.stake_credential().to_pla()))
             }
             csl::CertificateKind::StakeDelegation => {
                 let stk_deleg = value.as_stake_delegation().unwrap();
-                Self::DelegDelegate(
+                Ok(Self::DelegDelegate(
                     stk_deleg.stake_credential().to_pla(),
                     PaymentPubKeyHash(stk_deleg.pool_keyhash().to_pla()),
-                )
+                ))
             }
             csl::CertificateKind::PoolRegistration => {
                 let pool_reg = value.as_pool_registration().unwrap();
                 let params = pool_reg.pool_params();
-                Self::PoolRegister(
+                Ok(Self::PoolRegister(
                     PaymentPubKeyHash(params.operator().to_pla()),
                     PaymentPubKeyHash(params.vrf_keyhash().to_pla()),
-                )
+                ))
             }
             csl::CertificateKind::PoolRetirement => {
                 let pool_ret = value.as_pool_retirement().unwrap();
-                Self::PoolRetire(
+                Ok(Self::PoolRetire(
                     PaymentPubKeyHash(pool_ret.pool_keyhash().to_pla()),
                     pool_ret.epoch().into(),
-                )
+                ))
             }
-            csl::CertificateKind::GenesisKeyDelegation => Self::Genesis,
-            csl::CertificateKind::MoveInstantaneousRewardsCert => Self::Mir,
+            csl::CertificateKind::GenesisKeyDelegation => Ok(Self::Genesis),
+            csl::CertificateKind::MoveInstantaneousRewardsCert => Ok(Self::Mir),
+            csl::CertificateKind::CommitteeHotAuth => Err(TryFromCSLError::Unsupported(
+                "Conway certificate kind".to_string(),
+            )),
+            csl::CertificateKind::CommitteeColdResign => Err(TryFromCSLError::Unsupported(
+                "Conway certificate kind".to_string(),
+            )),
+            csl::CertificateKind::DRepDeregistration => Err(TryFromCSLError::Unsupported(
+                "Conway certificate kind".to_string(),
+            )),
+            csl::CertificateKind::DRepRegistration => Err(TryFromCSLError::Unsupported(
+                "Conway certificate kind".to_string(),
+            )),
+            csl::CertificateKind::DRepUpdate => Err(TryFromCSLError::Unsupported(
+                "Conway certificate kind".to_string(),
+            )),
+            csl::CertificateKind::StakeAndVoteDelegation => Err(TryFromCSLError::Unsupported(
+                "Conway certificate kind".to_string(),
+            )),
+            csl::CertificateKind::StakeRegistrationAndDelegation => Err(
+                TryFromCSLError::Unsupported("Conway certificate kind".to_string()),
+            ),
+            csl::CertificateKind::StakeVoteRegistrationAndDelegation => Err(
+                TryFromCSLError::Unsupported("Conway certificate kind".to_string()),
+            ),
+            csl::CertificateKind::VoteDelegation => Err(TryFromCSLError::Unsupported(
+                "Conway certificate kind".to_string(),
+            )),
+            csl::CertificateKind::VoteRegistrationAndDelegation => Err(
+                TryFromCSLError::Unsupported("Conway certificate kind".to_string()),
+            ),
         }
     }
 }
 
-impl FromCSL<csl::Certificates> for Vec<DCert> {
-    fn from_csl(value: &csl::Certificates) -> Self {
+// TODO(szg251): change to FromCSL after Conway support is complete
+impl TryFromCSL<csl::Certificates> for Vec<DCert> {
+    fn try_from_csl(value: &csl::Certificates) -> Result<Self, TryFromCSLError> {
         (0..value.len())
-            .map(|idx| value.get(idx).to_pla())
+            .map(|idx| value.get(idx).try_to_pla())
             .collect()
     }
 }
 
-impl FromCSL<csl::crypto::VRFKeyHash> for Ed25519PubKeyHash {
-    fn from_csl(value: &csl::crypto::VRFKeyHash) -> Self {
+impl FromCSL<csl::VRFKeyHash> for Ed25519PubKeyHash {
+    fn from_csl(value: &csl::VRFKeyHash) -> Self {
         Self(LedgerBytes(value.to_bytes()))
     }
 }
 
-impl TryFromCSL<csl::plutus::PlutusList> for AssocMap<DatumHash, Datum> {
-    fn try_from_csl(value: &csl::plutus::PlutusList) -> Result<Self, TryFromCSLError> {
+impl TryFromCSL<csl::PlutusList> for AssocMap<DatumHash, Datum> {
+    fn try_from_csl(value: &csl::PlutusList) -> Result<Self, TryFromCSLError> {
         (0..value.len())
             .map(|idx| {
                 let datum = value.get(idx);
-                let hash = csl::utils::hash_plutus_data(&datum);
+                let hash = csl::hash_plutus_data(&datum);
                 (hash, datum)
             })
             .map(|(hash, datum)| -> Result<_, TryFromCSLError> {
@@ -581,7 +621,7 @@ impl
         &csl::Mint,
         &csl::Withdrawals,
         &csl::Certificates,
-        &csl::plutus::Redeemers,
+        &csl::Redeemers,
     )> for AssocMap<ScriptPurpose, Redeemer>
 {
     fn try_from_csl(
@@ -590,7 +630,7 @@ impl
             &csl::Mint,
             &csl::Withdrawals,
             &csl::Certificates,
-            &csl::plutus::Redeemers,
+            &csl::Redeemers,
         ),
     ) -> Result<Self, TryFromCSLError> {
         let mint_hashes = mints.keys();
@@ -604,23 +644,31 @@ impl
                 let index = index as usize;
 
                 let purpose = match redeemer.tag().kind() {
-                    csl::plutus::RedeemerTagKind::Spend => {
+                    csl::RedeemerTagKind::Spend => {
                         let input = inputs.get(index);
-                        ScriptPurpose::Spending(input.to_pla())
+                        Ok(ScriptPurpose::Spending(input.to_pla()))
                     }
-                    csl::plutus::RedeemerTagKind::Mint => {
+                    csl::RedeemerTagKind::Mint => {
                         let hash = mint_hashes.get(idx);
-                        ScriptPurpose::Minting(CurrencySymbol::NativeToken(hash.to_pla()))
+                        Ok(ScriptPurpose::Minting(CurrencySymbol::NativeToken(
+                            hash.to_pla(),
+                        )))
                     }
-                    csl::plutus::RedeemerTagKind::Cert => {
+                    csl::RedeemerTagKind::Cert => {
                         let cert = certs.get(idx);
-                        ScriptPurpose::Certifying(cert.to_pla())
+                        Ok(ScriptPurpose::Certifying(cert.try_to_pla()?))
                     }
-                    csl::plutus::RedeemerTagKind::Reward => {
+                    csl::RedeemerTagKind::Reward => {
                         let wdrl = wdrl_addresses.get(idx);
-                        ScriptPurpose::Rewarding(wdrl.to_pla())
+                        Ok(ScriptPurpose::Rewarding(wdrl.to_pla()))
                     }
-                };
+                    csl::RedeemerTagKind::Vote => Err(TryFromCSLError::Unsupported(
+                        "Conway redeemer tag kind".to_string(),
+                    )),
+                    csl::RedeemerTagKind::VotingProposal => Err(TryFromCSLError::Unsupported(
+                        "Conway redeemer tag kind".to_string(),
+                    )),
+                }?;
 
                 let redeemer = Redeemer(redeemer.data().try_to_pla()?);
 
@@ -633,8 +681,8 @@ impl
 
 impl
     TryFromCSLWith<(
-        &Option<csl::utils::BigNum>, // validity_start
-        &Option<csl::utils::BigNum>, // ttl
+        &Option<csl::BigNum>, // validity_start
+        &Option<csl::BigNum>, // ttl
     )> for POSIXTimeRange
 {
     type ExtraInfo<'a> = (
@@ -642,18 +690,18 @@ impl
         &'a DateTime<Utc>,   // sys_start
     );
 
-    fn try_from_csl_with<'a>(
+    fn try_from_csl_with(
         (start, ttl): &(
-            &Option<csl::utils::BigNum>, // validity_start
-            &Option<csl::utils::BigNum>, // ttl
+            &Option<csl::BigNum>, // validity_start
+            &Option<csl::BigNum>, // ttl
         ),
-        (era_summaries, sys_start): Self::ExtraInfo<'a>,
+        (era_summaries, sys_start): Self::ExtraInfo<'_>,
     ) -> Result<Self, TryFromCSLError> {
         let end = start
             .zip(ttl.as_ref())
-            .map(|(start, ttl)| start.checked_add(&ttl).unwrap());
+            .map(|(start, ttl)| start.checked_add(ttl).unwrap());
 
-        let slot_to_time = |s: csl::utils::BigNum| {
+        let slot_to_time = |s: csl::BigNum| {
             slot_into_posix_time(era_summaries, sys_start, s.into())
                 .map_err(|err| TryFromCSLError::InvalidSlot(err.to_string()))
         };
@@ -684,9 +732,9 @@ impl
 }
 
 impl TryFromCSLWith<csl::Transaction> for TransactionInfo {
-    fn try_from_csl_with<'a>(
+    fn try_from_csl_with(
         tx: &csl::Transaction,
-        extra_info: Self::ExtraInfo<'a>,
+        extra_info: Self::ExtraInfo<'_>,
     ) -> Result<Self, TryFromCSLError> {
         let body = tx.body();
         let witness_set = tx.witness_set();
@@ -696,12 +744,8 @@ impl TryFromCSLWith<csl::Transaction> for TransactionInfo {
         let wdrls = body.withdrawals().unwrap_or(csl::Withdrawals::new());
         let certs = body.certs().unwrap_or(csl::Certificates::new());
 
-        let redeemers = witness_set
-            .redeemers()
-            .unwrap_or(csl::plutus::Redeemers::new());
-        let datums = witness_set
-            .plutus_data()
-            .unwrap_or(csl::plutus::PlutusList::new());
+        let redeemers = witness_set.redeemers().unwrap_or(csl::Redeemers::new());
+        let datums = witness_set.plutus_data().unwrap_or(csl::PlutusList::new());
 
         Ok(Self {
             inputs: inputs.try_to_pla_with(extra_info.0)?,
@@ -709,7 +753,7 @@ impl TryFromCSLWith<csl::Transaction> for TransactionInfo {
             outputs: body.outputs().try_to_pla()?,
             fee: Value::ada_value(&body.fee().to_pla()),
             mint: mint.to_pla(),
-            d_cert: certs.to_pla(),
+            d_cert: certs.try_to_pla()?,
             wdrl: wdrls.to_pla(),
             valid_range: (&body.validity_start_interval_bignum(), &body.ttl_bignum())
                 .try_to_pla_with((extra_info.1, extra_info.2))?,
@@ -723,7 +767,7 @@ impl TryFromCSLWith<csl::Transaction> for TransactionInfo {
             },
             redeemers: (&inputs, &mint, &wdrls, &certs, &redeemers).try_to_pla()?,
             datums: datums.try_to_pla()?,
-            id: csl::utils::hash_transaction(&body).to_pla(),
+            id: csl::hash_transaction(&body).to_pla(),
         })
     }
 
@@ -737,9 +781,9 @@ impl TryFromCSLWith<csl::Transaction> for TransactionInfo {
 impl TryFromCSLWith<csl::TransactionInputs> for Vec<TxInInfo> {
     type ExtraInfo<'a> = &'a BTreeMap<TransactionInput, TransactionOutput>;
 
-    fn try_from_csl_with<'a>(
+    fn try_from_csl_with(
         value: &csl::TransactionInputs,
-        available_utxos: Self::ExtraInfo<'a>,
+        available_utxos: Self::ExtraInfo<'_>,
     ) -> Result<Self, TryFromCSLError> {
         let inputs: Vec<TransactionInput> = value.to_pla();
 

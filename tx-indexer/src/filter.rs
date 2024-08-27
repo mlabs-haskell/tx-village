@@ -1,6 +1,6 @@
-use cardano_serialization_lib as csl;
 use oura::filters::selection::{Config, Predicate};
 use plutus_ledger_api::v2::{script::MintingPolicyHash, value::CurrencySymbol};
+use tx_bakery::csl;
 use tx_bakery::utils::pla_to_csl::TryFromPLAWithDef;
 
 /// Interesting transaction components to look for when filtering transactions
@@ -43,7 +43,7 @@ fn serialize_cur_sym(cur_sym: CurrencySymbol) -> String {
     match cur_sym {
         CurrencySymbol::Ada => String::new(),
         CurrencySymbol::NativeToken(MintingPolicyHash(script_hash)) => {
-            csl::crypto::ScriptHash::try_from_pla(&script_hash)
+            csl::ScriptHash::try_from_pla(&script_hash)
                 .unwrap()
                 .to_hex()
         }

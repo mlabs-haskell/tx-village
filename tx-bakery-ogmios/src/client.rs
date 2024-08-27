@@ -2,7 +2,6 @@ use std::collections::BTreeMap;
 use std::time;
 
 use anyhow::anyhow;
-use cardano_serialization_lib as csl;
 use chrono::{DateTime, Utc};
 use derive_builder::Builder;
 use jsonrpsee::core::traits::ToRpcParams;
@@ -17,7 +16,8 @@ use plutus_ledger_api::v2::{
     transaction::{TransactionHash, TransactionInput},
 };
 use serde::Serialize;
-use tracing::warn;
+use tracing::{debug, error, info, warn};
+use tx_bakery::csl;
 use url::Url;
 
 use tx_bakery::{
@@ -127,7 +127,7 @@ impl OgmiosClient {
                     .checked_mul(2u32.pow(attempt))
                     .ok_or(OgmiosError::StartupError(anyhow!("cannot wait any longer")))?;
                 tokio::time::sleep(wait_duration).await;
-                attempt = attempt + 1;
+                attempt += 1;
             }
         }
     }
@@ -166,10 +166,10 @@ impl OgmiosClient {
         U: serde::de::DeserializeOwned + Serialize,
         P: ToRpcParams + Send,
     {
-        self.client
-            .request(method, params)
-            .await
-            .map_err(|source| OgmiosError::JSONRpcError(source))
+        self.client.request(method, params).await.map_err(|err| {
+            debug!(%err, "Ogmios JSON RPC call error.");
+            OgmiosError::JSONRpcError(err)
+        })
     }
 
     pub async fn check_health(config: &OgmiosClientConfig) -> Result<OgmiosHealth> {
@@ -234,9 +234,10 @@ impl ChainQuery for OgmiosClient {
         address: &Address,
     ) -> std::result::Result<BTreeMap<TransactionInput, FullTransactionOutput>, ChainQueryError>
     {
-        let addr: csl::address::Address = address
+        debug!(?address, "Query UTxOs by address");
+        let addr: csl::Address = address
             .try_to_csl_with(self.config.network.to_network_id())
-            .map_err(|csl_err| OgmiosError::TryFromPLAError(csl_err))?;
+            .map_err(OgmiosError::TryFromPLAError)?;
 
         let addr = addr.to_bech32(Some("addr".to_owned())).map_err(|source| {
             OgmiosError::ConversionError {
@@ -261,7 +262,7 @@ impl ChainQuery for OgmiosClient {
     {
         let output_references = references
             .into_iter()
-            .map(Clone::clone)
+            .cloned()
             .map(OutputReference::try_from)
             .collect::<std::result::Result<Vec<_>, _>>()?;
 
@@ -278,39 +279,39 @@ impl Submitter for OgmiosClient {
     /// Evaluate a transaction and return execution budgets for each script
     async fn evaluate_transaction(
         &self,
-        tx_builder: &csl::tx_builder::TransactionBuilder,
-        plutus_scripts: &Vec<csl::plutus::PlutusScript>,
-        redeemers: &Vec<csl::plutus::Redeemer>,
-    ) -> std::result::Result<
-        BTreeMap<(csl::plutus::RedeemerTag, csl::utils::BigNum), csl::plutus::ExUnits>,
-        SubmitterError,
-    > {
+        tx_builder: &csl::TransactionBuilder,
+        plutus_scripts: &[csl::PlutusScript],
+        redeemers: &[csl::Redeemer],
+    ) -> std::result::Result<BTreeMap<(csl::RedeemerTag, csl::BigNum), csl::ExUnits>, SubmitterError>
+    {
         let mut tx_builder = tx_builder.clone();
 
-        tx_builder.set_fee(&csl::utils::to_bignum(0));
+        tx_builder.set_fee(&csl::BigNum::from(0u64));
 
         let mut witness_set = csl::TransactionWitnessSet::new();
 
-        let mut script_witnesses = csl::plutus::PlutusScripts::new();
+        let mut script_witnesses = csl::PlutusScripts::new();
 
         plutus_scripts
             .iter()
             .for_each(|script| script_witnesses.add(script));
 
-        let mut redeemer_witnesses = csl::plutus::Redeemers::new();
+        let mut redeemer_witnesses = csl::Redeemers::new();
 
         redeemers
             .iter()
-            .for_each(|redeemer| redeemer_witnesses.add(&redeemer));
+            .for_each(|redeemer| redeemer_witnesses.add(redeemer));
 
         witness_set.set_plutus_scripts(&script_witnesses);
         witness_set.set_redeemers(&redeemer_witnesses);
 
-        let tx_body = tx_builder
-            .build()
-            .map_err(|err| SubmitterError(anyhow::anyhow!("Transaction builder error: {}", err)))?;
+        let tx_body = tx_builder.build().map_err(|err| {
+            error!(%err, "Transaction builder error.");
+            SubmitterError(anyhow::anyhow!("Transaction builder error: {}", err))
+        })?;
         let tx = csl::Transaction::new(&tx_body, &witness_set, None);
 
+        debug!("Evaluating transaction");
         let params = EvaluateTransactionParams {
             transaction: TransactionCbor { cbor: tx.to_hex() },
             additional_utxo: Vec::new(),
@@ -323,11 +324,11 @@ impl Submitter for OgmiosClient {
                 Ok((
                     (
                         to_redeemer_tag(&budgets.validator.purpose)?,
-                        csl::utils::to_bignum(budgets.validator.index),
+                        csl::BigNum::from(budgets.validator.index),
                     ),
-                    csl::plutus::ExUnits::new(
-                        &csl::utils::to_bignum(budgets.budget.memory),
-                        &csl::utils::to_bignum(budgets.budget.cpu),
+                    csl::ExUnits::new(
+                        &csl::BigNum::from(budgets.budget.memory),
+                        &csl::BigNum::from(budgets.budget.cpu),
                     ),
                 ))
             })
@@ -338,6 +339,7 @@ impl Submitter for OgmiosClient {
         &self,
         tx: &csl::Transaction,
     ) -> std::result::Result<TransactionHash, SubmitterError> {
+        debug!("Submitting transaction");
         let params = SubmitTransactionParams {
             transaction: TransactionCbor { cbor: tx.to_hex() },
             additional_utxo: Vec::new(),
@@ -353,6 +355,7 @@ impl Submitter for OgmiosClient {
         &self,
         tx_hash: &TransactionHash,
     ) -> std::result::Result<(), SubmitterError> {
+        info!(?tx_hash, "Awaiting transaction confirmation.");
         let do_wait = || async {
             loop {
                 let _ = self.acquire_mempool().await?;
@@ -394,10 +397,10 @@ impl Submitter for OgmiosClient {
             retry_counter += 1;
         }
 
-        return Err(SubmitterError(anyhow!(
+        Err(SubmitterError(anyhow!(
             "Unable to confirm transaction {:?}",
             tx_hash
-        )));
+        )))
     }
 }
 

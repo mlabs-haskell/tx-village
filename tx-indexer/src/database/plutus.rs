@@ -1,7 +1,7 @@
-use cardano_serialization_lib as csl;
 use num_bigint::BigInt;
 use plutus_ledger_api as pla;
 use thiserror::Error;
+use tx_bakery::csl;
 use tx_bakery::utils::{
     csl_to_pla::{TryFromCSLError, TryToPLA},
     pla_to_csl::{TryFromPLAError, TryToCSLWithDef},
@@ -178,7 +178,7 @@ impl From<&Slot> for u64 {
 #[derive(Error, Debug)]
 pub enum PlutusDataEncodingError {
     #[error(transparent)]
-    CSLConversionError(#[from] csl::error::JsError),
+    CSLConversionError(#[from] csl::JsError),
 
     #[error(transparent)]
     TryFromPLAError(#[from] TryFromPLAError),
@@ -196,11 +196,11 @@ impl TryFrom<pla::plutus_data::PlutusData> for PlutusData {
 
     fn try_from(item: pla::plutus_data::PlutusData) -> Result<Self, Self::Error> {
         Ok(PlutusData(
-            csl::plutus::decode_plutus_datum_to_json_value(
+            csl::decode_plutus_datum_to_json_value(
                 &item
                     .try_to_csl()
                     .map_err(PlutusDataEncodingError::TryFromPLAError)?,
-                csl::plutus::PlutusDatumSchema::DetailedSchema,
+                csl::PlutusDatumSchema::DetailedSchema,
             )
             .map_err(PlutusDataEncodingError::CSLConversionError)?,
         ))
@@ -211,13 +211,12 @@ impl TryFrom<PlutusData> for pla::plutus_data::PlutusData {
     type Error = DBTypeConversionError;
 
     fn try_from(item: PlutusData) -> Result<Self, Self::Error> {
-        Ok(csl::plutus::encode_json_value_to_plutus_datum(
-            item.0,
-            csl::plutus::PlutusDatumSchema::DetailedSchema,
+        Ok(
+            csl::encode_json_value_to_plutus_datum(item.0, csl::PlutusDatumSchema::DetailedSchema)
+                .map_err(PlutusDataEncodingError::CSLConversionError)?
+                .try_to_pla()
+                .map_err(PlutusDataEncodingError::TryFromCSLError)?,
         )
-        .map_err(PlutusDataEncodingError::CSLConversionError)?
-        .try_to_pla()
-        .map_err(PlutusDataEncodingError::TryFromCSLError)?)
     }
 }
 

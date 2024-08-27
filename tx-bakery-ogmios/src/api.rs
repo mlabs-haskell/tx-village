@@ -1,5 +1,4 @@
 use anyhow::anyhow;
-use cardano_serialization_lib as csl;
 use chrono::Duration;
 use data_encoding::HEXLOWER;
 use jsonrpsee::core::traits::ToRpcParams;
@@ -9,6 +8,7 @@ use serde::{Deserialize, Serialize};
 use serde_json::value::{RawValue, Value as JsonValue};
 use std::collections::BTreeMap;
 use std::str::FromStr;
+use tx_bakery::csl;
 use tx_bakery::{
     chain_query::{self, FullTransactionOutput},
     utils::{csl_to_pla::TryToPLA, pla_to_csl::TryToCSLWithDef},
@@ -19,6 +19,7 @@ use super::error::OgmiosError;
 pub type Result<T> = std::result::Result<T, OgmiosError>;
 
 #[derive(Clone, Debug, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
 pub struct OgmiosHealth {
     // These fields are not parsed:
     //
@@ -46,15 +47,10 @@ pub struct OgmiosHealth {
     //     "blockNo": 5034297,
     //     "slot": 15520688
     // },
-    #[serde(rename(deserialize = "networkSynchronization"))]
     pub network_synchronization: f32,
-    #[serde(rename(deserialize = "currentEra"))]
     pub current_era: String,
-    #[serde(rename(deserialize = "connectionStatus"))]
     pub connection_status: String,
-    #[serde(rename(deserialize = "currentEpoch"))]
     pub current_epoch: i64,
-    #[serde(rename(deserialize = "slotInEpoch"))]
     pub slot_in_epoch: i64,
     pub version: String,
     pub network: String,
@@ -170,12 +166,10 @@ impl TryFrom<EraTime> for chain_query::EraTime {
 }
 
 #[derive(Clone, Debug, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
 pub(crate) struct EraParams {
-    #[serde(rename(deserialize = "epochLength"))]
     pub epoch_length: u64,
-    #[serde(rename(deserialize = "slotLength"))]
     pub slot_length: MilliSeconds,
-    #[serde(rename(deserialize = "safeZone"))]
     pub safe_zone: Option<u64>,
 }
 
@@ -200,12 +194,12 @@ pub(crate) struct MilliSeconds {
 }
 
 #[derive(Clone, Debug, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
 pub(crate) struct Utxo {
     pub transaction: TransactionId,
     pub index: u32,
     pub address: String,
     pub value: Value,
-    #[serde(rename(deserialize = "datumHash"))]
     pub datum_hash: Option<String>,
     pub datum: Option<String>,
     pub script: Option<Script>,
@@ -276,7 +270,7 @@ impl From<&pla::v2::transaction::TransactionHash> for TransactionId {
     fn from(tx_hash: &pla::v2::transaction::TransactionHash) -> TransactionId {
         let pla::v2::transaction::TransactionHash(pla::v2::crypto::LedgerBytes(bytes)) = tx_hash;
         TransactionId {
-            id: HEXLOWER.encode(&bytes),
+            id: HEXLOWER.encode(bytes),
         }
     }
 }
@@ -348,12 +342,11 @@ impl TryFrom<&Utxo> for FullTransactionOutput {
                 pla::v2::crypto::LedgerBytes(bytes),
             ))
         } else if let Some(d) = &utxo.datum {
-            let plutus_data = &csl::plutus::PlutusData::from_hex(&d).map_err(|source| {
-                OgmiosError::ConversionError {
+            let plutus_data =
+                &csl::PlutusData::from_hex(d).map_err(|source| OgmiosError::ConversionError {
                     label: "PlutusData".to_string(),
                     source: anyhow!(source),
-                }
-            })?;
+                })?;
             pla::v2::datum::OutputDatum::InlineDatum(pla::v2::datum::Datum(
                 plutus_data.try_to_pla()?,
             ))
@@ -378,8 +371,8 @@ impl TryFrom<&Utxo> for FullTransactionOutput {
                     }
                     Script::Plutus { cbor, language } => {
                         let plutus_version = match &language[..] {
-                            "plutus:v1" => csl::plutus::Language::new_plutus_v1(),
-                            "plutus:v2" => csl::plutus::Language::new_plutus_v2(),
+                            "plutus:v1" => csl::Language::new_plutus_v1(),
+                            "plutus:v2" => csl::Language::new_plutus_v2(),
                             _ => Err(OgmiosError::ConversionError {
                                 label: "Plutus language".to_string(),
                                 source: anyhow!("Couldn't parse Plutus language version."),
@@ -387,7 +380,7 @@ impl TryFrom<&Utxo> for FullTransactionOutput {
                         };
 
                         let flat_bytes =
-                            hex::decode(&cbor).map_err(|err| OgmiosError::ConversionError {
+                            hex::decode(cbor).map_err(|err| OgmiosError::ConversionError {
                                 label: "Plutus script".to_string(),
                                 source: anyhow!(
                                     "Couldn't decode hex encoded plutus script: {}",
@@ -399,7 +392,7 @@ impl TryFrom<&Utxo> for FullTransactionOutput {
                         serializer.write_bytes(flat_bytes).unwrap();
                         let script_bytes = serializer.finalize();
 
-                        let script = csl::plutus::PlutusScript::from_bytes_with_version(
+                        let script = csl::PlutusScript::from_bytes_with_version(
                             script_bytes,
                             &plutus_version,
                         )
@@ -417,7 +410,7 @@ impl TryFrom<&Utxo> for FullTransactionOutput {
             .transpose()?;
 
         Ok(FullTransactionOutput {
-            address: csl::address::Address::from_bech32(&utxo.address)
+            address: csl::Address::from_bech32(&utxo.address)
                 .map_err(|source| OgmiosError::ConversionError {
                     label: "Address".to_string(),
                     source: anyhow!(source),
@@ -496,70 +489,41 @@ pub(crate) enum NextTransactionResponse {
 pub type QueryLedgerStateProtocolParametersResponse = ProtocolParameters;
 
 #[derive(Clone, Debug, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
 pub struct ProtocolParameters {
-    #[serde(rename(deserialize = "minFeeCoefficient"))]
     pub min_fee_coefficient: u64,
-    #[serde(rename(deserialize = "minFeeConstant"))]
     pub min_fee_constant: AdaOnly,
-    #[serde(rename(deserialize = "minUtxoDepositCoefficient"))]
+    pub min_fee_reference_scripts: Option<MinFeeReferenceScripts>,
     pub min_utxo_deposit_coefficient: u64,
-    #[serde(rename(deserialize = "minUtxoDepositConstant"))]
     pub min_utxo_deposit_constant: AdaOnly,
-    #[serde(rename(deserialize = "maxBlockBodySize"))]
     pub max_block_body_size: Bytes,
-    #[serde(rename(deserialize = "maxBlockHeaderSize"))]
     pub max_block_header_size: Bytes,
-    #[serde(rename(deserialize = "maxTransactionSize"))]
     pub max_transaction_size: Option<Bytes>,
-    #[serde(rename(deserialize = "maxValueSize"))]
     pub max_value_size: Option<Bytes>,
-    #[serde(rename(deserialize = "extraEntropy"))]
     pub extra_entropy: Option<Nonce>,
-    #[serde(rename(deserialize = "stakeCredentialDeposit"))]
     pub stake_credential_deposit: AdaOnly,
-    #[serde(rename(deserialize = "stakePoolDeposit"))]
     pub stake_pool_deposit: AdaOnly,
-    #[serde(rename(deserialize = "stakePoolRetirementEpochBound"))]
     pub stake_pool_retirement_epoch_bound: u64,
-    #[serde(rename(deserialize = "stakePoolPledgeInfluence"))]
     pub stake_pool_pledge_influence: Ratio,
-    #[serde(rename(deserialize = "minStakePoolCost"))]
     pub min_stake_pool_cost: AdaOnly,
-    #[serde(rename(deserialize = "desiredNumberOfStakePools"))]
     pub desired_number_of_stake_pools: u64,
-    #[serde(rename(deserialize = "federatedBlockProductionRatio"))]
     pub federated_block_production_ratio: Option<Ratio>,
-    #[serde(rename(deserialize = "monetaryExpansion"))]
     pub monetary_expansion: Ratio,
-    #[serde(rename(deserialize = "treasuryExpansion"))]
     pub treasury_expansion: Ratio,
-    #[serde(rename(deserialize = "collateralPercentage"))]
     pub collateral_percentage: Option<u64>,
-    #[serde(rename(deserialize = "maxCollateralInputs"))]
     pub max_collateral_inputs: Option<u64>,
-    #[serde(rename(deserialize = "plutusCostModels"))]
     pub plutus_cost_models: Option<CostModels>,
-    #[serde(rename(deserialize = "scriptExecutionPrices"))]
     pub script_execution_prices: Option<ScriptExecutionPrices>,
-    #[serde(rename(deserialize = "maxExecutionUnitsPerTransaction"))]
     pub max_execution_units_per_transaction: Option<ExecutionUnits>,
-    #[serde(rename(deserialize = "maxExecutionUnitsPerBlock"))]
     pub max_execution_units_per_block: Option<ExecutionUnits>,
-    #[serde(rename(deserialize = "stakePoolVotingThresholds"))]
+    pub max_reference_scripts_size: Bytes,
     pub stake_pool_voting_thresholds: Option<StakePoolVotingThresholds>,
-    #[serde(rename(deserialize = "constitutionalCommitteeMinSize"))]
     pub constitutional_committee_min_size: Option<u64>,
-    #[serde(rename(deserialize = "constitutionalCommitteeMaxTermLength"))]
     pub constitutional_committee_max_term_length: Option<u64>,
-    #[serde(rename(deserialize = "governanceActionLifetime"))]
     pub governance_action_lifetime: Option<Epoch>,
-    #[serde(rename(deserialize = "governanceActionDeposit"))]
     pub governance_action_deposit: Option<AdaOnly>,
-    #[serde(rename(deserialize = "delegateRepresentativeVotingThresholds"))]
     pub delegate_representative_voting_thresholds: Option<DelegateRepresentativeVotingThresholds>,
-    #[serde(rename(deserialize = "delegateRepresentativeDeposit"))]
     pub delegate_representative_deposit: Option<AdaOnly>,
-    #[serde(rename(deserialize = "delegateRepresentativeMaxIdleTime"))]
     pub delegate_representative_max_idle_time: Option<Epoch>,
     pub version: ProtocolVersion,
 }
@@ -581,7 +545,40 @@ pub struct LovelaceOnly {
 
 pub type Nonce = String;
 
-pub type Ratio = String;
+#[derive(Clone, Debug)]
+pub struct Ratio {
+    numerator: u64,
+    denominator: u64,
+}
+
+impl<'de> serde::Deserialize<'de> for Ratio {
+    fn deserialize<D>(deserilizer: D) -> std::result::Result<Ratio, D::Error>
+    where
+        D: serde::Deserializer<'de>,
+    {
+        let str = String::deserialize(deserilizer)?;
+        let (left, right) = str
+            .split_once('/')
+            .ok_or(serde::de::Error::custom("Not a valid ratio"))?;
+        Ok(Ratio {
+            numerator: FromStr::from_str(left).map_err(|err: std::num::ParseIntError| {
+                serde::de::Error::custom(format!("Ratio numerator error: {:?}", err))
+            })?,
+            denominator: FromStr::from_str(right).map_err(|err: std::num::ParseIntError| {
+                serde::de::Error::custom(format!("Ratio denominator error: {:?}", err))
+            })?,
+        })
+    }
+}
+
+impl Serialize for Ratio {
+    fn serialize<S>(&self, serializer: S) -> std::result::Result<S::Ok, S::Error>
+    where
+        S: serde::Serializer,
+    {
+        serializer.serialize_str(&format!("{}/{}", self.numerator, self.denominator))
+    }
+}
 
 #[derive(Clone, Debug, Serialize, Deserialize)]
 pub struct ScriptExecutionPrices {
@@ -598,10 +595,16 @@ pub struct ExecutionUnits {
 }
 
 #[derive(Clone, Debug, Serialize, Deserialize)]
+pub struct MinFeeReferenceScripts {
+    range: u32,
+    base: f64,
+    multiplier: f64,
+}
+
+#[derive(Clone, Debug, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
 pub struct StakePoolVotingThresholds {
-    #[serde(rename(deserialize = "noConfidence"))]
     pub no_confidence: Ratio,
-    #[serde(rename(deserialize = "constitutionalCommittee"))]
     pub constitutional_committee: ConstitutionalCommittee,
 }
 
@@ -614,17 +617,13 @@ pub struct ConstitutionalCommittee {
 pub type Epoch = u64;
 
 #[derive(Clone, Debug, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
 pub struct DelegateRepresentativeVotingThresholds {
-    #[serde(rename(deserialize = "noConfidence"))]
     pub no_confidence: Ratio,
     pub constitution: Ratio,
-    #[serde(rename(deserialize = "constitutionalCommittee"))]
     pub constitutional_committee: ConstitutionalCommittee,
-    #[serde(rename(deserialize = "hardforkInitiation"))]
-    pub hardfork_initiation: Ratio,
-    #[serde(rename(deserialize = "propocolParametersUpdate"))]
-    pub propocol_parameters_update: ProtocolParametersUpdate,
-    #[serde(rename(deserialize = "treasuryWithdrawals"))]
+    pub hard_fork_initiation: Ratio,
+    pub protocol_parameters_update: ProtocolParametersUpdate,
     pub treasury_withdrawals: Ratio,
 }
 
@@ -649,35 +648,31 @@ impl TryFrom<ProtocolParameters> for chain_query::ProtocolParameters {
     fn try_from(pparams: ProtocolParameters) -> Result<Self> {
         let script_execution_prices = match pparams.script_execution_prices {
             None => None,
-            Some(ex_prices) => {
-                let mem_prices = parse_ratio(ex_prices.memory)?;
-                let cpu_prices = parse_ratio(ex_prices.cpu)?;
-                Some(csl::plutus::ExUnitPrices::new(
-                    &csl::UnitInterval::new(
-                        &csl::utils::to_bignum(mem_prices.0),
-                        &csl::utils::to_bignum(mem_prices.1),
-                    ),
-                    &csl::UnitInterval::new(
-                        &csl::utils::to_bignum(cpu_prices.0),
-                        &csl::utils::to_bignum(cpu_prices.1),
-                    ),
-                ))
-            }
+            Some(ex_prices) => Some(csl::ExUnitPrices::new(
+                &csl::UnitInterval::new(
+                    &csl::BigNum::from(ex_prices.memory.numerator),
+                    &csl::BigNum::from(ex_prices.memory.denominator),
+                ),
+                &csl::UnitInterval::new(
+                    &csl::BigNum::from(ex_prices.cpu.numerator),
+                    &csl::BigNum::from(ex_prices.cpu.denominator),
+                ),
+            )),
         };
 
         Ok(chain_query::ProtocolParameters {
-            min_fee_coefficient: csl::utils::to_bignum(pparams.min_fee_coefficient as u64),
-            min_fee_constant: csl::utils::to_bignum(pparams.min_fee_constant.ada.lovelace as u64),
-            min_utxo_deposit_coefficient: csl::utils::to_bignum(
-                pparams.min_utxo_deposit_coefficient as u64,
-            ),
-            min_utxo_deposit_constant: csl::utils::to_bignum(
+            min_fee_coefficient: csl::BigNum::from(pparams.min_fee_coefficient),
+            min_fee_constant: csl::BigNum::from(pparams.min_fee_constant.ada.lovelace as u64),
+            min_fee_reference_scripts: pparams
+                .min_fee_reference_scripts
+                .map(|min_fee| to_unit_interval(min_fee.base))
+                .transpose()?,
+            min_utxo_deposit_coefficient: csl::BigNum::from(pparams.min_utxo_deposit_coefficient),
+            min_utxo_deposit_constant: csl::BigNum::from(
                 pparams.min_utxo_deposit_constant.ada.lovelace as u64,
             ),
-            stake_pool_deposit: csl::utils::to_bignum(
-                pparams.stake_pool_deposit.ada.lovelace as u64,
-            ),
-            stake_credential_deposit: csl::utils::to_bignum(
+            stake_pool_deposit: csl::BigNum::from(pparams.stake_pool_deposit.ada.lovelace as u64),
+            stake_credential_deposit: csl::BigNum::from(
                 pparams.stake_credential_deposit.ada.lovelace as u64,
             ),
             max_value_size: pparams.max_value_size.map(|x| x.bytes as u32),
@@ -689,38 +684,42 @@ impl TryFrom<ProtocolParameters> for chain_query::ProtocolParameters {
     }
 }
 
-fn parse_ratio(ratio: Ratio) -> Result<(u64, u64)> {
-    let (left, right) = ratio.split_once('/').ok_or(OgmiosError::ConversionError {
-        label: "Ratio".to_string(),
-        source: anyhow!("Not a ratio"),
-    })?;
-    Ok((
-        FromStr::from_str(left).map_err(|source: std::num::ParseIntError| {
-            OgmiosError::ConversionError {
-                label: "Ratio numerator".to_string(),
-                source: anyhow!(source),
-            }
-        })?,
-        FromStr::from_str(right).map_err(|source: std::num::ParseIntError| {
-            OgmiosError::ConversionError {
-                label: "Ratio denumerator".to_string(),
-                source: anyhow!(source),
-            }
-        })?,
-    ))
+fn to_unit_interval(float: f64) -> Result<csl::UnitInterval> {
+    num::rational::Ratio::from_float(float)
+        .ok_or(OgmiosError::ConversionError {
+            label: "UnitInterval".to_string(),
+            source: anyhow!("Couldn't convert floating number to ratio.",),
+        })
+        .and_then(|ratio| {
+            Ok(csl::UnitInterval::new(
+                &csl::BigNum::from(<u64>::try_from(ratio.numer()).map_err(|err| {
+                    OgmiosError::ConversionError {
+                        label: "UnitInterval".to_string(),
+                        source: anyhow!(err),
+                    }
+                })?),
+                &csl::BigNum::from(<u64>::try_from(ratio.denom()).map_err(|err| {
+                    OgmiosError::ConversionError {
+                        label: "UnitInterval".to_string(),
+                        source: anyhow!(err),
+                    }
+                })?),
+            ))
+        })
 }
 
-fn to_costmdls(cost_models: CostModels) -> csl::plutus::Costmdls {
-    let mut costmdls = csl::plutus::Costmdls::new();
+fn to_costmdls(cost_models: CostModels) -> csl::Costmdls {
+    let mut costmdls = csl::Costmdls::new();
 
     cost_models.iter().for_each(|(lang, costs)| {
-        let mut cost_model = csl::plutus::CostModel::new();
+        let mut cost_model = csl::CostModel::new();
         costs.iter().enumerate().for_each(|(index, model)| {
             let _ = cost_model.set(index, &model.try_to_csl().unwrap());
         });
         let language = match &lang[..] {
-            "plutus:v1" => csl::plutus::Language::new_plutus_v1(),
-            "plutus:v2" => csl::plutus::Language::new_plutus_v2(),
+            "plutus:v1" => csl::Language::new_plutus_v1(),
+            "plutus:v2" => csl::Language::new_plutus_v2(),
+            "plutus:v3" => csl::Language::new_plutus_v3(),
             _ => panic!("Unknown Plutus language version"),
         };
         costmdls.insert(&language, &cost_model);
@@ -728,12 +727,12 @@ fn to_costmdls(cost_models: CostModels) -> csl::plutus::Costmdls {
     costmdls
 }
 
-pub fn to_redeemer_tag(str: &str) -> Result<csl::plutus::RedeemerTag> {
+pub fn to_redeemer_tag(str: &str) -> Result<csl::RedeemerTag> {
     match str {
-        "spend" => Ok(csl::plutus::RedeemerTag::new_spend()),
-        "certificate" => Ok(csl::plutus::RedeemerTag::new_cert()),
-        "mint" => Ok(csl::plutus::RedeemerTag::new_mint()),
-        "withdrawal" => Ok(csl::plutus::RedeemerTag::new_reward()),
+        "spend" => Ok(csl::RedeemerTag::new_spend()),
+        "certificate" => Ok(csl::RedeemerTag::new_cert()),
+        "mint" => Ok(csl::RedeemerTag::new_mint()),
+        "withdrawal" => Ok(csl::RedeemerTag::new_reward()),
         _ => Err(OgmiosError::ConversionError {
             label: "RedeemerTag".to_string(),
             source: anyhow!("Invalid RedeemerTag"),

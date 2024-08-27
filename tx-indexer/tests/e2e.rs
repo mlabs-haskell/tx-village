@@ -16,15 +16,14 @@ mod e2e_tests {
     use std::{collections::BTreeMap, sync::mpsc};
     use tracing::Level;
     use tx_bakery::{
-        chain_query::ChainQuery, submitter::Submitter, tx_info_builder::TxScaffold,
-        utils::script::ScriptOrRef, wallet::Wallet, ChangeStrategy, CollateralStrategy, TxBakery,
-        TxWithCtx,
+        chain_query::{ChainQuery, Network},
+        submitter::Submitter,
+        tx_info_builder::TxScaffold,
+        utils::{key_wallet::KeyWallet, script::ScriptOrRef},
+        wallet::Wallet,
+        ChangeStrategy, CollateralStrategy, TxBakery, TxWithCtx,
     };
-    use tx_bakery_ogmios::{
-        client::{OgmiosClient, OgmiosClientConfigBuilder},
-        launcher::{OgmiosLauncher, OgmiosLauncherConfigBuilder},
-    };
-    use tx_bakery_plutip::{Plutip, PlutipConfigBuilder};
+    use tx_bakery_ogmios::client::{OgmiosClient, OgmiosClientConfigBuilder};
     use tx_indexer::{
         config::{NetworkConfig, NetworkName, NodeAddress, TxIndexerConfig},
         error::{ErrorPolicy, ErrorPolicyProvider},
@@ -37,7 +36,10 @@ mod e2e_tests {
     };
     use url::Url;
 
+    // TODO(szg251): Un-ignore all tests once we have a replacement for Plutip
+
     #[tokio::test]
+    #[ignore]
     #[serial]
     async fn e2e_mint() -> std::result::Result<(), oura::Error> {
         // Set up tracing logger (logs to stdout).
@@ -47,25 +49,9 @@ mod e2e_tests {
             .finish();
         tracing::subscriber::set_global_default(collector)?;
 
-        let verbose = false;
-        let plutip_config = PlutipConfigBuilder::default()
-            .verbose(verbose)
-            .build()
-            .unwrap();
-        let plutip = Plutip::start(plutip_config).await.unwrap();
-
-        let ogmios_launcher_config = OgmiosLauncherConfigBuilder::default()
-            .node_socket(plutip.get_node_socket())
-            .node_config(plutip.get_node_config_path().await)
-            .network(plutip.get_network())
-            .verbose(verbose)
-            .build()
-            .unwrap();
-        let _ogmios_launcher = OgmiosLauncher::start(ogmios_launcher_config).await.unwrap();
-
         let ogmios_client_config = OgmiosClientConfigBuilder::default()
             .url(Url::parse("http://127.0.0.1:1337").unwrap())
-            .network(plutip.get_network())
+            .network(Network::Testnet)
             .build()
             .unwrap();
         let ogmios = OgmiosClient::connect(ogmios_client_config).await.unwrap();
@@ -73,13 +59,7 @@ mod e2e_tests {
         let (observer_sender, observer_receiver) = mpsc::channel();
         TxIndexer::run(TxIndexerConfig::new(
             ObserveHandler { observer_sender },
-            NodeAddress::UnixSocket(
-                plutip
-                    .get_node_socket()
-                    .into_os_string()
-                    .into_string()
-                    .unwrap(),
-            ),
+            NodeAddress::UnixSocket("/socket/path".to_string()),
             NetworkConfig::WellKnown(NetworkName::MAINNET),
             None,
             4,
@@ -94,7 +74,9 @@ mod e2e_tests {
         .await
         .expect("Failed to spawn indexer");
 
-        let (tx_hash, tx_info) = test_mint(&plutip, &ogmios).await;
+        let wallet = KeyWallet::new_enterprise("./test.skey").await.unwrap();
+
+        let (tx_hash, tx_info) = test_mint(&wallet, &ogmios).await;
 
         let tx_rec = observer_receiver.recv().unwrap();
         assert_eq_tx(tx_hash, tx_info, tx_rec);
@@ -162,13 +144,12 @@ mod e2e_tests {
     }
 
     async fn test_mint(
-        plutip: &Plutip,
+        wallet: &KeyWallet,
         ogmios: &OgmiosClient,
     ) -> (TransactionHash, TransactionInfo) {
         let mp: Vec<u8> = Json::from_json_string("\"WD8BAAAyIlMwA0kBBFtFUV0AFTM1c0ZuHN1oASQUgmKTCpmAGkkWW0VRXSBWYWxpZGF0aW9uIGZhaWxlZAAWVzk=\"").unwrap();
         let minting_policy = ScriptOrRef::from_bytes(mp).unwrap().as_minting_policy();
 
-        let wallet = plutip.get_own_wallet().await.unwrap();
         let own_utxos = ogmios
             .query_utxos_by_addr(&wallet.get_change_addr())
             .await
@@ -219,7 +200,7 @@ mod e2e_tests {
         let tx = TxWithCtx::new(&tx_info, &scripts, &collateral, &change_strategy);
 
         let tx_hash = tx_bakery
-            .bake_and_deliver(ogmios, &wallet, tx)
+            .bake_and_deliver(ogmios, wallet, tx)
             .await
             .unwrap();
 

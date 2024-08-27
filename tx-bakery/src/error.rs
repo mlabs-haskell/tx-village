@@ -19,7 +19,7 @@ pub enum Error {
     #[error("Unable to find redeemer for datum (hash: {0:?})")]
     MissingDatum(DatumHash),
 
-    #[error("Unable to find Plutus script (hash: {0:?})")]
+    #[error("Unable to find Plutus script in TxWithCtx (hash: {0:?})")]
     MissingScript(ScriptHash),
 
     #[error("Reference input containing script {0:?} is missing from the TransactionInfo reference input list.")]
@@ -32,7 +32,7 @@ pub enum Error {
     MissingChangeOutput,
 
     #[error("Execution units was not calculated for {0:?}.")]
-    MissingExUnits((csl::plutus::RedeemerTag, csl::utils::BigNum)),
+    MissingExUnits((csl::RedeemerTag, csl::BigNum)),
 
     #[error("Protocol parameter {0} is missing")]
     MissingProtocolParameter(String),

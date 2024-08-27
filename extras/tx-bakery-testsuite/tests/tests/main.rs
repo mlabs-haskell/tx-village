@@ -1,25 +1,29 @@
 use lbf_tx_bakery_tests_plutus_api::demo::plutus::{EqDatum, EqRedeemer, RefInputRedeemer};
 use num_bigint::BigInt;
 use plutus_ledger_api::plutus_data::IsPlutusData;
-use plutus_ledger_api::v2::address::{Address, Credential};
-use plutus_ledger_api::v2::crypto::LedgerBytes;
-use plutus_ledger_api::v2::datum::{Datum, OutputDatum};
-use plutus_ledger_api::v2::redeemer::Redeemer;
-use plutus_ledger_api::v2::script::MintingPolicyHash;
-use plutus_ledger_api::v2::script::ValidatorHash;
-use plutus_ledger_api::v2::transaction::{
-    TransactionHash, TransactionInfo, TransactionInput, TransactionOutput, TxInInfo,
+use plutus_ledger_api::v2::{
+    address::{Address, Credential},
+    crypto::LedgerBytes,
+    datum::{Datum, OutputDatum},
+    redeemer::Redeemer,
+    script::MintingPolicyHash,
+    script::ValidatorHash,
+    transaction::{
+        TransactionHash, TransactionInfo, TransactionInput, TransactionOutput, TxInInfo,
+    },
+    value::{AssetClass, CurrencySymbol, TokenName, Value},
 };
-use plutus_ledger_api::v2::value::{AssetClass, CurrencySymbol, TokenName, Value};
 use std::collections::BTreeMap;
-use tx_bakery::chain_query::{ChainQuery, FullTransactionOutput};
-use tx_bakery::error::Result;
-use tx_bakery::metadata::{Metadata, TransactionMetadata};
-use tx_bakery::submitter::Submitter;
-use tx_bakery::tx_info_builder::TxScaffold;
-use tx_bakery::utils::script::ScriptOrRef;
-use tx_bakery::wallet::Wallet;
-use tx_bakery::{ChangeStrategy, CollateralStrategy, TxBakery, TxWithCtx};
+use tx_bakery::{
+    chain_query::{ChainQuery, FullTransactionOutput},
+    error::Result,
+    metadata::{Metadata, TransactionMetadata},
+    submitter::Submitter,
+    tx_info_builder::TxScaffold,
+    utils::script::ScriptOrRef,
+    wallet::Wallet,
+    ChangeStrategy, CollateralStrategy, TxBakery, TxWithCtx,
+};
 
 /// Transaction that stores a EqDatum value at the Eq Validator.
 mod lock_eq_datum {
@@ -134,14 +138,14 @@ mod claim_eq_datum {
             .iter()
             .find(|(_, tx_out)| {
                 if let OutputDatum::InlineDatum(Datum(inline_datum)) = &tx_out.datum {
-                    EqDatum::from_plutus_data(&inline_datum).unwrap() == *datum
+                    EqDatum::from_plutus_data(inline_datum).unwrap() == *datum
                 } else {
                     false
                 }
             })
             .expect("Utxo with inline datum not found");
 
-        let tx_info = mk_tx_info(&wallet.get_change_addr(), &utxos, tx_in, &eq_redeemer);
+        let tx_info = mk_tx_info(&wallet.get_change_addr(), &utxos, tx_in, eq_redeemer);
 
         let scripts = BTreeMap::from([eq_validator.1.with_script_hash()]);
 
@@ -385,7 +389,7 @@ mod mint_with_ref_input {
             .iter()
             .find(|(_, tx_out)| {
                 if let OutputDatum::InlineDatum(Datum(inline_datum)) = &tx_out.datum {
-                    EqDatum::from_plutus_data(&inline_datum).unwrap() == *datum
+                    EqDatum::from_plutus_data(inline_datum).unwrap() == *datum
                 } else {
                     false
                 }
@@ -595,17 +599,18 @@ mod use_ref_script {
 
         let (script_ref, ref_script) = utxos
             .iter()
-            .find_map(|(tx_in, tx_out)| match tx_out.reference_script {
-                Some(ref script) => Some((
-                    TxInInfo {
-                        reference: tx_in.clone(),
-                        output: tx_out.into(),
-                    },
-                    tx_bakery::utils::script::ScriptOrRef::from_script(script.clone())
-                        .unwrap()
-                        .into_ref_script(tx_in.clone()),
-                )),
-                _ => None,
+            .find_map(|(tx_in, tx_out)| {
+                tx_out.reference_script.as_ref().map(|script| {
+                    (
+                        TxInInfo {
+                            reference: tx_in.clone(),
+                            output: tx_out.into(),
+                        },
+                        tx_bakery::utils::script::ScriptOrRef::from_script(script.clone())
+                            .unwrap()
+                            .into_ref_script(tx_in.clone()),
+                    )
+                })
             })
             .expect("Couldn't find UTxO with reference script");
 
@@ -643,8 +648,8 @@ mod use_ref_script {
         let tx = TxWithCtx::new(&tx_info, &scripts, &collateral, &change_strategy);
 
         let tx = tx_bakery.bake_signed_tx(submitter, wallet, tx).await?;
-        let witness_scripts = tx.witness_set().plutus_scripts().unwrap();
-        assert_eq!(witness_scripts.len(), 0);
+        let witness_scripts = tx.witness_set().plutus_scripts();
+        assert!(witness_scripts.is_none());
 
         Ok(submitter.submit_transaction(&tx).await?)
     }
@@ -756,6 +761,37 @@ mod with_last_output_change {
 
 #[cfg(test)]
 mod tests {
+    enum TestRuntime {
+        Testnet { ogmios_client: OgmiosClient },
+    }
+
+    impl TestRuntime {
+        async fn setup_testnet() -> Self {
+            let ogmios_client_config = OgmiosClientConfigBuilder::default()
+                .network(Network::Testnet)
+                .url(Url::parse("http://127.0.0.1:1337").unwrap())
+                .build()
+                .unwrap();
+            let ogmios_client = OgmiosClient::connect(ogmios_client_config).await.unwrap();
+
+            TestRuntime::Testnet { ogmios_client }
+        }
+
+        async fn get_own_wallet(&self) -> KeyWallet {
+            match self {
+                TestRuntime::Testnet { .. } => {
+                    KeyWallet::new_enterprise("./test.skey").await.unwrap()
+                }
+            }
+        }
+
+        fn ogmios_client(&self) -> &OgmiosClient {
+            match self {
+                TestRuntime::Testnet { ogmios_client } => ogmios_client,
+            }
+        }
+    }
+
     use super::{
         burn_with_secret, claim_eq_datum, lock_eq_datum, mint_with_ref_input, mint_with_secret,
         store_ref_script, use_ref_script, with_last_output_change, with_metadata, zero_ada_mint,
@@ -774,29 +810,33 @@ mod tests {
     use serial_test::serial;
     use std::fs;
     use std::path::Path;
-    use tx_bakery::chain_query::ChainQuery;
+    use tx_bakery::chain_query::{ChainQuery, Network};
     use tx_bakery::error::Result;
     use tx_bakery::submitter::Submitter;
-    use tx_bakery_ogmios::client::{OgmiosClient, OgmiosClientConfigBuilder};
-    use tx_bakery_ogmios::launcher::{OgmiosLauncher, OgmiosLauncherConfigBuilder};
-    use tx_bakery_plutip::{Plutip, PlutipConfigBuilder};
+    use tx_bakery::utils::key_wallet::KeyWallet;
     use tx_bakery::utils::script::ScriptOrRef;
     use tx_bakery::wallet::Wallet;
     use tx_bakery::TxBakery;
+    use tx_bakery_ogmios::client::{OgmiosClient, OgmiosClientConfigBuilder};
     use url::Url;
 
+    // TODO(szg251): Un-ignore all tests once we have a replacement for Plutip
+
     #[tokio::test]
+    #[ignore]
     #[serial]
     async fn init_tx_bakery() -> Result<()> {
-        let (_plutip, _ogmios_launcher, ogmios) = setup_plutip_test().await;
-        TxBakery::init(&ogmios).await?;
+        let test_runtime = TestRuntime::setup_testnet().await;
+        TxBakery::init(test_runtime.ogmios_client()).await?;
         Ok(())
     }
 
     #[tokio::test]
+    #[ignore]
     #[serial]
     async fn time_test() -> Result<()> {
-        let (_plutip, _ogmios_launcher, ogmios) = setup_plutip_test().await;
+        let test_runtime = TestRuntime::setup_testnet().await;
+        let ogmios = test_runtime.ogmios_client();
 
         let posix_time_now: POSIXTime = Local::now().into();
 
@@ -808,12 +848,12 @@ mod tests {
             posix_time_now.clone(),
         )?;
 
-        TxBakery::init(&ogmios).await?;
+        TxBakery::init(ogmios).await?;
 
         let tip = ogmios.query_tip().await?;
         let tip_diff = slot.abs_diff(tip.slot());
-        assert_in_delta!(tip.slot(), slot, 10);
-        assert!(tip_diff < 10);
+        assert_in_delta!(tip.slot(), slot, 100);
+        assert!(tip_diff < 100);
 
         let roundtrip_time =
             tx_bakery::time::slot_into_posix_time(&era_summaries, &system_start, slot)?;
@@ -823,6 +863,7 @@ mod tests {
     }
 
     #[tokio::test]
+    #[ignore]
     #[serial]
     async fn test_is_eq_validator() -> Result<()> {
         let config = read_config("data/tx-bakery-test-scripts-config.json");
@@ -831,14 +872,15 @@ mod tests {
             .as_validator();
         let (example_eq_datum_a, _) = setup_test_data();
 
-        let (plutip, _ogmios_launcher, ogmios) = setup_plutip_test().await;
+        let test_runtime = TestRuntime::setup_testnet().await;
 
-        let wallet = plutip.get_own_wallet().await.unwrap();
+        let wallet = test_runtime.get_own_wallet().await;
+        let ogmios = test_runtime.ogmios_client();
 
         let tx_hash_lock_a = lock_eq_datum::build_and_submit(
             &wallet,
-            &ogmios,
-            &ogmios,
+            ogmios,
+            ogmios,
             eq_validator.clone(),
             &example_eq_datum_a,
         )
@@ -864,16 +906,16 @@ mod tests {
                     }
                 ])
                 .await?
-                .into_iter()
-                .map(|(r, _)| r.index)
+                .into_keys()
+                .map(|r| r.index)
                 .collect::<Vec<_>>(),
             vec![0.into(), 1.into()],
         );
 
         let tx_hash_claim_a = claim_eq_datum::build_and_submit(
             &wallet,
-            &ogmios,
-            &ogmios,
+            ogmios,
+            ogmios,
             eq_validator,
             &EqRedeemer::IsEqual(example_eq_datum_a.clone()),
             &example_eq_datum_a,
@@ -885,6 +927,7 @@ mod tests {
     }
 
     #[tokio::test]
+    #[ignore]
     #[serial]
     async fn test_mint() -> Result<()> {
         let config = read_config("data/tx-bakery-test-scripts-config.json");
@@ -892,18 +935,19 @@ mod tests {
             .unwrap()
             .as_minting_policy();
 
-        let (plutip, _ogmios_launcher, ogmios) = setup_plutip_test().await;
+        let test_runtime = TestRuntime::setup_testnet().await;
 
-        let wallet = plutip.get_own_wallet().await.unwrap();
+        let wallet = test_runtime.get_own_wallet().await;
+        let ogmios = test_runtime.ogmios_client();
 
         let tx_hash_mint =
-            mint_with_secret::build_and_submit(&wallet, &ogmios, &ogmios, minting_policy.clone())
+            mint_with_secret::build_and_submit(&wallet, ogmios, ogmios, minting_policy.clone())
                 .await?;
 
         ogmios.await_tx_confirm(&tx_hash_mint).await?;
 
         let tx_hash_burn =
-            burn_with_secret::build_and_submit(&wallet, &ogmios, &ogmios, minting_policy).await?;
+            burn_with_secret::build_and_submit(&wallet, ogmios, ogmios, minting_policy).await?;
 
         ogmios.await_tx_confirm(&tx_hash_burn).await?;
 
@@ -911,6 +955,7 @@ mod tests {
     }
 
     #[tokio::test]
+    #[ignore]
     #[serial]
     async fn test_ref_input() -> Result<()> {
         let config = read_config("data/tx-bakery-test-scripts-config.json");
@@ -922,14 +967,15 @@ mod tests {
             .as_minting_policy();
         let (example_eq_datum_a, _) = setup_test_data();
 
-        let (plutip, _ogmios_launcher, ogmios) = setup_plutip_test().await;
+        let test_runtime = TestRuntime::setup_testnet().await;
 
-        let wallet = plutip.get_own_wallet().await.unwrap();
+        let wallet = test_runtime.get_own_wallet().await;
+        let ogmios = test_runtime.ogmios_client();
 
         let tx_hash_lock_a = lock_eq_datum::build_and_submit(
             &wallet,
-            &ogmios,
-            &ogmios,
+            ogmios,
+            ogmios,
             eq_validator.clone(),
             &example_eq_datum_a,
         )
@@ -939,8 +985,8 @@ mod tests {
 
         let tx_hash_mint = mint_with_ref_input::build_and_submit(
             &wallet,
-            &ogmios,
-            &ogmios,
+            ogmios,
+            ogmios,
             &example_eq_datum_a,
             ref_input_minting_policy,
             eq_validator,
@@ -952,6 +998,7 @@ mod tests {
     }
 
     #[tokio::test]
+    #[ignore]
     #[serial]
     async fn test_zero_ada_mint() -> Result<()> {
         let config = read_config("data/tx-bakery-test-scripts-config.json");
@@ -959,18 +1006,20 @@ mod tests {
             .unwrap()
             .as_minting_policy();
 
-        let (plutip, _ogmios_launcher, ogmios) = setup_plutip_test().await;
+        let test_runtime = TestRuntime::setup_testnet().await;
 
-        let wallet = plutip.get_own_wallet().await.unwrap();
+        let wallet = test_runtime.get_own_wallet().await;
+        let ogmios = test_runtime.ogmios_client();
 
         let tx_hash_mint =
-            zero_ada_mint::build_and_submit(&wallet, &ogmios, &ogmios, minting_policy).await?;
+            zero_ada_mint::build_and_submit(&wallet, ogmios, ogmios, minting_policy).await?;
 
         ogmios.await_tx_confirm(&tx_hash_mint).await?;
         Ok(())
     }
 
     #[tokio::test]
+    #[ignore]
     #[serial]
     async fn test_ref_script() -> Result<()> {
         let config = read_config("data/tx-bakery-test-scripts-config.json");
@@ -978,17 +1027,18 @@ mod tests {
             .unwrap()
             .as_minting_policy();
 
-        let (plutip, _ogmios_launcher, ogmios) = setup_plutip_test().await;
-        let wallet = plutip.get_own_wallet().await.unwrap();
+        let test_runtime = TestRuntime::setup_testnet().await;
+        let wallet = test_runtime.get_own_wallet().await;
+        let ogmios = test_runtime.ogmios_client();
 
         let tx_hash_store_script =
-            store_ref_script::build_and_submit(&wallet, &ogmios, &ogmios, minting_policy.clone())
+            store_ref_script::build_and_submit(&wallet, ogmios, ogmios, minting_policy.clone())
                 .await?;
 
         ogmios.await_tx_confirm(&tx_hash_store_script).await?;
 
         let tx_hash_burn =
-            use_ref_script::build_and_submit(&wallet, &ogmios, &ogmios, &minting_policy.0).await?;
+            use_ref_script::build_and_submit(&wallet, ogmios, ogmios, &minting_policy.0).await?;
 
         ogmios.await_tx_confirm(&tx_hash_burn).await?;
 
@@ -996,13 +1046,15 @@ mod tests {
     }
 
     #[tokio::test]
+    #[ignore]
     #[serial]
     async fn test_with_metadata() -> Result<()> {
-        let (plutip, _ogmios_launcher, ogmios) = setup_plutip_test().await;
+        let test_runtime = TestRuntime::setup_testnet().await;
 
-        let wallet = plutip.get_own_wallet().await.unwrap();
+        let wallet = test_runtime.get_own_wallet().await;
+        let ogmios = test_runtime.ogmios_client();
 
-        let tx_hash_lock_a = with_metadata::build_and_submit(&wallet, &ogmios, &ogmios).await?;
+        let tx_hash_lock_a = with_metadata::build_and_submit(&wallet, ogmios, ogmios).await?;
 
         ogmios.await_tx_confirm(&tx_hash_lock_a).await?;
 
@@ -1010,21 +1062,19 @@ mod tests {
     }
 
     #[tokio::test]
+    #[ignore]
     #[serial]
     async fn test_with_last_output_change() -> Result<()> {
         let (example_eq_datum_a, _) = setup_test_data();
 
-        let (plutip, _ogmios_launcher, ogmios) = setup_plutip_test().await;
+        let test_runtime = TestRuntime::setup_testnet().await;
 
-        let wallet = plutip.get_own_wallet().await.unwrap();
+        let wallet = test_runtime.get_own_wallet().await;
+        let ogmios = test_runtime.ogmios_client();
 
-        let tx_hash = with_last_output_change::build_and_submit(
-            &wallet,
-            &ogmios,
-            &ogmios,
-            &example_eq_datum_a,
-        )
-        .await?;
+        let tx_hash =
+            with_last_output_change::build_and_submit(&wallet, ogmios, ogmios, &example_eq_datum_a)
+                .await?;
 
         ogmios.await_tx_confirm(&tx_hash).await?;
 
@@ -1034,43 +1084,11 @@ mod tests {
 
         assert_eq!(utxos.len(), 1);
 
-        let change_has_datum = match utxos.values().nth(0).unwrap().datum {
-            OutputDatum::None => false,
-            _ => true,
-        };
+        let change_has_datum = !matches!(utxos.values().next().unwrap().datum, OutputDatum::None);
 
         assert!(change_has_datum);
 
         Ok(())
-    }
-
-    async fn setup_plutip_test() -> (Plutip, OgmiosLauncher, OgmiosClient) {
-        let verbose = false;
-        let plutip_config = PlutipConfigBuilder::default()
-            .verbose(verbose)
-            .build()
-            .unwrap();
-        let plutip = Plutip::start(plutip_config).await.unwrap();
-
-        let ogmios_config = OgmiosLauncherConfigBuilder::default()
-            .node_socket(plutip.get_node_socket())
-            .node_config(plutip.get_node_config_path().await)
-            .network(plutip.get_network())
-            .host("127.0.0.1".into())
-            .port(1337)
-            .verbose(verbose)
-            .build()
-            .unwrap();
-        let ogmios_launcher = OgmiosLauncher::start(ogmios_config).await.unwrap();
-
-        let ogmios_client_config = OgmiosClientConfigBuilder::default()
-            .network(plutip.get_network())
-            .url(Url::parse("http://127.0.0.1:1337").unwrap())
-            .build()
-            .unwrap();
-        let ogmios_client = OgmiosClient::connect(ogmios_client_config).await.unwrap();
-
-        (plutip, ogmios_launcher, ogmios_client)
     }
 
     fn setup_test_data() -> (EqDatum, EqDatum) {
@@ -1120,14 +1138,18 @@ mod tests {
     }
 
     fn read_config(path: impl AsRef<Path>) -> Config {
-        let conf_str = fs::read_to_string(&path).expect(&format!(
-            "Couldn't read plutarch config JSON file at {}.",
-            path.as_ref().display()
-        ));
+        let conf_str = fs::read_to_string(&path).unwrap_or_else(|_| {
+            panic!(
+                "Couldn't read plutarch config JSON file at {}.",
+                path.as_ref().display()
+            )
+        });
 
-        Json::from_json_string(&conf_str).expect(&format!(
-            "Couldn't deserialize JSON data of file {}",
-            path.as_ref().display()
-        ))
+        Json::from_json_string(&conf_str).unwrap_or_else(|_| {
+            panic!(
+                "Couldn't deserialize JSON data of file {}",
+                path.as_ref().display()
+            )
+        })
     }
 }

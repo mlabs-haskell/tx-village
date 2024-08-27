@@ -7,3 +7,4 @@ extend-exclude = ["fourmolu.yaml"]
 [default.extend-identifiers]
 TypeLits = "TypeLits"
 BA = "BA"
+numer = "numer"
