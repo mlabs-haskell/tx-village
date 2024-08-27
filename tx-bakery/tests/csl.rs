@@ -1,6 +1,5 @@
 #[cfg(test)]
 mod csl_pla_roundtrip_tests {
-    use cardano_serialization_lib as csl;
     use num_bigint::BigInt;
     use plutus_ledger_api::{
         generators::correct::v1::{
@@ -9,9 +8,10 @@ mod csl_pla_roundtrip_tests {
             arb_slot, arb_token_name, arb_transaction_hash, arb_transaction_index,
             arb_transaction_input, arb_value,
         },
-        v2::{address::StakingCredential, crypto::Ed25519PubKeyHash, value::Value},
+        v2::{address::StakingCredential, value::Value},
     };
     use proptest::{prop_assert_eq, proptest, strategy::Strategy, test_runner::TestCaseError};
+    use tx_bakery::csl;
     use tx_bakery::utils::csl_to_pla::{FromCSL, TryFromCSL};
     use tx_bakery::utils::pla_to_csl::{TryToCSL, TryToCSLWithDef};
 
@@ -36,9 +36,9 @@ mod csl_pla_roundtrip_tests {
         ))
     }
 
-    fn try_to_try_from_with<'a, B, A: TryToCSL<B> + TryFromCSL<B> + PartialEq + std::fmt::Debug>(
+    fn try_to_try_from_with<B, A: TryToCSL<B> + TryFromCSL<B> + PartialEq + std::fmt::Debug>(
         v: A,
-        info: A::ExtraInfo<'a>,
+        info: A::ExtraInfo<'_>,
     ) -> Result<(), TestCaseError> {
         Ok(prop_assert_eq!(
             A::try_from_csl(&<A as TryToCSL<B>>::try_to_csl_with(&v, info)?)?,
@@ -61,7 +61,7 @@ mod csl_pla_roundtrip_tests {
       // But the arbitrary generated value by PLA does not.
       #[test]
       fn test_value(val in arb_value()) {
-        let csl_val: csl::utils::Value  = val.try_to_csl()?;
+        let csl_val: csl::Value  = val.try_to_csl()?;
         prop_assert_eq!(
           Value::from_csl(&csl_val),
           // Add a zero ada value.
@@ -81,7 +81,7 @@ mod csl_pla_roundtrip_tests {
 
       #[test]
       fn test_ed25519_pub_key_hash(val in arb_ed25519_pub_key_hash()) {
-          try_to_from_prop::<csl::crypto::Ed25519KeyHash, _>(val)?
+          try_to_from_prop::<csl::Ed25519KeyHash, _>(val)?
       }
 
       #[test]
@@ -91,7 +91,7 @@ mod csl_pla_roundtrip_tests {
 
       #[test]
       fn test_staking_credential(val in arb_credential().prop_map(StakingCredential::Hash)) {
-          try_to_from_prop::<csl::address::StakeCredential, StakingCredential>(val)?
+          try_to_from_prop::<csl::Credential, StakingCredential>(val)?
       }
 
       #[test]
