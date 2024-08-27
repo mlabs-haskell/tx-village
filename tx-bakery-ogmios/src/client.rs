@@ -127,7 +127,7 @@ impl OgmiosClient {
                     .checked_mul(2u32.pow(attempt))
                     .ok_or(OgmiosError::StartupError(anyhow!("cannot wait any longer")))?;
                 tokio::time::sleep(wait_duration).await;
-                attempt = attempt + 1;
+                attempt += 1;
             }
         }
     }
@@ -237,7 +237,7 @@ impl ChainQuery for OgmiosClient {
         debug!(?address, "Query UTxOs by address");
         let addr: csl::Address = address
             .try_to_csl_with(self.config.network.to_network_id())
-            .map_err(|csl_err| OgmiosError::TryFromPLAError(csl_err))?;
+            .map_err(OgmiosError::TryFromPLAError)?;
 
         let addr = addr.to_bech32(Some("addr".to_owned())).map_err(|source| {
             OgmiosError::ConversionError {
@@ -262,7 +262,7 @@ impl ChainQuery for OgmiosClient {
     {
         let output_references = references
             .into_iter()
-            .map(Clone::clone)
+            .cloned()
             .map(OutputReference::try_from)
             .collect::<std::result::Result<Vec<_>, _>>()?;
 
@@ -280,8 +280,8 @@ impl Submitter for OgmiosClient {
     async fn evaluate_transaction(
         &self,
         tx_builder: &csl::TransactionBuilder,
-        plutus_scripts: &Vec<csl::PlutusScript>,
-        redeemers: &Vec<csl::Redeemer>,
+        plutus_scripts: &[csl::PlutusScript],
+        redeemers: &[csl::Redeemer],
     ) -> std::result::Result<BTreeMap<(csl::RedeemerTag, csl::BigNum), csl::ExUnits>, SubmitterError>
     {
         let mut tx_builder = tx_builder.clone();
@@ -300,7 +300,7 @@ impl Submitter for OgmiosClient {
 
         redeemers
             .iter()
-            .for_each(|redeemer| redeemer_witnesses.add(&redeemer));
+            .for_each(|redeemer| redeemer_witnesses.add(redeemer));
 
         witness_set.set_plutus_scripts(&script_witnesses);
         witness_set.set_redeemers(&redeemer_witnesses);
@@ -397,10 +397,10 @@ impl Submitter for OgmiosClient {
             retry_counter += 1;
         }
 
-        return Err(SubmitterError(anyhow!(
+        Err(SubmitterError(anyhow!(
             "Unable to confirm transaction {:?}",
             tx_hash
-        )));
+        )))
     }
 }
 

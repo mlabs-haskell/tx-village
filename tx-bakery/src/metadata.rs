@@ -15,14 +15,10 @@ impl TryFrom<&TransactionMetadata> for csl::GeneralTransactionMetadata {
     fn try_from(tx_metadata: &TransactionMetadata) -> Result<Self, Self::Error> {
         let mut csl_tx_metadata = csl::GeneralTransactionMetadata::new();
 
-        tx_metadata
-            .0
-            .iter()
-            .map(|(key, value)| {
-                let _ = csl_tx_metadata.insert(&csl::BigNum::from(*key), &value.try_into()?);
-                Ok(())
-            })
-            .collect::<Result<_, Self::Error>>()?;
+        tx_metadata.0.iter().try_for_each(|(key, value)| {
+            let _ = csl_tx_metadata.insert(&csl::BigNum::from(*key), &value.try_into()?);
+            Ok::<(), Self::Error>(())
+        })?;
 
         Ok(csl_tx_metadata)
     }
@@ -52,13 +48,10 @@ impl TryFrom<&Metadata> for csl::TransactionMetadatum {
             Metadata::Map(metadata_map) => {
                 let mut csl_metadata_map = csl::MetadataMap::new();
 
-                metadata_map
-                    .iter()
-                    .map(|(key, value)| {
-                        let _ = csl_metadata_map.insert(&key.try_into()?, &value.try_into()?);
-                        Ok(())
-                    })
-                    .collect::<Result<_, Self::Error>>()?;
+                metadata_map.iter().try_for_each(|(key, value)| {
+                    let _ = csl_metadata_map.insert(&key.try_into()?, &value.try_into()?);
+                    Ok::<(), Self::Error>(())
+                })?;
 
                 Ok(csl::TransactionMetadatum::new_map(&csl_metadata_map))
             }
@@ -66,13 +59,10 @@ impl TryFrom<&Metadata> for csl::TransactionMetadatum {
             Metadata::List(metadata_list) => {
                 let mut csl_metadata_list = csl::MetadataList::new();
 
-                metadata_list
-                    .iter()
-                    .map(|elem| {
-                        let _ = csl_metadata_list.add(&elem.try_into()?);
-                        Ok(())
-                    })
-                    .collect::<Result<_, Self::Error>>()?;
+                metadata_list.iter().try_for_each(|elem| {
+                    csl_metadata_list.add(&elem.try_into()?);
+                    Ok::<(), Self::Error>(())
+                })?;
 
                 Ok(csl::TransactionMetadatum::new_list(&csl_metadata_list))
             }

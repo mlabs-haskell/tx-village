@@ -47,10 +47,7 @@ pub enum TryFromPLAError {
 pub trait TryFromPLA<T> {
     type ExtraInfo<'a>;
 
-    fn try_from_pla_with<'a>(
-        val: &T,
-        extra_info: Self::ExtraInfo<'a>,
-    ) -> Result<Self, TryFromPLAError>
+    fn try_from_pla_with(val: &T, extra_info: Self::ExtraInfo<'_>) -> Result<Self, TryFromPLAError>
     where
         Self: Sized;
 }
@@ -70,7 +67,7 @@ where
     U: TryFromPLA<T, ExtraInfo<'a> = ()>,
 {
     fn try_from_pla(val: &T) -> Result<Self, TryFromPLAError> {
-        TryFromPLA::try_from_pla_with(val, Default::default())
+        TryFromPLA::try_from_pla_with(val, ())
     }
 }
 
@@ -81,7 +78,7 @@ where
 pub trait TryToCSL<T> {
     type ExtraInfo<'a>;
 
-    fn try_to_csl_with<'a>(&self, extra_info: Self::ExtraInfo<'a>) -> Result<T, TryFromPLAError>;
+    fn try_to_csl_with(&self, extra_info: Self::ExtraInfo<'_>) -> Result<T, TryFromPLAError>;
 }
 
 impl<T, U> TryToCSL<U> for T
@@ -90,7 +87,7 @@ where
 {
     type ExtraInfo<'a> = U::ExtraInfo<'a>;
 
-    fn try_to_csl_with<'a>(&self, extra_info: Self::ExtraInfo<'a>) -> Result<U, TryFromPLAError> {
+    fn try_to_csl_with(&self, extra_info: Self::ExtraInfo<'_>) -> Result<U, TryFromPLAError> {
         TryFromPLA::try_from_pla_with(self, extra_info)
     }
 }
@@ -163,7 +160,9 @@ impl TryFromPLA<i64> for csl::Int {
 
     fn try_from_pla_with(val: &i64, _: ()) -> Result<Self, TryFromPLAError> {
         if val.is_negative() {
-            Ok(csl::Int::new_negative(&csl::BigNum::from(val.abs() as u64)))
+            Ok(csl::Int::new_negative(&csl::BigNum::from(
+                val.unsigned_abs(),
+            )))
         } else {
             Ok(csl::Int::new(&csl::BigNum::from(*val as u64)))
         }
@@ -264,17 +263,17 @@ impl TryFromPLA<TransactionOutput> for csl::TransactionOutput {
                     .ok_or(TryFromPLAError::MissingScript(script_hash))?;
                 Ok(match script_or_ref {
                     crate::utils::script::ScriptOrRef::RefScript(_, script) => {
-                        csl::ScriptRef::new_plutus_script(&script)
+                        csl::ScriptRef::new_plutus_script(script)
                     }
                     crate::utils::script::ScriptOrRef::PlutusScript(script) => {
-                        csl::ScriptRef::new_plutus_script(&script)
+                        csl::ScriptRef::new_plutus_script(script)
                     }
                 })
             })
             .transpose()?;
 
         if let Some(script_ref) = &script_ref {
-            output_builder = output_builder.with_script_ref(&script_ref);
+            output_builder = output_builder.with_script_ref(script_ref);
         };
 
         let value_without_min_utxo = val.value.try_to_csl()?;
@@ -562,13 +561,13 @@ impl TryFromPLA<AssocMap<StakingCredential, BigInt>> for csl::Withdrawals {
 impl TryFromPLA<Redeemer> for csl::Redeemer {
     type ExtraInfo<'a> = (&'a csl::RedeemerTag, u64);
 
-    fn try_from_pla_with<'a>(
+    fn try_from_pla_with(
         pla_redeemer: &Redeemer,
-        (red_tag, red_idx): Self::ExtraInfo<'a>,
+        (red_tag, red_idx): Self::ExtraInfo<'_>,
     ) -> Result<csl::Redeemer, TryFromPLAError> {
         let Redeemer(plutus_data) = pla_redeemer;
         Ok(csl::Redeemer::new(
-            &red_tag,
+            red_tag,
             &red_idx.try_to_csl()?,
             &plutus_data.try_to_csl()?,
             &csl::ExUnits::new(&csl::BigNum::from(0u64), &csl::BigNum::from(0u64)),

@@ -188,8 +188,8 @@ impl TxBakery {
     /// Convert PLA TransactionInfo inputs, redeemers and datums to a CSL transaction input builder
     fn mk_inputs(
         &self,
-        inputs: &Vec<TxInInfo>,
-        ref_inputs: &Vec<TxInInfo>,
+        inputs: &[TxInInfo],
+        ref_inputs: &[TxInInfo],
         input_redeemers: &BTreeMap<TransactionInput, Redeemer>,
         input_datums: &BTreeMap<DatumHash, Datum>,
         scripts: &BTreeMap<ScriptHash, ScriptOrRef>,
@@ -200,7 +200,7 @@ impl TxBakery {
         inputs
             .iter()
             .enumerate()
-            .map(|(idx, TxInInfo { reference, output })| {
+            .try_for_each(|(idx, TxInInfo { reference, output })| {
                 let redeemer = input_redeemers.get(reference);
 
                 match redeemer {
@@ -218,7 +218,7 @@ impl TxBakery {
                                     err
                                 ))
                             })?;
-                        Ok(())
+                        Ok::<(), Error>(())
                     }
                     Some(redeemer) => {
                         let script_hash = match &output.address.credential {
@@ -243,7 +243,7 @@ impl TxBakery {
 
                         let script_source = match &script_or_ref {
                             ScriptOrRef::PlutusScript(script) => {
-                                csl::PlutusScriptSource::new(&script)
+                                csl::PlutusScriptSource::new(script)
                             }
                             ScriptOrRef::RefScript(ref_tx_in, script) => {
                                 ref_inputs
@@ -268,7 +268,7 @@ impl TxBakery {
                         let datum_source = match &output.datum {
                             OutputDatum::DatumHash(dh) => {
                                 let Datum(input_datum) = input_datums
-                                    .get(&dh)
+                                    .get(dh)
                                     .ok_or(Error::MissingDatum(dh.clone()))?;
 
                                 Some(csl::DatumSource::new(&input_datum.try_to_csl()?))
@@ -310,8 +310,7 @@ impl TxBakery {
                         Ok(())
                     }
                 }
-            })
-            .collect::<Result<_>>()?;
+            })?;
 
         Ok(tx_inputs_builder)
     }
@@ -344,7 +343,7 @@ impl TxBakery {
     /// Convert PLA mints to CSL and pair them with their corresponding redeemers
     fn mk_mints(
         tx_mint: &Value,
-        ref_inputs: &Vec<TxInInfo>,
+        ref_inputs: &[TxInInfo],
         mint_redeemers: &BTreeMap<ScriptHash, Redeemer>,
         scripts: &BTreeMap<ScriptHash, ScriptOrRef>,
         ex_units_map: Option<&BTreeMap<(csl::RedeemerTag, csl::BigNum), csl::ExUnits>>,
@@ -360,71 +359,63 @@ impl TxBakery {
                 CurrencySymbol::Ada => None,
             })
             .enumerate()
-            .map(|(idx, (script_hash, assets))| {
-                assets
-                    .iter()
-                    .map(|(token_name, amount)| {
-                        let script_or_ref = scripts
-                            .get(script_hash)
-                            .ok_or(Error::MissingScript(script_hash.clone()))?;
-                        let redeemer = mint_redeemers
-                            .get(script_hash)
-                            .ok_or(Error::MissingMintRedeemer(script_hash.clone()))?;
+            .try_for_each(|(idx, (script_hash, assets))| {
+                assets.iter().try_for_each(|(token_name, amount)| {
+                    let script_or_ref = scripts
+                        .get(script_hash)
+                        .ok_or(Error::MissingScript(script_hash.clone()))?;
+                    let redeemer = mint_redeemers
+                        .get(script_hash)
+                        .ok_or(Error::MissingMintRedeemer(script_hash.clone()))?;
 
-                        let csl_redeemer = redeemer
-                            .try_to_csl_with((&csl::RedeemerTag::new_mint(), idx as u64))?;
+                    let csl_redeemer =
+                        redeemer.try_to_csl_with((&csl::RedeemerTag::new_mint(), idx as u64))?;
 
-                        let csl_redeemer = match ex_units_map {
-                            Some(ex_units_map) => {
-                                Self::apply_ex_units(&csl_redeemer, ex_units_map)?
-                            }
-                            None => csl_redeemer,
-                        };
+                    let csl_redeemer = match ex_units_map {
+                        Some(ex_units_map) => Self::apply_ex_units(&csl_redeemer, ex_units_map)?,
+                        None => csl_redeemer,
+                    };
 
-                        let script_source = match &script_or_ref {
-                            ScriptOrRef::PlutusScript(script) => {
-                                csl::PlutusScriptSource::new(&script)
-                            }
-                            ScriptOrRef::RefScript(ref_tx_in, script) => {
-                                ref_inputs
-                                    .iter()
-                                    .find(|TxInInfo { reference, .. }| reference == ref_tx_in)
-                                    .map(|_| ())
-                                    .ok_or_else(|| {
-                                        Error::MissingReferenceScript(
-                                            ref_tx_in.clone(),
-                                            script_or_ref.get_script_hash(),
-                                        )
-                                    })?;
-                                csl::PlutusScriptSource::new_ref_input(
-                                    &script_hash.try_to_csl()?,
-                                    &ref_tx_in.try_to_csl()?,
-                                    &script.language_version(),
-                                    script_or_ref.get_script_size(),
-                                )
-                            }
-                        };
-
-                        let mint_witness =
-                            csl::MintWitness::new_plutus_script(&script_source, &csl_redeemer);
-                        mint_builder
-                            .add_asset(
-                                &mint_witness,
-                                &token_name.try_to_csl()?,
-                                &amount.try_to_csl()?,
+                    let script_source = match &script_or_ref {
+                        ScriptOrRef::PlutusScript(script) => csl::PlutusScriptSource::new(script),
+                        ScriptOrRef::RefScript(ref_tx_in, script) => {
+                            ref_inputs
+                                .iter()
+                                .find(|TxInInfo { reference, .. }| reference == ref_tx_in)
+                                .map(|_| ())
+                                .ok_or_else(|| {
+                                    Error::MissingReferenceScript(
+                                        ref_tx_in.clone(),
+                                        script_or_ref.get_script_hash(),
+                                    )
+                                })?;
+                            csl::PlutusScriptSource::new_ref_input(
+                                &script_hash.try_to_csl()?,
+                                &ref_tx_in.try_to_csl()?,
+                                &script.language_version(),
+                                script_or_ref.get_script_size(),
                             )
-                            .map_err(|err| {
-                                Error::TransactionBuildError(anyhow!(
-                                    "Failed to add mint {:?}: {}",
-                                    MintingPolicyHash(script_hash.clone()),
-                                    err
-                                ))
-                            })?;
-                        Ok(())
-                    })
-                    .collect::<Result<()>>()
-            })
-            .collect::<Result<()>>()?;
+                        }
+                    };
+
+                    let mint_witness =
+                        csl::MintWitness::new_plutus_script(&script_source, &csl_redeemer);
+                    mint_builder
+                        .add_asset(
+                            &mint_witness,
+                            &token_name.try_to_csl()?,
+                            &amount.try_to_csl()?,
+                        )
+                        .map_err(|err| {
+                            Error::TransactionBuildError(anyhow!(
+                                "Failed to add mint {:?}: {}",
+                                MintingPolicyHash(script_hash.clone()),
+                                err
+                            ))
+                        })?;
+                    Ok::<(), Error>(())
+                })
+            })?;
 
         Ok(mint_builder)
     }
@@ -435,11 +426,7 @@ impl TxBakery {
     /// - must have at least the configured amount of Ada
     ///         (TODO: we could calculate the exact minimum collateral amount using protocol params)
     ///
-    fn find_collateral(
-        &self,
-        collateral_amount: u64,
-        tx_inputs: &Vec<TxInInfo>,
-    ) -> Option<TxInInfo> {
+    fn find_collateral(&self, collateral_amount: u64, tx_inputs: &[TxInInfo]) -> Option<TxInInfo> {
         tx_inputs
             .iter()
             .find(
@@ -503,28 +490,27 @@ impl TxBakery {
             },
         );
 
-        let input_datums = BTreeMap::from(
-            tx.tx_info
-                .datums
-                .0
-                .iter()
-                .cloned()
-                .collect::<BTreeMap<_, _>>(),
-        );
+        let input_datums = tx
+            .tx_info
+            .datums
+            .0
+            .iter()
+            .cloned()
+            .collect::<BTreeMap<_, _>>();
 
         tx_builder.set_inputs(&self.mk_inputs(
             &tx.tx_info.inputs,
             &tx.tx_info.reference_inputs,
             &input_redeemers,
             &input_datums,
-            &tx.scripts,
+            tx.scripts,
             tx.ex_units_map,
         )?);
 
         tx.tx_info
             .reference_inputs
             .iter()
-            .map(|TxInInfo { reference, output }| {
+            .try_for_each(|TxInInfo { reference, output }| {
                 match output.reference_script {
                     None => tx_builder.add_reference_input(&reference.try_to_csl()?),
                     Some(ref script_hash) => {
@@ -538,15 +524,14 @@ impl TxBakery {
                         )
                     }
                 }
-                Ok(())
-            })
-            .collect::<Result<()>>()?;
+                Ok::<(), Error>(())
+            })?;
 
         tx_builder.set_mint_builder(&TxBakery::mk_mints(
             &tx.tx_info.mint,
             &tx.tx_info.reference_inputs,
             &mint_redeemers,
-            &tx.scripts,
+            tx.scripts,
             tx.ex_units_map,
         )?);
 
@@ -576,7 +561,7 @@ impl TxBakery {
                     .map_err(|source| Error::TransactionBuildError(anyhow!(source)))?;
             }
             CollateralStrategy::Explicit { utxo, amount } => {
-                let collateral = self.mk_collateral(&utxo)?;
+                let collateral = self.mk_collateral(utxo)?;
                 tx_builder.set_collateral(&collateral);
                 tx_builder
                     .set_total_collateral_and_return(
@@ -590,12 +575,11 @@ impl TxBakery {
 
         self.mk_outputs(&tx.tx_info.outputs, tx.change_strategy, tx.scripts)?
             .iter()
-            .map(|tx_out| {
+            .try_for_each(|tx_out| {
                 tx_builder
-                    .add_output(&tx_out)
+                    .add_output(tx_out)
                     .map_err(|source| Error::TransactionBuildError(anyhow!(source)))
-            })
-            .collect::<Result<_>>()?;
+            })?;
 
         let (validity_start, ttl) = time_range_into_slots(
             &self.era_summaries,
@@ -613,11 +597,10 @@ impl TxBakery {
         tx.tx_info
             .signatories
             .iter()
-            .map(|PaymentPubKeyHash(pkh)| {
+            .try_for_each(|PaymentPubKeyHash(pkh)| {
                 tx_builder.add_required_signer(&pkh.try_to_csl()?);
-                Ok(())
-            })
-            .collect::<Result<()>>()?;
+                Ok::<(), Error>(())
+            })?;
 
         if let Some(metadata) = tx.metadata {
             tx_builder.set_metadata(&metadata.try_into()?);
@@ -629,7 +612,7 @@ impl TxBakery {
     pub fn mk_tx_body(&self, tx: &TxWithCtx<'_>) -> Result<csl::TransactionBody> {
         let tx_builder = self.mk_tx_builder(tx)?;
 
-        let (datums, redeemers) = TxBakery::extract_witnesses(&tx.tx_info)?;
+        let (datums, redeemers) = TxBakery::extract_witnesses(tx.tx_info)?;
 
         self.balance_transaction(tx, tx_builder, &datums, &redeemers)
     }
@@ -727,19 +710,19 @@ impl TxBakery {
     fn calc_script_data_hash(
         &self,
         mut tx_builder: csl::TransactionBuilder,
-        wit_datums: &Vec<csl::PlutusData>,
-        wit_redeemers: &Vec<csl::Redeemer>,
+        wit_datums: &[csl::PlutusData],
+        wit_redeemers: &[csl::Redeemer],
     ) -> csl::TransactionBuilder {
         debug!("Calculating script integrity hash");
         let mut redeemers = csl::Redeemers::new();
-        wit_redeemers.iter().for_each(|red| redeemers.add(&red));
+        wit_redeemers.iter().for_each(|red| redeemers.add(red));
 
         if !wit_datums.is_empty() || !wit_redeemers.is_empty() {
             let datums = if wit_datums.is_empty() {
                 None
             } else {
                 let mut ds = csl::PlutusList::new();
-                wit_datums.iter().for_each(|dat| ds.add(&dat));
+                wit_datums.iter().for_each(|dat| ds.add(dat));
                 Some(ds)
             };
 
@@ -752,7 +735,7 @@ impl TxBakery {
                 datums,
             );
 
-            let _ = tx_builder.set_script_data_hash(&script_data_hash);
+            tx_builder.set_script_data_hash(&script_data_hash);
         }
         tx_builder
     }
@@ -769,7 +752,7 @@ impl TxBakery {
             &redeemer.tag(),
             &redeemer.index(),
             &redeemer.data(),
-            &ex_units,
+            ex_units,
         ))
     }
 
@@ -778,12 +761,12 @@ impl TxBakery {
         &self,
         tx: &TxWithCtx<'_>,
         mut tx_builder: csl::TransactionBuilder,
-        wit_datums: &Vec<csl::PlutusData>,
-        wit_redeemers: &Vec<csl::Redeemer>,
+        wit_datums: &[csl::PlutusData],
+        wit_redeemers: &[csl::Redeemer],
     ) -> Result<csl::TransactionBody> {
         debug!("Balance transaction");
         let mut redeemers = csl::Redeemers::new();
-        wit_redeemers.iter().for_each(|red| redeemers.add(&red));
+        wit_redeemers.iter().for_each(|red| redeemers.add(red));
 
         tx_builder = self.calc_script_data_hash(tx_builder, wit_datums, wit_redeemers);
 
@@ -827,12 +810,11 @@ impl TxBakery {
         tx: TxWithCtx<'_>,
     ) -> Result<csl::Transaction> {
         info!("Bake balanced transaction.");
-        let (datums, redeemers) = TxBakery::extract_witnesses(&tx.tx_info)?;
-        let plutus_scripts = TxBakery::witness_scripts(&tx.tx_info, &tx.scripts)?;
+        let (datums, redeemers) = TxBakery::extract_witnesses(tx.tx_info)?;
+        let plutus_scripts = TxBakery::witness_scripts(tx.tx_info, tx.scripts)?;
 
         let aux_data: Result<Option<csl::AuxiliaryData>> = tx
             .metadata
-            .clone()
             .map(|metadata| {
                 let mut aux_data = csl::AuxiliaryData::new();
                 aux_data.set_metadata(&metadata.try_into()?);

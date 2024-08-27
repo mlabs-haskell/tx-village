@@ -76,9 +76,9 @@ pub trait TryFromCSL<T> {
 pub trait TryFromCSLWith<T> {
     type ExtraInfo<'a>;
 
-    fn try_from_csl_with<'a>(
+    fn try_from_csl_with(
         value: &T,
-        extra_info: Self::ExtraInfo<'a>,
+        extra_info: Self::ExtraInfo<'_>,
     ) -> Result<Self, TryFromCSLError>
     where
         Self: Sized;
@@ -100,7 +100,7 @@ where
 pub trait TryToPLAWith<T> {
     type ExtraInfo<'a>;
 
-    fn try_to_pla_with<'a>(&self, extra_info: Self::ExtraInfo<'a>) -> Result<T, TryFromCSLError>;
+    fn try_to_pla_with(&self, extra_info: Self::ExtraInfo<'_>) -> Result<T, TryFromCSLError>;
 }
 
 impl<T, U> TryToPLAWith<U> for T
@@ -109,8 +109,8 @@ where
 {
     type ExtraInfo<'a> = U::ExtraInfo<'a>;
 
-    fn try_to_pla_with<'a>(&self, extra_info: Self::ExtraInfo<'a>) -> Result<U, TryFromCSLError> {
-        U::try_from_csl_with(&self, extra_info)
+    fn try_to_pla_with(&self, extra_info: Self::ExtraInfo<'_>) -> Result<U, TryFromCSLError> {
+        U::try_from_csl_with(self, extra_info)
     }
 }
 
@@ -690,16 +690,16 @@ impl
         &'a DateTime<Utc>,   // sys_start
     );
 
-    fn try_from_csl_with<'a>(
+    fn try_from_csl_with(
         (start, ttl): &(
             &Option<csl::BigNum>, // validity_start
             &Option<csl::BigNum>, // ttl
         ),
-        (era_summaries, sys_start): Self::ExtraInfo<'a>,
+        (era_summaries, sys_start): Self::ExtraInfo<'_>,
     ) -> Result<Self, TryFromCSLError> {
         let end = start
             .zip(ttl.as_ref())
-            .map(|(start, ttl)| start.checked_add(&ttl).unwrap());
+            .map(|(start, ttl)| start.checked_add(ttl).unwrap());
 
         let slot_to_time = |s: csl::BigNum| {
             slot_into_posix_time(era_summaries, sys_start, s.into())
@@ -732,9 +732,9 @@ impl
 }
 
 impl TryFromCSLWith<csl::Transaction> for TransactionInfo {
-    fn try_from_csl_with<'a>(
+    fn try_from_csl_with(
         tx: &csl::Transaction,
-        extra_info: Self::ExtraInfo<'a>,
+        extra_info: Self::ExtraInfo<'_>,
     ) -> Result<Self, TryFromCSLError> {
         let body = tx.body();
         let witness_set = tx.witness_set();
@@ -781,9 +781,9 @@ impl TryFromCSLWith<csl::Transaction> for TransactionInfo {
 impl TryFromCSLWith<csl::TransactionInputs> for Vec<TxInInfo> {
     type ExtraInfo<'a> = &'a BTreeMap<TransactionInput, TransactionOutput>;
 
-    fn try_from_csl_with<'a>(
+    fn try_from_csl_with(
         value: &csl::TransactionInputs,
-        available_utxos: Self::ExtraInfo<'a>,
+        available_utxos: Self::ExtraInfo<'_>,
     ) -> Result<Self, TryFromCSLError> {
         let inputs: Vec<TransactionInput> = value.to_pla();
 

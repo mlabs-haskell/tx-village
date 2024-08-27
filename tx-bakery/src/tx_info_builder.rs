@@ -50,9 +50,8 @@ impl TxScaffoldInput {
     }
 }
 
-impl TxScaffold {
-    /// Start an empty scaffold
-    pub fn new() -> Self {
+impl Default for TxScaffold {
+    fn default() -> Self {
         TxScaffold {
             inputs: BTreeMap::new(),
             reference_inputs: BTreeMap::new(),
@@ -63,6 +62,13 @@ impl TxScaffold {
             valid_range: Interval::Always.into(),
             signatories: BTreeSet::new(),
         }
+    }
+}
+
+impl TxScaffold {
+    /// Start an empty scaffold
+    pub fn new() -> Self {
+        Self::default()
     }
 
     /// Add a transaction input

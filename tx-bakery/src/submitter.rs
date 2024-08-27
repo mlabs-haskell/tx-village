@@ -11,8 +11,8 @@ pub trait Submitter {
     fn evaluate_transaction(
         &self,
         tx_builder: &csl::TransactionBuilder,
-        plutus_scripts: &Vec<csl::PlutusScript>,
-        redeemers: &Vec<csl::Redeemer>,
+        plutus_scripts: &[csl::PlutusScript],
+        redeemers: &[csl::Redeemer],
     ) -> impl Future<
         Output = Result<BTreeMap<(csl::RedeemerTag, csl::BigNum), csl::ExUnits>, SubmitterError>,
     >;

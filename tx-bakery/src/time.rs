@@ -10,7 +10,7 @@ use plutus_ledger_api::v2::transaction::{POSIXTime, POSIXTimeConversionError, PO
 
 /// Convert a POSIX time into number of slots in the current system
 pub fn posix_time_into_slot(
-    era_summaries: &Vec<EraSummary>,
+    era_summaries: &[EraSummary],
     sys_start: &DateTime<Utc>,
     posix_time: POSIXTime,
 ) -> Result<u64> {
@@ -21,7 +21,7 @@ pub fn posix_time_into_slot(
 }
 
 pub fn time_into_slot(
-    era_summaries: &Vec<EraSummary>,
+    era_summaries: &[EraSummary],
     sys_start: &DateTime<Utc>,
     time: DateTime<Utc>,
 ) -> Result<u64> {
@@ -48,7 +48,7 @@ pub fn time_into_slot(
 }
 
 pub fn slot_into_posix_time(
-    era_summaries: &Vec<EraSummary>,
+    era_summaries: &[EraSummary],
     sys_start: &DateTime<Utc>,
     slot: u64,
 ) -> Result<POSIXTime> {
@@ -56,7 +56,7 @@ pub fn slot_into_posix_time(
 }
 
 pub fn slot_into_time(
-    era_summaries: &Vec<EraSummary>,
+    era_summaries: &[EraSummary],
     sys_start: &DateTime<Utc>,
     slot: u64,
 ) -> Result<DateTime<Utc>> {
@@ -77,7 +77,7 @@ pub fn slot_into_time(
 }
 
 pub fn time_range_into_slots(
-    era_summaries: &Vec<EraSummary>,
+    era_summaries: &[EraSummary],
     sys_start: &DateTime<Utc>,
     interval: POSIXTimeRange,
 ) -> Result<(Option<csl::BigNum>, Option<csl::BigNum>)> {
@@ -97,7 +97,7 @@ pub fn time_range_into_slots(
         Extended::NegInf => None,
         Extended::PosInf => Some(u64::MAX),
         Extended::Finite(posix_time) => {
-            let slots = posix_time_into_slot(&era_summaries, &sys_start, posix_time)?;
+            let slots = posix_time_into_slot(era_summaries, sys_start, posix_time)?;
             if lower_closed {
                 Some(slots)
             } else {
@@ -110,7 +110,7 @@ pub fn time_range_into_slots(
         Extended::NegInf => Some(0),
         Extended::PosInf => None,
         Extended::Finite(posix_time) => {
-            let slots = posix_time_into_slot(&era_summaries, &sys_start, posix_time)?;
+            let slots = posix_time_into_slot(era_summaries, sys_start, posix_time)?;
             if upper_closed {
                 Some(slots)
             } else {

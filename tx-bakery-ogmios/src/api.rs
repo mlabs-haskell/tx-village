@@ -270,7 +270,7 @@ impl From<&pla::v2::transaction::TransactionHash> for TransactionId {
     fn from(tx_hash: &pla::v2::transaction::TransactionHash) -> TransactionId {
         let pla::v2::transaction::TransactionHash(pla::v2::crypto::LedgerBytes(bytes)) = tx_hash;
         TransactionId {
-            id: HEXLOWER.encode(&bytes),
+            id: HEXLOWER.encode(bytes),
         }
     }
 }
@@ -343,7 +343,7 @@ impl TryFrom<&Utxo> for FullTransactionOutput {
             ))
         } else if let Some(d) = &utxo.datum {
             let plutus_data =
-                &csl::PlutusData::from_hex(&d).map_err(|source| OgmiosError::ConversionError {
+                &csl::PlutusData::from_hex(d).map_err(|source| OgmiosError::ConversionError {
                     label: "PlutusData".to_string(),
                     source: anyhow!(source),
                 })?;
@@ -380,7 +380,7 @@ impl TryFrom<&Utxo> for FullTransactionOutput {
                         };
 
                         let flat_bytes =
-                            hex::decode(&cbor).map_err(|err| OgmiosError::ConversionError {
+                            hex::decode(cbor).map_err(|err| OgmiosError::ConversionError {
                                 label: "Plutus script".to_string(),
                                 source: anyhow!(
                                     "Couldn't decode hex encoded plutus script: {}",
@@ -661,15 +661,13 @@ impl TryFrom<ProtocolParameters> for chain_query::ProtocolParameters {
         };
 
         Ok(chain_query::ProtocolParameters {
-            min_fee_coefficient: csl::BigNum::from(pparams.min_fee_coefficient as u64),
+            min_fee_coefficient: csl::BigNum::from(pparams.min_fee_coefficient),
             min_fee_constant: csl::BigNum::from(pparams.min_fee_constant.ada.lovelace as u64),
             min_fee_reference_scripts: pparams
                 .min_fee_reference_scripts
                 .map(|min_fee| to_unit_interval(min_fee.base))
                 .transpose()?,
-            min_utxo_deposit_coefficient: csl::BigNum::from(
-                pparams.min_utxo_deposit_coefficient as u64,
-            ),
+            min_utxo_deposit_coefficient: csl::BigNum::from(pparams.min_utxo_deposit_coefficient),
             min_utxo_deposit_constant: csl::BigNum::from(
                 pparams.min_utxo_deposit_constant.ada.lovelace as u64,
             ),
