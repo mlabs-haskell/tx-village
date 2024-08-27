@@ -2196,7 +2196,7 @@ dependencies = [
 
 [[package]]
 name = "tx-bakery"
-version = "0.1.0"
+version = "2.0.0-beta.1"
 dependencies = [
  "anyhow",
  "assertables",
@@ -2221,10 +2221,9 @@ dependencies = [
 
 [[package]]
 name = "tx-bakery-ogmios"
-version = "0.1.0"
+version = "2.0.0-beta.1"
 dependencies = [
  "anyhow",
- "cardano-serialization-lib",
  "cbor_event",
  "chrono",
  "data-encoding",
