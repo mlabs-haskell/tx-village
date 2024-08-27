@@ -1,1 +1,0 @@
-window.ALL_CRATES = ["tx_bakery_plutip"];

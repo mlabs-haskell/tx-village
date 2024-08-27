@@ -593,13 +593,6 @@
 <a href="#591" id="591">591</a>
 <a href="#592" id="592">592</a>
 <a href="#593" id="593">593</a>
-<a href="#594" id="594">594</a>
-<a href="#595" id="595">595</a>
-<a href="#596" id="596">596</a>
-<a href="#597" id="597">597</a>
-<a href="#598" id="598">598</a>
-<a href="#599" id="599">599</a>
-<a href="#600" id="600">600</a>
 </pre></div><pre class="rust"><code><span class="doccomment">//! Conversion from plutus-ledger-api to cardano-serialization-lib
 
 </span><span class="kw">use </span>cardano_serialization_lib <span class="kw">as </span>csl;
@@ -626,10 +619,10 @@
 <span class="attr">#[derive(Debug, thiserror::Error)]
 </span><span class="kw">pub enum </span>TryFromPLAError {
     <span class="attr">#[error(<span class="string">"{0}"</span>)]
-    </span>CSLDeserializeError(csl::error::DeserializeError),
+    </span>CSLDeserializeError(csl::DeserializeError),
 
     <span class="attr">#[error(<span class="string">"{0}"</span>)]
-    </span>CSLJsError(csl::error::JsError),
+    </span>CSLJsError(csl::JsError),
 
     <span class="attr">#[error(<span class="string">"Unable to cast BigInt {0} into type {1}: value is out of bound"</span>)]
     </span>BigIntOutOfRange(BigInt, String),
@@ -649,10 +642,7 @@
 </span><span class="kw">pub trait </span>TryFromPLA&lt;T&gt; {
     <span class="kw">type </span>ExtraInfo&lt;<span class="lifetime">'a</span>&gt;;
 
-    <span class="kw">fn </span>try_from_pla_with&lt;<span class="lifetime">'a</span>&gt;(
-        val: <span class="kw-2">&amp;</span>T,
-        extra_info: <span class="self">Self</span>::ExtraInfo&lt;<span class="lifetime">'a</span>&gt;,
-    ) -&gt; <span class="prelude-ty">Result</span>&lt;<span class="self">Self</span>, TryFromPLAError&gt;
+    <span class="kw">fn </span>try_from_pla_with(val: <span class="kw-2">&amp;</span>T, extra_info: <span class="self">Self</span>::ExtraInfo&lt;<span class="lifetime">'_</span>&gt;) -&gt; <span class="prelude-ty">Result</span>&lt;<span class="self">Self</span>, TryFromPLAError&gt;
     <span class="kw">where
         </span><span class="self">Self</span>: Sized;
 }
@@ -672,7 +662,7 @@
     </span>U: TryFromPLA&lt;T, ExtraInfo&lt;<span class="lifetime">'a</span>&gt; = ()&gt;,
 {
     <span class="kw">fn </span>try_from_pla(val: <span class="kw-2">&amp;</span>T) -&gt; <span class="prelude-ty">Result</span>&lt;<span class="self">Self</span>, TryFromPLAError&gt; {
-        TryFromPLA::try_from_pla_with(val, Default::default())
+        TryFromPLA::try_from_pla_with(val, ())
     }
 }
 
@@ -683,7 +673,7 @@
 </span><span class="kw">pub trait </span>TryToCSL&lt;T&gt; {
     <span class="kw">type </span>ExtraInfo&lt;<span class="lifetime">'a</span>&gt;;
 
-    <span class="kw">fn </span>try_to_csl_with&lt;<span class="lifetime">'a</span>&gt;(<span class="kw-2">&amp;</span><span class="self">self</span>, extra_info: <span class="self">Self</span>::ExtraInfo&lt;<span class="lifetime">'a</span>&gt;) -&gt; <span class="prelude-ty">Result</span>&lt;T, TryFromPLAError&gt;;
+    <span class="kw">fn </span>try_to_csl_with(<span class="kw-2">&amp;</span><span class="self">self</span>, extra_info: <span class="self">Self</span>::ExtraInfo&lt;<span class="lifetime">'_</span>&gt;) -&gt; <span class="prelude-ty">Result</span>&lt;T, TryFromPLAError&gt;;
 }
 
 <span class="kw">impl</span>&lt;T, U&gt; TryToCSL&lt;U&gt; <span class="kw">for </span>T
@@ -692,7 +682,7 @@
 {
     <span class="kw">type </span>ExtraInfo&lt;<span class="lifetime">'a</span>&gt; = U::ExtraInfo&lt;<span class="lifetime">'a</span>&gt;;
 
-    <span class="kw">fn </span>try_to_csl_with&lt;<span class="lifetime">'a</span>&gt;(<span class="kw-2">&amp;</span><span class="self">self</span>, extra_info: <span class="self">Self</span>::ExtraInfo&lt;<span class="lifetime">'a</span>&gt;) -&gt; <span class="prelude-ty">Result</span>&lt;U, TryFromPLAError&gt; {
+    <span class="kw">fn </span>try_to_csl_with(<span class="kw-2">&amp;</span><span class="self">self</span>, extra_info: <span class="self">Self</span>::ExtraInfo&lt;<span class="lifetime">'_</span>&gt;) -&gt; <span class="prelude-ty">Result</span>&lt;U, TryFromPLAError&gt; {
         TryFromPLA::try_from_pla_with(<span class="self">self</span>, extra_info)
     }
 }
@@ -714,17 +704,17 @@
     }
 }
 
-<span class="kw">impl </span>TryFromPLA&lt;u64&gt; <span class="kw">for </span>csl::utils::BigNum {
+<span class="kw">impl </span>TryFromPLA&lt;u64&gt; <span class="kw">for </span>csl::BigNum {
     <span class="kw">type </span>ExtraInfo&lt;<span class="lifetime">'a</span>&gt; = ();
 
     <span class="kw">fn </span>try_from_pla_with(val: <span class="kw-2">&amp;</span>u64, <span class="kw">_</span>: ()) -&gt; <span class="prelude-ty">Result</span>&lt;<span class="self">Self</span>, TryFromPLAError&gt; {
         <span class="comment">// BigNum(s) are u64 under the hood.
 
-        </span><span class="prelude-val">Ok</span>(csl::utils::BigNum::from(<span class="kw-2">*</span>val))
+        </span><span class="prelude-val">Ok</span>(csl::BigNum::from(<span class="kw-2">*</span>val))
     }
 }
 
-<span class="kw">impl </span>TryFromPLA&lt;BigInt&gt; <span class="kw">for </span>csl::utils::BigNum {
+<span class="kw">impl </span>TryFromPLA&lt;BigInt&gt; <span class="kw">for </span>csl::BigNum {
     <span class="kw">type </span>ExtraInfo&lt;<span class="lifetime">'a</span>&gt; = ();
 
     <span class="kw">fn </span>try_from_pla_with(val: <span class="kw-2">&amp;</span>BigInt, <span class="kw">_</span>: ()) -&gt; <span class="prelude-ty">Result</span>&lt;<span class="self">Self</span>, TryFromPLAError&gt; {
@@ -740,7 +730,7 @@
     }
 }
 
-<span class="kw">impl </span>TryFromPLA&lt;BigInt&gt; <span class="kw">for </span>csl::utils::BigInt {
+<span class="kw">impl </span>TryFromPLA&lt;BigInt&gt; <span class="kw">for </span>csl::BigInt {
     <span class="kw">type </span>ExtraInfo&lt;<span class="lifetime">'a</span>&gt; = ();
 
     <span class="kw">fn </span>try_from_pla_with(val: <span class="kw-2">&amp;</span>BigInt, <span class="kw">_</span>: ()) -&gt; <span class="prelude-ty">Result</span>&lt;<span class="self">Self</span>, TryFromPLAError&gt; {
@@ -748,55 +738,55 @@
     }
 }
 
-<span class="kw">impl </span>TryFromPLA&lt;BigInt&gt; <span class="kw">for </span>csl::utils::Int {
+<span class="kw">impl </span>TryFromPLA&lt;BigInt&gt; <span class="kw">for </span>csl::Int {
     <span class="kw">type </span>ExtraInfo&lt;<span class="lifetime">'a</span>&gt; = ();
 
     <span class="kw">fn </span>try_from_pla_with(val: <span class="kw-2">&amp;</span>BigInt, <span class="kw">_</span>: ()) -&gt; <span class="prelude-ty">Result</span>&lt;<span class="self">Self</span>, TryFromPLAError&gt; {
         <span class="kw">if </span>val.is_negative() {
-            <span class="prelude-val">Ok</span>(csl::utils::Int::new_negative(<span class="kw-2">&amp;</span>(val.abs()).try_to_csl()<span class="question-mark">?</span>))
+            <span class="prelude-val">Ok</span>(csl::Int::new_negative(<span class="kw-2">&amp;</span>(val.abs()).try_to_csl()<span class="question-mark">?</span>))
         } <span class="kw">else </span>{
-            <span class="prelude-val">Ok</span>(csl::utils::Int::new(<span class="kw-2">&amp;</span>val.try_to_csl()<span class="question-mark">?</span>))
+            <span class="prelude-val">Ok</span>(csl::Int::new(<span class="kw-2">&amp;</span>val.try_to_csl()<span class="question-mark">?</span>))
         }
     }
 }
 
-<span class="kw">impl </span>TryFromPLA&lt;i64&gt; <span class="kw">for </span>csl::utils::Int {
+<span class="kw">impl </span>TryFromPLA&lt;i64&gt; <span class="kw">for </span>csl::Int {
     <span class="kw">type </span>ExtraInfo&lt;<span class="lifetime">'a</span>&gt; = ();
 
     <span class="kw">fn </span>try_from_pla_with(val: <span class="kw-2">&amp;</span>i64, <span class="kw">_</span>: ()) -&gt; <span class="prelude-ty">Result</span>&lt;<span class="self">Self</span>, TryFromPLAError&gt; {
         <span class="kw">if </span>val.is_negative() {
-            <span class="prelude-val">Ok</span>(csl::utils::Int::new_negative(<span class="kw-2">&amp;</span>csl::utils::to_bignum(
-                val.abs() <span class="kw">as </span>u64,
+            <span class="prelude-val">Ok</span>(csl::Int::new_negative(<span class="kw-2">&amp;</span>csl::BigNum::from(
+                val.unsigned_abs(),
             )))
         } <span class="kw">else </span>{
-            <span class="prelude-val">Ok</span>(csl::utils::Int::new(<span class="kw-2">&amp;</span>csl::utils::to_bignum(<span class="kw-2">*</span>val <span class="kw">as </span>u64)))
+            <span class="prelude-val">Ok</span>(csl::Int::new(<span class="kw-2">&amp;</span>csl::BigNum::from(<span class="kw-2">*</span>val <span class="kw">as </span>u64)))
         }
     }
 }
 
-<span class="kw">impl </span>TryFromPLA&lt;Ed25519PubKeyHash&gt; <span class="kw">for </span>csl::crypto::Ed25519KeyHash {
+<span class="kw">impl </span>TryFromPLA&lt;Ed25519PubKeyHash&gt; <span class="kw">for </span>csl::Ed25519KeyHash {
     <span class="kw">type </span>ExtraInfo&lt;<span class="lifetime">'a</span>&gt; = ();
 
     <span class="kw">fn </span>try_from_pla_with(val: <span class="kw-2">&amp;</span>Ed25519PubKeyHash, <span class="kw">_</span>: ()) -&gt; <span class="prelude-ty">Result</span>&lt;<span class="self">Self</span>, TryFromPLAError&gt; {
-        csl::crypto::Ed25519KeyHash::from_bytes(val.<span class="number">0 </span>.<span class="number">0</span>.to_owned())
+        csl::Ed25519KeyHash::from_bytes(val.<span class="number">0 </span>.<span class="number">0</span>.to_owned())
             .map_err(TryFromPLAError::CSLDeserializeError)
     }
 }
 
-<span class="kw">impl </span>TryFromPLA&lt;ScriptHash&gt; <span class="kw">for </span>csl::crypto::ScriptHash {
+<span class="kw">impl </span>TryFromPLA&lt;ScriptHash&gt; <span class="kw">for </span>csl::ScriptHash {
     <span class="kw">type </span>ExtraInfo&lt;<span class="lifetime">'a</span>&gt; = ();
 
     <span class="kw">fn </span>try_from_pla_with(val: <span class="kw-2">&amp;</span>ScriptHash, <span class="kw">_</span>: ()) -&gt; <span class="prelude-ty">Result</span>&lt;<span class="self">Self</span>, TryFromPLAError&gt; {
-        csl::crypto::ScriptHash::from_bytes(val.<span class="number">0 </span>.<span class="number">0</span>.to_owned())
+        csl::ScriptHash::from_bytes(val.<span class="number">0 </span>.<span class="number">0</span>.to_owned())
             .map_err(TryFromPLAError::CSLDeserializeError)
     }
 }
 
-<span class="kw">impl </span>TryFromPLA&lt;TransactionHash&gt; <span class="kw">for </span>csl::crypto::TransactionHash {
+<span class="kw">impl </span>TryFromPLA&lt;TransactionHash&gt; <span class="kw">for </span>csl::TransactionHash {
     <span class="kw">type </span>ExtraInfo&lt;<span class="lifetime">'a</span>&gt; = ();
 
     <span class="kw">fn </span>try_from_pla_with(val: <span class="kw-2">&amp;</span>TransactionHash, <span class="kw">_</span>: ()) -&gt; <span class="prelude-ty">Result</span>&lt;<span class="self">Self</span>, TryFromPLAError&gt; {
-        csl::crypto::TransactionHash::from_bytes(val.<span class="number">0 </span>.<span class="number">0</span>.to_owned())
+        csl::TransactionHash::from_bytes(val.<span class="number">0 </span>.<span class="number">0</span>.to_owned())
             .map_err(TryFromPLAError::CSLDeserializeError)
     }
 }
@@ -849,7 +839,7 @@
         val: <span class="kw-2">&amp;</span>TransactionOutput,
         extra_info: TransactionOutputExtraInfo,
     ) -&gt; <span class="prelude-ty">Result</span>&lt;<span class="self">Self</span>, TryFromPLAError&gt; {
-        <span class="kw">let </span><span class="kw-2">mut </span>output_builder = csl::output_builder::TransactionOutputBuilder::new()
+        <span class="kw">let </span><span class="kw-2">mut </span>output_builder = csl::TransactionOutputBuilder::new()
             .with_address(<span class="kw-2">&amp;</span>val.address.try_to_csl_with(extra_info.network_id)<span class="question-mark">?</span>);
 
         output_builder = <span class="kw">match </span><span class="kw-2">&amp;</span>val.datum {
@@ -868,22 +858,22 @@
                     .ok_or(TryFromPLAError::MissingScript(script_hash))<span class="question-mark">?</span>;
                 <span class="prelude-val">Ok</span>(<span class="kw">match </span>script_or_ref {
                     <span class="kw">crate</span>::utils::script::ScriptOrRef::RefScript(<span class="kw">_</span>, script) =&gt; {
-                        csl::ScriptRef::new_plutus_script(<span class="kw-2">&amp;</span>script)
+                        csl::ScriptRef::new_plutus_script(script)
                     }
                     <span class="kw">crate</span>::utils::script::ScriptOrRef::PlutusScript(script) =&gt; {
-                        csl::ScriptRef::new_plutus_script(<span class="kw-2">&amp;</span>script)
+                        csl::ScriptRef::new_plutus_script(script)
                     }
                 })
             })
             .transpose()<span class="question-mark">?</span>;
 
         <span class="kw">if let </span><span class="prelude-val">Some</span>(script_ref) = <span class="kw-2">&amp;</span>script_ref {
-            output_builder = output_builder.with_script_ref(<span class="kw-2">&amp;</span>script_ref);
+            output_builder = output_builder.with_script_ref(script_ref);
         };
 
         <span class="kw">let </span>value_without_min_utxo = val.value.try_to_csl()<span class="question-mark">?</span>;
 
-        <span class="kw">let </span><span class="kw-2">mut </span>calc = csl::utils::MinOutputAdaCalculator::new_empty(extra_info.data_cost)
+        <span class="kw">let </span><span class="kw-2">mut </span>calc = csl::MinOutputAdaCalculator::new_empty(extra_info.data_cost)
             .map_err(TryFromPLAError::CSLJsError)<span class="question-mark">?</span>;
         calc.set_amount(<span class="kw-2">&amp;</span>value_without_min_utxo);
         <span class="kw">match </span><span class="kw-2">&amp;</span>val.datum {
@@ -903,8 +893,8 @@
         <span class="kw">let </span>coin = std::cmp::max(value_without_min_utxo.coin(), required_coin);
 
         <span class="kw">let </span>value = <span class="kw">match </span>value_without_min_utxo.multiasset() {
-            <span class="prelude-val">Some</span>(multiasset) =&gt; csl::utils::Value::new_with_assets(<span class="kw-2">&amp;</span>coin, <span class="kw-2">&amp;</span>multiasset),
-            <span class="prelude-val">None </span>=&gt; csl::utils::Value::new(<span class="kw-2">&amp;</span>coin),
+            <span class="prelude-val">Some</span>(multiasset) =&gt; csl::Value::new_with_assets(<span class="kw-2">&amp;</span>coin, <span class="kw-2">&amp;</span>multiasset),
+            <span class="prelude-val">None </span>=&gt; csl::Value::new(<span class="kw-2">&amp;</span>coin),
         };
 
         output_builder
@@ -955,21 +945,22 @@
     ) -&gt; <span class="prelude-ty">Result</span>&lt;<span class="self">Self</span>, TryFromPLAError&gt; {
         val.iter()
             .try_fold(csl::MintAssets::new(), |<span class="kw-2">mut </span>acc, (k, v)| {
-                acc.insert(<span class="kw-2">&amp;</span>k.try_to_csl()<span class="question-mark">?</span>, v.try_to_csl()<span class="question-mark">?</span>);
+                acc.insert(<span class="kw-2">&amp;</span>k.try_to_csl()<span class="question-mark">?</span>, v.try_to_csl()<span class="question-mark">?</span>)
+                    .map_err(TryFromPLAError::CSLJsError)<span class="question-mark">?</span>;
                 <span class="prelude-val">Ok</span>(acc)
             })
     }
 }
 
-<span class="kw">impl </span>TryFromPLA&lt;Value&gt; <span class="kw">for </span>csl::utils::Value {
+<span class="kw">impl </span>TryFromPLA&lt;Value&gt; <span class="kw">for </span>csl::Value {
     <span class="kw">type </span>ExtraInfo&lt;<span class="lifetime">'a</span>&gt; = ();
 
     <span class="kw">fn </span>try_from_pla_with(val: <span class="kw-2">&amp;</span>Value, <span class="kw">_</span>: ()) -&gt; <span class="prelude-ty">Result</span>&lt;<span class="self">Self</span>, TryFromPLAError&gt; {
-        <span class="kw">let </span>coin: csl::utils::Coin = val
+        <span class="kw">let </span>coin: csl::Coin = val
             .<span class="number">0
             </span>.get(<span class="kw-2">&amp;</span>CurrencySymbol::Ada)
             .and_then(|m| m.get(<span class="kw-2">&amp;</span>TokenName::ada()))
-            .map_or(<span class="prelude-val">Ok</span>(csl::utils::BigNum::zero()), TryToCSLWithDef::try_to_csl)<span class="question-mark">?</span>;
+            .map_or(<span class="prelude-val">Ok</span>(csl::BigNum::zero()), TryToCSLWithDef::try_to_csl)<span class="question-mark">?</span>;
 
         <span class="kw">let </span>m_ass = val
             .<span class="number">0
@@ -983,7 +974,7 @@
                 <span class="prelude-val">Ok</span>(acc)
             })<span class="question-mark">?</span>;
 
-        <span class="kw">let </span><span class="kw-2">mut </span>v = csl::utils::Value::new(<span class="kw-2">&amp;</span>coin);
+        <span class="kw">let </span><span class="kw-2">mut </span>v = csl::Value::new(<span class="kw-2">&amp;</span>coin);
 
         v.set_multiasset(<span class="kw-2">&amp;</span>m_ass);
 
@@ -991,35 +982,35 @@
     }
 }
 
-<span class="kw">impl </span>TryFromPLA&lt;PlutusData&gt; <span class="kw">for </span>csl::plutus::PlutusData {
+<span class="kw">impl </span>TryFromPLA&lt;PlutusData&gt; <span class="kw">for </span>csl::PlutusData {
     <span class="kw">type </span>ExtraInfo&lt;<span class="lifetime">'a</span>&gt; = ();
 
     <span class="kw">fn </span>try_from_pla_with(val: <span class="kw-2">&amp;</span>PlutusData, <span class="kw">_</span>: ()) -&gt; <span class="prelude-ty">Result</span>&lt;<span class="self">Self</span>, TryFromPLAError&gt; {
         <span class="kw">match </span>val {
-            PlutusData::Constr(tag, args) =&gt; <span class="prelude-val">Ok</span>(csl::plutus::PlutusData::new_constr_plutus_data(
-                <span class="kw-2">&amp;</span>csl::plutus::ConstrPlutusData::new(<span class="kw-2">&amp;</span>tag.try_to_csl()<span class="question-mark">?</span>, <span class="kw-2">&amp;</span>args.try_to_csl()<span class="question-mark">?</span>),
+            PlutusData::Constr(tag, args) =&gt; <span class="prelude-val">Ok</span>(csl::PlutusData::new_constr_plutus_data(
+                <span class="kw-2">&amp;</span>csl::ConstrPlutusData::new(<span class="kw-2">&amp;</span>tag.try_to_csl()<span class="question-mark">?</span>, <span class="kw-2">&amp;</span>args.try_to_csl()<span class="question-mark">?</span>),
             )),
-            PlutusData::Map(l) =&gt; <span class="prelude-val">Ok</span>(csl::plutus::PlutusData::new_map(<span class="kw-2">&amp;</span>l.try_to_csl()<span class="question-mark">?</span>)),
-            PlutusData::List(l) =&gt; <span class="prelude-val">Ok</span>(csl::plutus::PlutusData::new_list(<span class="kw-2">&amp;</span>l.try_to_csl()<span class="question-mark">?</span>)),
-            PlutusData::Integer(i) =&gt; <span class="prelude-val">Ok</span>(csl::plutus::PlutusData::new_integer(<span class="kw-2">&amp;</span>i.try_to_csl()<span class="question-mark">?</span>)),
-            PlutusData::Bytes(b) =&gt; <span class="prelude-val">Ok</span>(csl::plutus::PlutusData::new_bytes(b.to_owned())),
+            PlutusData::Map(l) =&gt; <span class="prelude-val">Ok</span>(csl::PlutusData::new_map(<span class="kw-2">&amp;</span>l.try_to_csl()<span class="question-mark">?</span>)),
+            PlutusData::List(l) =&gt; <span class="prelude-val">Ok</span>(csl::PlutusData::new_list(<span class="kw-2">&amp;</span>l.try_to_csl()<span class="question-mark">?</span>)),
+            PlutusData::Integer(i) =&gt; <span class="prelude-val">Ok</span>(csl::PlutusData::new_integer(<span class="kw-2">&amp;</span>i.try_to_csl()<span class="question-mark">?</span>)),
+            PlutusData::Bytes(b) =&gt; <span class="prelude-val">Ok</span>(csl::PlutusData::new_bytes(b.to_owned())),
         }
     }
 }
 
-<span class="kw">impl </span>TryFromPLA&lt;Vec&lt;PlutusData&gt;&gt; <span class="kw">for </span>csl::plutus::PlutusList {
+<span class="kw">impl </span>TryFromPLA&lt;Vec&lt;PlutusData&gt;&gt; <span class="kw">for </span>csl::PlutusList {
     <span class="kw">type </span>ExtraInfo&lt;<span class="lifetime">'a</span>&gt; = ();
 
     <span class="kw">fn </span>try_from_pla_with(val: <span class="kw-2">&amp;</span>Vec&lt;PlutusData&gt;, <span class="kw">_</span>: ()) -&gt; <span class="prelude-ty">Result</span>&lt;<span class="self">Self</span>, TryFromPLAError&gt; {
         val.iter()
             <span class="comment">// traverse
             </span>.map(|x| x.try_to_csl())
-            .collect::&lt;<span class="prelude-ty">Result</span>&lt;Vec&lt;csl::plutus::PlutusData&gt;, TryFromPLAError&gt;&gt;()
+            .collect::&lt;<span class="prelude-ty">Result</span>&lt;Vec&lt;csl::PlutusData&gt;, TryFromPLAError&gt;&gt;()
             .map(|x| x.into())
     }
 }
 
-<span class="kw">impl </span>TryFromPLA&lt;Vec&lt;(PlutusData, PlutusData)&gt;&gt; <span class="kw">for </span>csl::plutus::PlutusMap {
+<span class="kw">impl </span>TryFromPLA&lt;Vec&lt;(PlutusData, PlutusData)&gt;&gt; <span class="kw">for </span>csl::PlutusMap {
     <span class="kw">type </span>ExtraInfo&lt;<span class="lifetime">'a</span>&gt; = ();
 
     <span class="kw">fn </span>try_from_pla_with(
@@ -1027,23 +1018,27 @@
         <span class="kw">_</span>: (),
     ) -&gt; <span class="prelude-ty">Result</span>&lt;<span class="self">Self</span>, TryFromPLAError&gt; {
         val.iter()
-            .try_fold(csl::plutus::PlutusMap::new(), |<span class="kw-2">mut </span>acc, (k, v)| {
-                acc.insert(<span class="kw-2">&amp;</span>k.try_to_csl()<span class="question-mark">?</span>, <span class="kw-2">&amp;</span>v.try_to_csl()<span class="question-mark">?</span>);
+            .try_fold(csl::PlutusMap::new(), |<span class="kw-2">mut </span>acc, (k, v)| {
+                <span class="kw">let </span><span class="kw-2">mut </span>values = <span class="kw">match </span>acc.get(<span class="kw-2">&amp;</span>k.try_to_csl()<span class="question-mark">?</span>) {
+                    <span class="prelude-val">Some</span>(existing_values) =&gt; existing_values,
+                    <span class="prelude-val">None </span>=&gt; csl::PlutusMapValues::new(),
+                };
+                values.add(<span class="kw-2">&amp;</span>v.try_to_csl()<span class="question-mark">?</span>);
+                acc.insert(<span class="kw-2">&amp;</span>k.try_to_csl()<span class="question-mark">?</span>, <span class="kw-2">&amp;</span>values);
                 <span class="prelude-val">Ok</span>(acc)
             })
     }
 }
 
-<span class="kw">impl </span>TryFromPLA&lt;DatumHash&gt; <span class="kw">for </span>csl::crypto::DataHash {
+<span class="kw">impl </span>TryFromPLA&lt;DatumHash&gt; <span class="kw">for </span>csl::DataHash {
     <span class="kw">type </span>ExtraInfo&lt;<span class="lifetime">'a</span>&gt; = ();
 
     <span class="kw">fn </span>try_from_pla_with(val: <span class="kw-2">&amp;</span>DatumHash, <span class="kw">_</span>: ()) -&gt; <span class="prelude-ty">Result</span>&lt;<span class="self">Self</span>, TryFromPLAError&gt; {
-        csl::crypto::DataHash::from_bytes(val.<span class="number">0 </span>.<span class="number">0</span>.to_owned())
-            .map_err(TryFromPLAError::CSLDeserializeError)
+        csl::DataHash::from_bytes(val.<span class="number">0 </span>.<span class="number">0</span>.to_owned()).map_err(TryFromPLAError::CSLDeserializeError)
     }
 }
 
-<span class="kw">impl </span>TryFromPLA&lt;Datum&gt; <span class="kw">for </span>csl::plutus::PlutusData {
+<span class="kw">impl </span>TryFromPLA&lt;Datum&gt; <span class="kw">for </span>csl::PlutusData {
     <span class="kw">type </span>ExtraInfo&lt;<span class="lifetime">'a</span>&gt; = ();
 
     <span class="kw">fn </span>try_from_pla_with(val: <span class="kw-2">&amp;</span>Datum, <span class="kw">_</span>: ()) -&gt; <span class="prelude-ty">Result</span>&lt;<span class="self">Self</span>, TryFromPLAError&gt; {
@@ -1051,11 +1046,11 @@
     }
 }
 
-<span class="kw">impl </span>TryFromPLA&lt;ChainPointer&gt; <span class="kw">for </span>csl::address::Pointer {
+<span class="kw">impl </span>TryFromPLA&lt;ChainPointer&gt; <span class="kw">for </span>csl::Pointer {
     <span class="kw">type </span>ExtraInfo&lt;<span class="lifetime">'a</span>&gt; = ();
 
     <span class="kw">fn </span>try_from_pla_with(val: <span class="kw-2">&amp;</span>ChainPointer, <span class="kw">_</span>: ()) -&gt; <span class="prelude-ty">Result</span>&lt;<span class="self">Self</span>, TryFromPLAError&gt; {
-        <span class="prelude-val">Ok</span>(csl::address::Pointer::new_pointer(
+        <span class="prelude-val">Ok</span>(csl::Pointer::new_pointer(
             <span class="kw-2">&amp;</span>val.slot_number.try_to_csl()<span class="question-mark">?</span>,
             <span class="kw-2">&amp;</span>val.transaction_index.try_to_csl()<span class="question-mark">?</span>,
             <span class="kw-2">&amp;</span>val.certificate_index.try_to_csl()<span class="question-mark">?</span>,
@@ -1063,7 +1058,7 @@
     }
 }
 
-<span class="kw">impl </span>TryFromPLA&lt;Slot&gt; <span class="kw">for </span>csl::utils::BigNum {
+<span class="kw">impl </span>TryFromPLA&lt;Slot&gt; <span class="kw">for </span>csl::BigNum {
     <span class="kw">type </span>ExtraInfo&lt;<span class="lifetime">'a</span>&gt; = ();
 
     <span class="kw">fn </span>try_from_pla_with(val: <span class="kw-2">&amp;</span>Slot, <span class="kw">_</span>: ()) -&gt; <span class="prelude-ty">Result</span>&lt;<span class="self">Self</span>, TryFromPLAError&gt; {
@@ -1071,7 +1066,7 @@
     }
 }
 
-<span class="kw">impl </span>TryFromPLA&lt;TransactionIndex&gt; <span class="kw">for </span>csl::utils::BigNum {
+<span class="kw">impl </span>TryFromPLA&lt;TransactionIndex&gt; <span class="kw">for </span>csl::BigNum {
     <span class="kw">type </span>ExtraInfo&lt;<span class="lifetime">'a</span>&gt; = ();
 
     <span class="kw">fn </span>try_from_pla_with(val: <span class="kw-2">&amp;</span>TransactionIndex, <span class="kw">_</span>: ()) -&gt; <span class="prelude-ty">Result</span>&lt;<span class="self">Self</span>, TryFromPLAError&gt; {
@@ -1079,7 +1074,7 @@
     }
 }
 
-<span class="kw">impl </span>TryFromPLA&lt;CertificateIndex&gt; <span class="kw">for </span>csl::utils::BigNum {
+<span class="kw">impl </span>TryFromPLA&lt;CertificateIndex&gt; <span class="kw">for </span>csl::BigNum {
     <span class="kw">type </span>ExtraInfo&lt;<span class="lifetime">'a</span>&gt; = ();
 
     <span class="kw">fn </span>try_from_pla_with(val: <span class="kw-2">&amp;</span>CertificateIndex, <span class="kw">_</span>: ()) -&gt; <span class="prelude-ty">Result</span>&lt;<span class="self">Self</span>, TryFromPLAError&gt; {
@@ -1087,22 +1082,18 @@
     }
 }
 
-<span class="kw">impl </span>TryFromPLA&lt;Credential&gt; <span class="kw">for </span>csl::address::StakeCredential {
+<span class="kw">impl </span>TryFromPLA&lt;Credential&gt; <span class="kw">for </span>csl::Credential {
     <span class="kw">type </span>ExtraInfo&lt;<span class="lifetime">'a</span>&gt; = ();
 
     <span class="kw">fn </span>try_from_pla_with(val: <span class="kw-2">&amp;</span>Credential, <span class="kw">_</span>: ()) -&gt; <span class="prelude-ty">Result</span>&lt;<span class="self">Self</span>, TryFromPLAError&gt; {
         <span class="kw">match </span>val {
-            Credential::PubKey(pkh) =&gt; <span class="prelude-val">Ok</span>(csl::address::StakeCredential::from_keyhash(
-                <span class="kw-2">&amp;</span>pkh.try_to_csl()<span class="question-mark">?</span>,
-            )),
-            Credential::Script(sh) =&gt; <span class="prelude-val">Ok</span>(csl::address::StakeCredential::from_scripthash(
-                <span class="kw-2">&amp;</span>sh.<span class="number">0</span>.try_to_csl()<span class="question-mark">?</span>,
-            )),
+            Credential::PubKey(pkh) =&gt; <span class="prelude-val">Ok</span>(csl::Credential::from_keyhash(<span class="kw-2">&amp;</span>pkh.try_to_csl()<span class="question-mark">?</span>)),
+            Credential::Script(sh) =&gt; <span class="prelude-val">Ok</span>(csl::Credential::from_scripthash(<span class="kw-2">&amp;</span>sh.<span class="number">0</span>.try_to_csl()<span class="question-mark">?</span>)),
         }
     }
 }
 
-<span class="kw">impl </span>TryFromPLA&lt;StakingCredential&gt; <span class="kw">for </span>csl::address::StakeCredential {
+<span class="kw">impl </span>TryFromPLA&lt;StakingCredential&gt; <span class="kw">for </span>csl::Credential {
     <span class="kw">type </span>ExtraInfo&lt;<span class="lifetime">'a</span>&gt; = ();
 
     <span class="kw">fn </span>try_from_pla_with(val: <span class="kw-2">&amp;</span>StakingCredential, <span class="kw">_</span>: ()) -&gt; <span class="prelude-ty">Result</span>&lt;<span class="self">Self</span>, TryFromPLAError&gt; {
@@ -1115,39 +1106,34 @@
     }
 }
 
-<span class="kw">impl </span>TryFromPLA&lt;Address&gt; <span class="kw">for </span>csl::address::Address {
+<span class="kw">impl </span>TryFromPLA&lt;Address&gt; <span class="kw">for </span>csl::Address {
     <span class="kw">type </span>ExtraInfo&lt;<span class="lifetime">'a</span>&gt; = u8;
 
     <span class="kw">fn </span>try_from_pla_with(val: <span class="kw-2">&amp;</span>Address, network_tag: u8) -&gt; <span class="prelude-ty">Result</span>&lt;<span class="self">Self</span>, TryFromPLAError&gt; {
         <span class="kw">let </span>payment = val.credential.try_to_csl()<span class="question-mark">?</span>;
 
         <span class="prelude-val">Ok</span>(<span class="kw">match </span>val.staking_credential {
-            <span class="prelude-val">None </span>=&gt; csl::address::EnterpriseAddress::new(network_tag, <span class="kw-2">&amp;</span>payment).to_address(),
+            <span class="prelude-val">None </span>=&gt; csl::EnterpriseAddress::new(network_tag, <span class="kw-2">&amp;</span>payment).to_address(),
             <span class="prelude-val">Some</span>(<span class="kw-2">ref </span>sc) =&gt; <span class="kw">match </span>sc {
                 StakingCredential::Hash(c) =&gt; {
-                    csl::address::BaseAddress::new(network_tag, <span class="kw-2">&amp;</span>payment, <span class="kw-2">&amp;</span>c.try_to_csl()<span class="question-mark">?</span>)
-                        .to_address()
+                    csl::BaseAddress::new(network_tag, <span class="kw-2">&amp;</span>payment, <span class="kw-2">&amp;</span>c.try_to_csl()<span class="question-mark">?</span>).to_address()
                 }
                 StakingCredential::Pointer(ptr) =&gt; {
-                    csl::address::PointerAddress::new(network_tag, <span class="kw-2">&amp;</span>payment, <span class="kw-2">&amp;</span>ptr.try_to_csl()<span class="question-mark">?</span>)
-                        .to_address()
+                    csl::PointerAddress::new(network_tag, <span class="kw-2">&amp;</span>payment, <span class="kw-2">&amp;</span>ptr.try_to_csl()<span class="question-mark">?</span>).to_address()
                 }
             },
         })
     }
 }
 
-<span class="kw">impl </span>TryFromPLA&lt;StakingCredential&gt; <span class="kw">for </span>csl::address::RewardAddress {
+<span class="kw">impl </span>TryFromPLA&lt;StakingCredential&gt; <span class="kw">for </span>csl::RewardAddress {
     <span class="kw">type </span>ExtraInfo&lt;<span class="lifetime">'a</span>&gt; = u8;
 
     <span class="kw">fn </span>try_from_pla_with(
         val: <span class="kw-2">&amp;</span>StakingCredential,
         network_tag: u8,
     ) -&gt; <span class="prelude-ty">Result</span>&lt;<span class="self">Self</span>, TryFromPLAError&gt; {
-        <span class="prelude-val">Ok</span>(csl::address::RewardAddress::new(
-            network_tag,
-            <span class="kw-2">&amp;</span>val.try_to_csl()<span class="question-mark">?</span>,
-        ))
+        <span class="prelude-val">Ok</span>(csl::RewardAddress::new(network_tag, <span class="kw-2">&amp;</span>val.try_to_csl()<span class="question-mark">?</span>))
     }
 }
 
@@ -1167,19 +1153,19 @@
     }
 }
 
-<span class="kw">impl </span>TryFromPLA&lt;Redeemer&gt; <span class="kw">for </span>csl::plutus::Redeemer {
-    <span class="kw">type </span>ExtraInfo&lt;<span class="lifetime">'a</span>&gt; = (<span class="kw-2">&amp;</span><span class="lifetime">'a </span>csl::plutus::RedeemerTag, u64);
+<span class="kw">impl </span>TryFromPLA&lt;Redeemer&gt; <span class="kw">for </span>csl::Redeemer {
+    <span class="kw">type </span>ExtraInfo&lt;<span class="lifetime">'a</span>&gt; = (<span class="kw-2">&amp;</span><span class="lifetime">'a </span>csl::RedeemerTag, u64);
 
-    <span class="kw">fn </span>try_from_pla_with&lt;<span class="lifetime">'a</span>&gt;(
+    <span class="kw">fn </span>try_from_pla_with(
         pla_redeemer: <span class="kw-2">&amp;</span>Redeemer,
-        (red_tag, red_idx): <span class="self">Self</span>::ExtraInfo&lt;<span class="lifetime">'a</span>&gt;,
-    ) -&gt; <span class="prelude-ty">Result</span>&lt;csl::plutus::Redeemer, TryFromPLAError&gt; {
+        (red_tag, red_idx): <span class="self">Self</span>::ExtraInfo&lt;<span class="lifetime">'_</span>&gt;,
+    ) -&gt; <span class="prelude-ty">Result</span>&lt;csl::Redeemer, TryFromPLAError&gt; {
         <span class="kw">let </span>Redeemer(plutus_data) = pla_redeemer;
-        <span class="prelude-val">Ok</span>(csl::plutus::Redeemer::new(
-            <span class="kw-2">&amp;</span>red_tag,
+        <span class="prelude-val">Ok</span>(csl::Redeemer::new(
+            red_tag,
             <span class="kw-2">&amp;</span>red_idx.try_to_csl()<span class="question-mark">?</span>,
             <span class="kw-2">&amp;</span>plutus_data.try_to_csl()<span class="question-mark">?</span>,
-            <span class="kw-2">&amp;</span>csl::plutus::ExUnits::new(<span class="kw-2">&amp;</span>csl::utils::to_bignum(<span class="number">0</span>), <span class="kw-2">&amp;</span>csl::utils::to_bignum(<span class="number">0</span>)),
+            <span class="kw-2">&amp;</span>csl::ExUnits::new(<span class="kw-2">&amp;</span>csl::BigNum::from(<span class="number">0u64</span>), <span class="kw-2">&amp;</span>csl::BigNum::from(<span class="number">0u64</span>)),
         ))
     }
 }

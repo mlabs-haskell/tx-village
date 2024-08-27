@@ -93,7 +93,7 @@
     <span class="attr">#[error(<span class="string">"Unable to find redeemer for datum (hash: {0:?})"</span>)]
     </span>MissingDatum(DatumHash),
 
-    <span class="attr">#[error(<span class="string">"Unable to find Plutus script (hash: {0:?})"</span>)]
+    <span class="attr">#[error(<span class="string">"Unable to find Plutus script in TxWithCtx (hash: {0:?})"</span>)]
     </span>MissingScript(ScriptHash),
 
     <span class="attr">#[error(<span class="string">"Reference input containing script {0:?} is missing from the TransactionInfo reference input list."</span>)]
@@ -106,7 +106,7 @@
     </span>MissingChangeOutput,
 
     <span class="attr">#[error(<span class="string">"Execution units was not calculated for {0:?}."</span>)]
-    </span>MissingExUnits((csl::plutus::RedeemerTag, csl::utils::BigNum)),
+    </span>MissingExUnits((csl::RedeemerTag, csl::BigNum)),
 
     <span class="attr">#[error(<span class="string">"Protocol parameter {0} is missing"</span>)]
     </span>MissingProtocolParameter(String),

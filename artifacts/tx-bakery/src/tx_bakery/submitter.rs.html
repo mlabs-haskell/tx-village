@@ -35,9 +35,6 @@
 <a href="#33" id="33">33</a>
 <a href="#34" id="34">34</a>
 <a href="#35" id="35">35</a>
-<a href="#36" id="36">36</a>
-<a href="#37" id="37">37</a>
-<a href="#38" id="38">38</a>
 </pre></div><pre class="rust"><code><span class="doccomment">//! Trait for a component capable of submitting transactions
 
 </span><span class="kw">use </span>cardano_serialization_lib <span class="kw">as </span>csl;
@@ -50,14 +47,11 @@
 </span><span class="kw">pub trait </span>Submitter {
     <span class="kw">fn </span>evaluate_transaction(
         <span class="kw-2">&amp;</span><span class="self">self</span>,
-        tx_builder: <span class="kw-2">&amp;</span>csl::tx_builder::TransactionBuilder,
-        plutus_scripts: <span class="kw-2">&amp;</span>Vec&lt;csl::plutus::PlutusScript&gt;,
-        redeemers: <span class="kw-2">&amp;</span>Vec&lt;csl::plutus::Redeemer&gt;,
+        tx_builder: <span class="kw-2">&amp;</span>csl::TransactionBuilder,
+        plutus_scripts: <span class="kw-2">&amp;</span>[csl::PlutusScript],
+        redeemers: <span class="kw-2">&amp;</span>[csl::Redeemer],
     ) -&gt; <span class="kw">impl </span>Future&lt;
-        Output = <span class="prelude-ty">Result</span>&lt;
-            BTreeMap&lt;(csl::plutus::RedeemerTag, csl::utils::BigNum), csl::plutus::ExUnits&gt;,
-            SubmitterError,
-        &gt;,
+        Output = <span class="prelude-ty">Result</span>&lt;BTreeMap&lt;(csl::RedeemerTag, csl::BigNum), csl::ExUnits&gt;, SubmitterError&gt;,
     &gt;;
 
     <span class="doccomment">/// Submit a fully build and balanced tranasaction

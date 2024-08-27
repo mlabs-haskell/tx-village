@@ -90,22 +90,6 @@
 <a href="#88" id="88">88</a>
 <a href="#89" id="89">89</a>
 <a href="#90" id="90">90</a>
-<a href="#91" id="91">91</a>
-<a href="#92" id="92">92</a>
-<a href="#93" id="93">93</a>
-<a href="#94" id="94">94</a>
-<a href="#95" id="95">95</a>
-<a href="#96" id="96">96</a>
-<a href="#97" id="97">97</a>
-<a href="#98" id="98">98</a>
-<a href="#99" id="99">99</a>
-<a href="#100" id="100">100</a>
-<a href="#101" id="101">101</a>
-<a href="#102" id="102">102</a>
-<a href="#103" id="103">103</a>
-<a href="#104" id="104">104</a>
-<a href="#105" id="105">105</a>
-<a href="#106" id="106">106</a>
 </pre></div><pre class="rust"><code><span class="doccomment">//! Transaction Metadata
 
 </span><span class="kw">use crate</span>::{error::Error, utils::pla_to_csl::TryToCSLWithDef};
@@ -117,20 +101,16 @@
 </span><span class="attr">#[derive(Debug, Clone)]
 </span><span class="kw">pub struct </span>TransactionMetadata(<span class="kw">pub </span>BTreeMap&lt;u64, Metadata&gt;);
 
-<span class="kw">impl </span>TryFrom&lt;<span class="kw-2">&amp;</span>TransactionMetadata&gt; <span class="kw">for </span>csl::metadata::GeneralTransactionMetadata {
+<span class="kw">impl </span>TryFrom&lt;<span class="kw-2">&amp;</span>TransactionMetadata&gt; <span class="kw">for </span>csl::GeneralTransactionMetadata {
     <span class="kw">type </span>Error = Error;
 
     <span class="kw">fn </span>try_from(tx_metadata: <span class="kw-2">&amp;</span>TransactionMetadata) -&gt; <span class="prelude-ty">Result</span>&lt;<span class="self">Self</span>, <span class="self">Self</span>::Error&gt; {
-        <span class="kw">let </span><span class="kw-2">mut </span>csl_tx_metadata = csl::metadata::GeneralTransactionMetadata::new();
+        <span class="kw">let </span><span class="kw-2">mut </span>csl_tx_metadata = csl::GeneralTransactionMetadata::new();
 
-        tx_metadata
-            .<span class="number">0
-            </span>.iter()
-            .map(|(key, value)| {
-                <span class="kw">let _ </span>= csl_tx_metadata.insert(<span class="kw-2">&amp;</span>csl::utils::to_bignum(<span class="kw-2">*</span>key), <span class="kw-2">&amp;</span>value.try_into()<span class="question-mark">?</span>);
-                <span class="prelude-val">Ok</span>(())
-            })
-            .collect::&lt;<span class="prelude-ty">Result</span>&lt;<span class="kw">_</span>, <span class="self">Self</span>::Error&gt;&gt;()<span class="question-mark">?</span>;
+        tx_metadata.<span class="number">0</span>.iter().try_for_each(|(key, value)| {
+            <span class="kw">let _ </span>= csl_tx_metadata.insert(<span class="kw-2">&amp;</span>csl::BigNum::from(<span class="kw-2">*</span>key), <span class="kw-2">&amp;</span>value.try_into()<span class="question-mark">?</span>);
+            <span class="prelude-val">Ok</span>::&lt;(), <span class="self">Self</span>::Error&gt;(())
+        })<span class="question-mark">?</span>;
 
         <span class="prelude-val">Ok</span>(csl_tx_metadata)
     }
@@ -152,63 +132,51 @@
     Text(String),
 }
 
-<span class="kw">impl </span>TryFrom&lt;<span class="kw-2">&amp;</span>Metadata&gt; <span class="kw">for </span>csl::metadata::TransactionMetadatum {
+<span class="kw">impl </span>TryFrom&lt;<span class="kw-2">&amp;</span>Metadata&gt; <span class="kw">for </span>csl::TransactionMetadatum {
     <span class="kw">type </span>Error = Error;
 
     <span class="kw">fn </span>try_from(metadata: <span class="kw-2">&amp;</span>Metadata) -&gt; <span class="prelude-ty">Result</span>&lt;<span class="self">Self</span>, <span class="self">Self</span>::Error&gt; {
         <span class="kw">match </span>metadata {
             Metadata::Map(metadata_map) =&gt; {
-                <span class="kw">let </span><span class="kw-2">mut </span>csl_metadata_map = csl::metadata::MetadataMap::new();
+                <span class="kw">let </span><span class="kw-2">mut </span>csl_metadata_map = csl::MetadataMap::new();
 
-                metadata_map
-                    .iter()
-                    .map(|(key, value)| {
-                        <span class="kw">let _ </span>= csl_metadata_map.insert(<span class="kw-2">&amp;</span>key.try_into()<span class="question-mark">?</span>, <span class="kw-2">&amp;</span>value.try_into()<span class="question-mark">?</span>);
-                        <span class="prelude-val">Ok</span>(())
-                    })
-                    .collect::&lt;<span class="prelude-ty">Result</span>&lt;<span class="kw">_</span>, <span class="self">Self</span>::Error&gt;&gt;()<span class="question-mark">?</span>;
+                metadata_map.iter().try_for_each(|(key, value)| {
+                    <span class="kw">let _ </span>= csl_metadata_map.insert(<span class="kw-2">&amp;</span>key.try_into()<span class="question-mark">?</span>, <span class="kw-2">&amp;</span>value.try_into()<span class="question-mark">?</span>);
+                    <span class="prelude-val">Ok</span>::&lt;(), <span class="self">Self</span>::Error&gt;(())
+                })<span class="question-mark">?</span>;
 
-                <span class="prelude-val">Ok</span>(csl::metadata::TransactionMetadatum::new_map(
-                    <span class="kw-2">&amp;</span>csl_metadata_map,
-                ))
+                <span class="prelude-val">Ok</span>(csl::TransactionMetadatum::new_map(<span class="kw-2">&amp;</span>csl_metadata_map))
             }
 
             Metadata::List(metadata_list) =&gt; {
-                <span class="kw">let </span><span class="kw-2">mut </span>csl_metadata_list = csl::metadata::MetadataList::new();
+                <span class="kw">let </span><span class="kw-2">mut </span>csl_metadata_list = csl::MetadataList::new();
 
-                metadata_list
-                    .iter()
-                    .map(|elem| {
-                        <span class="kw">let _ </span>= csl_metadata_list.add(<span class="kw-2">&amp;</span>elem.try_into()<span class="question-mark">?</span>);
-                        <span class="prelude-val">Ok</span>(())
-                    })
-                    .collect::&lt;<span class="prelude-ty">Result</span>&lt;<span class="kw">_</span>, <span class="self">Self</span>::Error&gt;&gt;()<span class="question-mark">?</span>;
+                metadata_list.iter().try_for_each(|elem| {
+                    csl_metadata_list.add(<span class="kw-2">&amp;</span>elem.try_into()<span class="question-mark">?</span>);
+                    <span class="prelude-val">Ok</span>::&lt;(), <span class="self">Self</span>::Error&gt;(())
+                })<span class="question-mark">?</span>;
 
-                <span class="prelude-val">Ok</span>(csl::metadata::TransactionMetadatum::new_list(
-                    <span class="kw-2">&amp;</span>csl_metadata_list,
-                ))
+                <span class="prelude-val">Ok</span>(csl::TransactionMetadatum::new_list(<span class="kw-2">&amp;</span>csl_metadata_list))
             }
 
-            Metadata::Int(int) =&gt; <span class="prelude-val">Ok</span>(csl::metadata::TransactionMetadatum::new_int(
-                <span class="kw-2">&amp;</span>int.try_to_csl()<span class="question-mark">?</span>,
-            )),
+            Metadata::Int(int) =&gt; <span class="prelude-val">Ok</span>(csl::TransactionMetadatum::new_int(<span class="kw-2">&amp;</span>int.try_to_csl()<span class="question-mark">?</span>)),
 
-            Metadata::Bytes(bytes) =&gt; {
-                csl::metadata::TransactionMetadatum::new_bytes(bytes.to_owned()).map_err(|source| {
+            Metadata::Bytes(bytes) =&gt; csl::TransactionMetadatum::new_bytes(bytes.to_owned())
+                .map_err(|source| {
                     Error::ConversionError(<span class="macro">anyhow!</span>(
                         <span class="string">"Metadata::Bytes could not be converted: {}"</span>,
                         source
                     ))
-                })
-            }
+                }),
 
-            Metadata::Text(str) =&gt; csl::metadata::TransactionMetadatum::new_text(str.to_owned())
-                .map_err(|source| {
+            Metadata::Text(str) =&gt; {
+                csl::TransactionMetadatum::new_text(str.to_owned()).map_err(|source| {
                     Error::ConversionError(<span class="macro">anyhow!</span>(
                         <span class="string">"Metadata::Text could not be converted: {}"</span>,
                         source
                     ))
-                }),
+                })
+            }
         }
     }
 }

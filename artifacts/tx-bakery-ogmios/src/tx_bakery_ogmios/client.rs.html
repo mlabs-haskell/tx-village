@@ -425,11 +425,13 @@
 <a href="#423" id="423">423</a>
 <a href="#424" id="424">424</a>
 <a href="#425" id="425">425</a>
+<a href="#426" id="426">426</a>
+<a href="#427" id="427">427</a>
+<a href="#428" id="428">428</a>
 </pre></div><pre class="rust"><code><span class="kw">use </span>std::collections::BTreeMap;
 <span class="kw">use </span>std::time;
 
 <span class="kw">use </span>anyhow::anyhow;
-<span class="kw">use </span>cardano_serialization_lib <span class="kw">as </span>csl;
 <span class="kw">use </span>chrono::{DateTime, Utc};
 <span class="kw">use </span>derive_builder::Builder;
 <span class="kw">use </span>jsonrpsee::core::traits::ToRpcParams;
@@ -444,7 +446,8 @@
     transaction::{TransactionHash, TransactionInput},
 };
 <span class="kw">use </span>serde::Serialize;
-<span class="kw">use </span>tracing::warn;
+<span class="kw">use </span>tracing::{debug, error, info, warn};
+<span class="kw">use </span>tx_bakery::csl;
 <span class="kw">use </span>url::Url;
 
 <span class="kw">use </span>tx_bakery::{
@@ -554,7 +557,7 @@
                     .checked_mul(<span class="number">2u32</span>.pow(attempt))
                     .ok_or(OgmiosError::StartupError(<span class="macro">anyhow!</span>(<span class="string">"cannot wait any longer"</span>)))<span class="question-mark">?</span>;
                 tokio::time::sleep(wait_duration).<span class="kw">await</span>;
-                attempt = attempt + <span class="number">1</span>;
+                attempt += <span class="number">1</span>;
             }
         }
     }
@@ -593,10 +596,10 @@
         </span>U: serde::de::DeserializeOwned + Serialize,
         P: ToRpcParams + Send,
     {
-        <span class="self">self</span>.client
-            .request(method, params)
-            .<span class="kw">await
-            </span>.map_err(|source| OgmiosError::JSONRpcError(source))
+        <span class="self">self</span>.client.request(method, params).<span class="kw">await</span>.map_err(|err| {
+            <span class="macro">debug!</span>(%err, <span class="string">"Ogmios JSON RPC call error."</span>);
+            OgmiosError::JSONRpcError(err)
+        })
     }
 
     <span class="kw">pub async fn </span>check_health(config: <span class="kw-2">&amp;</span>OgmiosClientConfig) -&gt; <span class="prelude-ty">Result</span>&lt;OgmiosHealth&gt; {
@@ -661,9 +664,10 @@
         address: <span class="kw-2">&amp;</span>Address,
     ) -&gt; std::result::Result&lt;BTreeMap&lt;TransactionInput, FullTransactionOutput&gt;, ChainQueryError&gt;
     {
-        <span class="kw">let </span>addr: csl::address::Address = address
+        <span class="macro">debug!</span>(<span class="question-mark">?</span>address, <span class="string">"Query UTxOs by address"</span>);
+        <span class="kw">let </span>addr: csl::Address = address
             .try_to_csl_with(<span class="self">self</span>.config.network.to_network_id())
-            .map_err(|csl_err| OgmiosError::TryFromPLAError(csl_err))<span class="question-mark">?</span>;
+            .map_err(OgmiosError::TryFromPLAError)<span class="question-mark">?</span>;
 
         <span class="kw">let </span>addr = addr.to_bech32(<span class="prelude-val">Some</span>(<span class="string">"addr"</span>.to_owned())).map_err(|source| {
             OgmiosError::ConversionError {
@@ -688,7 +692,7 @@
     {
         <span class="kw">let </span>output_references = references
             .into_iter()
-            .map(Clone::clone)
+            .cloned()
             .map(OutputReference::try_from)
             .collect::&lt;std::result::Result&lt;Vec&lt;<span class="kw">_</span>&gt;, <span class="kw">_</span>&gt;&gt;()<span class="question-mark">?</span>;
 
@@ -705,39 +709,39 @@
     <span class="doccomment">/// Evaluate a transaction and return execution budgets for each script
     </span><span class="kw">async fn </span>evaluate_transaction(
         <span class="kw-2">&amp;</span><span class="self">self</span>,
-        tx_builder: <span class="kw-2">&amp;</span>csl::tx_builder::TransactionBuilder,
-        plutus_scripts: <span class="kw-2">&amp;</span>Vec&lt;csl::plutus::PlutusScript&gt;,
-        redeemers: <span class="kw-2">&amp;</span>Vec&lt;csl::plutus::Redeemer&gt;,
-    ) -&gt; std::result::Result&lt;
-        BTreeMap&lt;(csl::plutus::RedeemerTag, csl::utils::BigNum), csl::plutus::ExUnits&gt;,
-        SubmitterError,
-    &gt; {
+        tx_builder: <span class="kw-2">&amp;</span>csl::TransactionBuilder,
+        plutus_scripts: <span class="kw-2">&amp;</span>[csl::PlutusScript],
+        redeemers: <span class="kw-2">&amp;</span>[csl::Redeemer],
+    ) -&gt; std::result::Result&lt;BTreeMap&lt;(csl::RedeemerTag, csl::BigNum), csl::ExUnits&gt;, SubmitterError&gt;
+    {
         <span class="kw">let </span><span class="kw-2">mut </span>tx_builder = tx_builder.clone();
 
-        tx_builder.set_fee(<span class="kw-2">&amp;</span>csl::utils::to_bignum(<span class="number">0</span>));
+        tx_builder.set_fee(<span class="kw-2">&amp;</span>csl::BigNum::from(<span class="number">0u64</span>));
 
         <span class="kw">let </span><span class="kw-2">mut </span>witness_set = csl::TransactionWitnessSet::new();
 
-        <span class="kw">let </span><span class="kw-2">mut </span>script_witnesses = csl::plutus::PlutusScripts::new();
+        <span class="kw">let </span><span class="kw-2">mut </span>script_witnesses = csl::PlutusScripts::new();
 
         plutus_scripts
             .iter()
             .for_each(|script| script_witnesses.add(script));
 
-        <span class="kw">let </span><span class="kw-2">mut </span>redeemer_witnesses = csl::plutus::Redeemers::new();
+        <span class="kw">let </span><span class="kw-2">mut </span>redeemer_witnesses = csl::Redeemers::new();
 
         redeemers
             .iter()
-            .for_each(|redeemer| redeemer_witnesses.add(<span class="kw-2">&amp;</span>redeemer));
+            .for_each(|redeemer| redeemer_witnesses.add(redeemer));
 
         witness_set.set_plutus_scripts(<span class="kw-2">&amp;</span>script_witnesses);
         witness_set.set_redeemers(<span class="kw-2">&amp;</span>redeemer_witnesses);
 
-        <span class="kw">let </span>tx_body = tx_builder
-            .build()
-            .map_err(|err| SubmitterError(<span class="macro">anyhow::anyhow!</span>(<span class="string">"Transaction builder error: {}"</span>, err)))<span class="question-mark">?</span>;
+        <span class="kw">let </span>tx_body = tx_builder.build().map_err(|err| {
+            <span class="macro">error!</span>(%err, <span class="string">"Transaction builder error."</span>);
+            SubmitterError(<span class="macro">anyhow::anyhow!</span>(<span class="string">"Transaction builder error: {}"</span>, err))
+        })<span class="question-mark">?</span>;
         <span class="kw">let </span>tx = csl::Transaction::new(<span class="kw-2">&amp;</span>tx_body, <span class="kw-2">&amp;</span>witness_set, <span class="prelude-val">None</span>);
 
+        <span class="macro">debug!</span>(<span class="string">"Evaluating transaction"</span>);
         <span class="kw">let </span>params = EvaluateTransactionParams {
             transaction: TransactionCbor { cbor: tx.to_hex() },
             additional_utxo: Vec::new(),
@@ -750,11 +754,11 @@
                 <span class="prelude-val">Ok</span>((
                     (
                         to_redeemer_tag(<span class="kw-2">&amp;</span>budgets.validator.purpose)<span class="question-mark">?</span>,
-                        csl::utils::to_bignum(budgets.validator.index),
+                        csl::BigNum::from(budgets.validator.index),
                     ),
-                    csl::plutus::ExUnits::new(
-                        <span class="kw-2">&amp;</span>csl::utils::to_bignum(budgets.budget.memory),
-                        <span class="kw-2">&amp;</span>csl::utils::to_bignum(budgets.budget.cpu),
+                    csl::ExUnits::new(
+                        <span class="kw-2">&amp;</span>csl::BigNum::from(budgets.budget.memory),
+                        <span class="kw-2">&amp;</span>csl::BigNum::from(budgets.budget.cpu),
                     ),
                 ))
             })
@@ -765,6 +769,7 @@
         <span class="kw-2">&amp;</span><span class="self">self</span>,
         tx: <span class="kw-2">&amp;</span>csl::Transaction,
     ) -&gt; std::result::Result&lt;TransactionHash, SubmitterError&gt; {
+        <span class="macro">debug!</span>(<span class="string">"Submitting transaction"</span>);
         <span class="kw">let </span>params = SubmitTransactionParams {
             transaction: TransactionCbor { cbor: tx.to_hex() },
             additional_utxo: Vec::new(),
@@ -780,6 +785,7 @@
         <span class="kw-2">&amp;</span><span class="self">self</span>,
         tx_hash: <span class="kw-2">&amp;</span>TransactionHash,
     ) -&gt; std::result::Result&lt;(), SubmitterError&gt; {
+        <span class="macro">info!</span>(<span class="question-mark">?</span>tx_hash, <span class="string">"Awaiting transaction confirmation."</span>);
         <span class="kw">let </span>do_wait = || <span class="kw">async </span>{
             <span class="kw">loop </span>{
                 <span class="kw">let _ </span>= <span class="self">self</span>.acquire_mempool().<span class="kw">await</span><span class="question-mark">?</span>;
@@ -821,10 +827,10 @@
             retry_counter += <span class="number">1</span>;
         }
 
-        <span class="kw">return </span><span class="prelude-val">Err</span>(SubmitterError(<span class="macro">anyhow!</span>(
+        <span class="prelude-val">Err</span>(SubmitterError(<span class="macro">anyhow!</span>(
             <span class="string">"Unable to confirm transaction {:?}"</span>,
             tx_hash
-        )));
+        )))
     }
 }
 

@@ -91,6 +91,13 @@
 <a href="#89" id="89">89</a>
 <a href="#90" id="90">90</a>
 <a href="#91" id="91">91</a>
+<a href="#92" id="92">92</a>
+<a href="#93" id="93">93</a>
+<a href="#94" id="94">94</a>
+<a href="#95" id="95">95</a>
+<a href="#96" id="96">96</a>
+<a href="#97" id="97">97</a>
+<a href="#98" id="98">98</a>
 </pre></div><pre class="rust"><code><span class="doccomment">//! Plutus Script management
 
 </span><span class="kw">use </span><span class="kw">super</span>::csl_to_pla::ToPLA;
@@ -104,7 +111,7 @@
 
 <span class="attr">#[derive(Clone, Debug)]
 </span><span class="kw">pub enum </span>Script {
-    PlutusScript(csl::plutus::PlutusScript),
+    PlutusScript(csl::PlutusScript),
     NativeScript(csl::NativeScript),
 }
 
@@ -112,9 +119,9 @@
 </span><span class="attr">#[derive(Clone, Debug)]
 </span><span class="kw">pub enum </span>ScriptOrRef {
     <span class="doccomment">/// Script will be used from a reference input
-    </span>RefScript(TransactionInput, csl::plutus::PlutusScript),
+    </span>RefScript(TransactionInput, csl::PlutusScript),
     <span class="doccomment">/// Script will be added as script witness
-    </span>PlutusScript(csl::plutus::PlutusScript),
+    </span>PlutusScript(csl::PlutusScript),
 }
 
 <span class="kw">impl </span>ScriptOrRef {
@@ -124,7 +131,7 @@
         serializer.write_bytes(bytes).unwrap();
         <span class="kw">let </span>script_bytes = serializer.finalize();
 
-        <span class="kw">let </span>script = csl::plutus::PlutusScript::from_bytes_v2(script_bytes)
+        <span class="kw">let </span>script = csl::PlutusScript::from_bytes_v2(script_bytes)
             .map_err(|source| Error::ConversionError(<span class="macro">anyhow!</span>(source)))<span class="question-mark">?</span>;
         <span class="prelude-val">Ok</span>(ScriptOrRef::PlutusScript(script))
     }
@@ -145,7 +152,7 @@
         }
     }
 
-    <span class="kw">pub fn </span>get_script(<span class="self">self</span>) -&gt; csl::plutus::PlutusScript {
+    <span class="kw">pub fn </span>get_script(<span class="self">self</span>) -&gt; csl::PlutusScript {
         <span class="kw">match </span><span class="self">self </span>{
             ScriptOrRef::RefScript(<span class="kw">_</span>, script) =&gt; script,
             ScriptOrRef::PlutusScript(script) =&gt; script,
@@ -159,7 +166,14 @@
         }
     }
 
-    <span class="kw">pub fn </span>get_version(<span class="self">self</span>) -&gt; csl::plutus::Language {
+    <span class="kw">pub fn </span>get_script_size(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; usize {
+        <span class="kw">match </span><span class="self">self </span>{
+            ScriptOrRef::RefScript(<span class="kw">_</span>, script) =&gt; script.bytes().len(),
+            ScriptOrRef::PlutusScript(script) =&gt; script.bytes().len(),
+        }
+    }
+
+    <span class="kw">pub fn </span>get_version(<span class="self">self</span>) -&gt; csl::Language {
         <span class="kw">match </span><span class="self">self </span>{
             ScriptOrRef::RefScript(<span class="kw">_</span>, script) =&gt; script.language_version(),
             ScriptOrRef::PlutusScript(script) =&gt; script.language_version(),

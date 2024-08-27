@@ -138,7 +138,7 @@
 
 <span class="doccomment">/// Convert a POSIX time into number of slots in the current system
 </span><span class="kw">pub fn </span>posix_time_into_slot(
-    era_summaries: <span class="kw-2">&amp;</span>Vec&lt;EraSummary&gt;,
+    era_summaries: <span class="kw-2">&amp;</span>[EraSummary],
     sys_start: <span class="kw-2">&amp;</span>DateTime&lt;Utc&gt;,
     posix_time: POSIXTime,
 ) -&gt; <span class="prelude-ty">Result</span>&lt;u64&gt; {
@@ -149,7 +149,7 @@
 }
 
 <span class="kw">pub fn </span>time_into_slot(
-    era_summaries: <span class="kw-2">&amp;</span>Vec&lt;EraSummary&gt;,
+    era_summaries: <span class="kw-2">&amp;</span>[EraSummary],
     sys_start: <span class="kw-2">&amp;</span>DateTime&lt;Utc&gt;,
     time: DateTime&lt;Utc&gt;,
 ) -&gt; <span class="prelude-ty">Result</span>&lt;u64&gt; {
@@ -176,7 +176,7 @@
 }
 
 <span class="kw">pub fn </span>slot_into_posix_time(
-    era_summaries: <span class="kw-2">&amp;</span>Vec&lt;EraSummary&gt;,
+    era_summaries: <span class="kw-2">&amp;</span>[EraSummary],
     sys_start: <span class="kw-2">&amp;</span>DateTime&lt;Utc&gt;,
     slot: u64,
 ) -&gt; <span class="prelude-ty">Result</span>&lt;POSIXTime&gt; {
@@ -184,7 +184,7 @@
 }
 
 <span class="kw">pub fn </span>slot_into_time(
-    era_summaries: <span class="kw-2">&amp;</span>Vec&lt;EraSummary&gt;,
+    era_summaries: <span class="kw-2">&amp;</span>[EraSummary],
     sys_start: <span class="kw-2">&amp;</span>DateTime&lt;Utc&gt;,
     slot: u64,
 ) -&gt; <span class="prelude-ty">Result</span>&lt;DateTime&lt;Utc&gt;&gt; {
@@ -205,10 +205,10 @@
 }
 
 <span class="kw">pub fn </span>time_range_into_slots(
-    era_summaries: <span class="kw-2">&amp;</span>Vec&lt;EraSummary&gt;,
+    era_summaries: <span class="kw-2">&amp;</span>[EraSummary],
     sys_start: <span class="kw-2">&amp;</span>DateTime&lt;Utc&gt;,
     interval: POSIXTimeRange,
-) -&gt; <span class="prelude-ty">Result</span>&lt;(<span class="prelude-ty">Option</span>&lt;csl::utils::BigNum&gt;, <span class="prelude-ty">Option</span>&lt;csl::utils::BigNum&gt;)&gt; {
+) -&gt; <span class="prelude-ty">Result</span>&lt;(<span class="prelude-ty">Option</span>&lt;csl::BigNum&gt;, <span class="prelude-ty">Option</span>&lt;csl::BigNum&gt;)&gt; {
     <span class="kw">let </span>PlutusInterval {
         from:
             LowerBound {
@@ -225,7 +225,7 @@
         Extended::NegInf =&gt; <span class="prelude-val">None</span>,
         Extended::PosInf =&gt; <span class="prelude-val">Some</span>(u64::MAX),
         Extended::Finite(posix_time) =&gt; {
-            <span class="kw">let </span>slots = posix_time_into_slot(<span class="kw-2">&amp;</span>era_summaries, <span class="kw-2">&amp;</span>sys_start, posix_time)<span class="question-mark">?</span>;
+            <span class="kw">let </span>slots = posix_time_into_slot(era_summaries, sys_start, posix_time)<span class="question-mark">?</span>;
             <span class="kw">if </span>lower_closed {
                 <span class="prelude-val">Some</span>(slots)
             } <span class="kw">else </span>{
@@ -238,7 +238,7 @@
         Extended::NegInf =&gt; <span class="prelude-val">Some</span>(<span class="number">0</span>),
         Extended::PosInf =&gt; <span class="prelude-val">None</span>,
         Extended::Finite(posix_time) =&gt; {
-            <span class="kw">let </span>slots = posix_time_into_slot(<span class="kw-2">&amp;</span>era_summaries, <span class="kw-2">&amp;</span>sys_start, posix_time)<span class="question-mark">?</span>;
+            <span class="kw">let </span>slots = posix_time_into_slot(era_summaries, sys_start, posix_time)<span class="question-mark">?</span>;
             <span class="kw">if </span>upper_closed {
                 <span class="prelude-val">Some</span>(slots)
             } <span class="kw">else </span>{
@@ -248,8 +248,8 @@
     };
 
     <span class="prelude-val">Ok</span>((
-        lb_slots.map(csl::utils::to_bignum),
-        ub_slots.map(csl::utils::to_bignum),
+        lb_slots.map(csl::BigNum::from),
+        ub_slots.map(csl::BigNum::from),
     ))
 }
 </code></pre></div></section></main></body></html>

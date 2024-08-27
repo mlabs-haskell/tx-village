@@ -51,9 +51,9 @@
 <a href="#49" id="49">49</a>
 <a href="#50" id="50">50</a>
 <a href="#51" id="51">51</a>
-</pre></div><pre class="rust"><code><span class="kw">use </span>cardano_serialization_lib <span class="kw">as </span>csl;
-<span class="kw">use </span>oura::filters::selection::{Config, Predicate};
+</pre></div><pre class="rust"><code><span class="kw">use </span>oura::filters::selection::{Config, Predicate};
 <span class="kw">use </span>plutus_ledger_api::v2::{script::MintingPolicyHash, value::CurrencySymbol};
+<span class="kw">use </span>tx_bakery::csl;
 <span class="kw">use </span>tx_bakery::utils::pla_to_csl::TryFromPLAWithDef;
 
 <span class="doccomment">/// Interesting transaction components to look for when filtering transactions
@@ -96,7 +96,7 @@
     <span class="kw">match </span>cur_sym {
         CurrencySymbol::Ada =&gt; String::new(),
         CurrencySymbol::NativeToken(MintingPolicyHash(script_hash)) =&gt; {
-            csl::crypto::ScriptHash::try_from_pla(<span class="kw-2">&amp;</span>script_hash)
+            csl::ScriptHash::try_from_pla(<span class="kw-2">&amp;</span>script_hash)
                 .unwrap()
                 .to_hex()
         }

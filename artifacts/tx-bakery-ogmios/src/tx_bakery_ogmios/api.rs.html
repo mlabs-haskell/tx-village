@@ -741,9 +741,7 @@
 <a href="#739" id="739">739</a>
 <a href="#740" id="740">740</a>
 <a href="#741" id="741">741</a>
-<a href="#742" id="742">742</a>
 </pre></div><pre class="rust"><code><span class="kw">use </span>anyhow::anyhow;
-<span class="kw">use </span>cardano_serialization_lib <span class="kw">as </span>csl;
 <span class="kw">use </span>chrono::Duration;
 <span class="kw">use </span>data_encoding::HEXLOWER;
 <span class="kw">use </span>jsonrpsee::core::traits::ToRpcParams;
@@ -753,6 +751,7 @@
 <span class="kw">use </span>serde_json::value::{RawValue, Value <span class="kw">as </span>JsonValue};
 <span class="kw">use </span>std::collections::BTreeMap;
 <span class="kw">use </span>std::str::FromStr;
+<span class="kw">use </span>tx_bakery::csl;
 <span class="kw">use </span>tx_bakery::{
     chain_query::{<span class="self">self</span>, FullTransactionOutput},
     utils::{csl_to_pla::TryToPLA, pla_to_csl::TryToCSLWithDef},
@@ -763,6 +762,7 @@
 <span class="kw">pub type </span><span class="prelude-ty">Result</span>&lt;T&gt; = std::result::Result&lt;T, OgmiosError&gt;;
 
 <span class="attr">#[derive(Clone, Debug, Serialize, Deserialize)]
+#[serde(rename_all = <span class="string">"camelCase"</span>)]
 </span><span class="kw">pub struct </span>OgmiosHealth {
     <span class="comment">// These fields are not parsed:
     //
@@ -790,16 +790,11 @@
     //     "blockNo": 5034297,
     //     "slot": 15520688
     // },
-    </span><span class="attr">#[serde(rename(deserialize = <span class="string">"networkSynchronization"</span>))]
     </span><span class="kw">pub </span>network_synchronization: f32,
-    <span class="attr">#[serde(rename(deserialize = <span class="string">"currentEra"</span>))]
-    </span><span class="kw">pub </span>current_era: String,
-    <span class="attr">#[serde(rename(deserialize = <span class="string">"connectionStatus"</span>))]
-    </span><span class="kw">pub </span>connection_status: String,
-    <span class="attr">#[serde(rename(deserialize = <span class="string">"currentEpoch"</span>))]
-    </span><span class="kw">pub </span>current_epoch: i64,
-    <span class="attr">#[serde(rename(deserialize = <span class="string">"slotInEpoch"</span>))]
-    </span><span class="kw">pub </span>slot_in_epoch: i64,
+    <span class="kw">pub </span>current_era: String,
+    <span class="kw">pub </span>connection_status: String,
+    <span class="kw">pub </span>current_epoch: i64,
+    <span class="kw">pub </span>slot_in_epoch: i64,
     <span class="kw">pub </span>version: String,
     <span class="kw">pub </span>network: String,
 }
@@ -914,13 +909,11 @@
 }
 
 <span class="attr">#[derive(Clone, Debug, Serialize, Deserialize)]
+#[serde(rename_all = <span class="string">"camelCase"</span>)]
 </span><span class="kw">pub</span>(<span class="kw">crate</span>) <span class="kw">struct </span>EraParams {
-    <span class="attr">#[serde(rename(deserialize = <span class="string">"epochLength"</span>))]
-    </span><span class="kw">pub </span>epoch_length: u64,
-    <span class="attr">#[serde(rename(deserialize = <span class="string">"slotLength"</span>))]
-    </span><span class="kw">pub </span>slot_length: MilliSeconds,
-    <span class="attr">#[serde(rename(deserialize = <span class="string">"safeZone"</span>))]
-    </span><span class="kw">pub </span>safe_zone: <span class="prelude-ty">Option</span>&lt;u64&gt;,
+    <span class="kw">pub </span>epoch_length: u64,
+    <span class="kw">pub </span>slot_length: MilliSeconds,
+    <span class="kw">pub </span>safe_zone: <span class="prelude-ty">Option</span>&lt;u64&gt;,
 }
 
 <span class="kw">impl </span>From&lt;EraParams&gt; <span class="kw">for </span>chain_query::EraParameters {
@@ -944,13 +937,13 @@
 }
 
 <span class="attr">#[derive(Clone, Debug, Serialize, Deserialize)]
+#[serde(rename_all = <span class="string">"camelCase"</span>)]
 </span><span class="kw">pub</span>(<span class="kw">crate</span>) <span class="kw">struct </span>Utxo {
     <span class="kw">pub </span>transaction: TransactionId,
     <span class="kw">pub </span>index: u32,
     <span class="kw">pub </span>address: String,
     <span class="kw">pub </span>value: Value,
-    <span class="attr">#[serde(rename(deserialize = <span class="string">"datumHash"</span>))]
-    </span><span class="kw">pub </span>datum_hash: <span class="prelude-ty">Option</span>&lt;String&gt;,
+    <span class="kw">pub </span>datum_hash: <span class="prelude-ty">Option</span>&lt;String&gt;,
     <span class="kw">pub </span>datum: <span class="prelude-ty">Option</span>&lt;String&gt;,
     <span class="kw">pub </span>script: <span class="prelude-ty">Option</span>&lt;Script&gt;,
 }
@@ -1020,7 +1013,7 @@
     <span class="kw">fn </span>from(tx_hash: <span class="kw-2">&amp;</span>pla::v2::transaction::TransactionHash) -&gt; TransactionId {
         <span class="kw">let </span>pla::v2::transaction::TransactionHash(pla::v2::crypto::LedgerBytes(bytes)) = tx_hash;
         TransactionId {
-            id: HEXLOWER.encode(<span class="kw-2">&amp;</span>bytes),
+            id: HEXLOWER.encode(bytes),
         }
     }
 }
@@ -1092,12 +1085,11 @@
                 pla::v2::crypto::LedgerBytes(bytes),
             ))
         } <span class="kw">else if let </span><span class="prelude-val">Some</span>(d) = <span class="kw-2">&amp;</span>utxo.datum {
-            <span class="kw">let </span>plutus_data = <span class="kw-2">&amp;</span>csl::plutus::PlutusData::from_hex(<span class="kw-2">&amp;</span>d).map_err(|source| {
-                OgmiosError::ConversionError {
+            <span class="kw">let </span>plutus_data =
+                <span class="kw-2">&amp;</span>csl::PlutusData::from_hex(d).map_err(|source| OgmiosError::ConversionError {
                     label: <span class="string">"PlutusData"</span>.to_string(),
                     source: <span class="macro">anyhow!</span>(source),
-                }
-            })<span class="question-mark">?</span>;
+                })<span class="question-mark">?</span>;
             pla::v2::datum::OutputDatum::InlineDatum(pla::v2::datum::Datum(
                 plutus_data.try_to_pla()<span class="question-mark">?</span>,
             ))
@@ -1122,8 +1114,8 @@
                     }
                     Script::Plutus { cbor, language } =&gt; {
                         <span class="kw">let </span>plutus_version = <span class="kw">match </span><span class="kw-2">&amp;</span>language[..] {
-                            <span class="string">"plutus:v1" </span>=&gt; csl::plutus::Language::new_plutus_v1(),
-                            <span class="string">"plutus:v2" </span>=&gt; csl::plutus::Language::new_plutus_v2(),
+                            <span class="string">"plutus:v1" </span>=&gt; csl::Language::new_plutus_v1(),
+                            <span class="string">"plutus:v2" </span>=&gt; csl::Language::new_plutus_v2(),
                             <span class="kw">_ </span>=&gt; <span class="prelude-val">Err</span>(OgmiosError::ConversionError {
                                 label: <span class="string">"Plutus language"</span>.to_string(),
                                 source: <span class="macro">anyhow!</span>(<span class="string">"Couldn't parse Plutus language version."</span>),
@@ -1131,7 +1123,7 @@
                         };
 
                         <span class="kw">let </span>flat_bytes =
-                            hex::decode(<span class="kw-2">&amp;</span>cbor).map_err(|err| OgmiosError::ConversionError {
+                            hex::decode(cbor).map_err(|err| OgmiosError::ConversionError {
                                 label: <span class="string">"Plutus script"</span>.to_string(),
                                 source: <span class="macro">anyhow!</span>(
                                     <span class="string">"Couldn't decode hex encoded plutus script: {}"</span>,
@@ -1143,7 +1135,7 @@
                         serializer.write_bytes(flat_bytes).unwrap();
                         <span class="kw">let </span>script_bytes = serializer.finalize();
 
-                        <span class="kw">let </span>script = csl::plutus::PlutusScript::from_bytes_with_version(
+                        <span class="kw">let </span>script = csl::PlutusScript::from_bytes_with_version(
                             script_bytes,
                             <span class="kw-2">&amp;</span>plutus_version,
                         )
@@ -1161,7 +1153,7 @@
             .transpose()<span class="question-mark">?</span>;
 
         <span class="prelude-val">Ok</span>(FullTransactionOutput {
-            address: csl::address::Address::from_bech32(<span class="kw-2">&amp;</span>utxo.address)
+            address: csl::Address::from_bech32(<span class="kw-2">&amp;</span>utxo.address)
                 .map_err(|source| OgmiosError::ConversionError {
                     label: <span class="string">"Address"</span>.to_string(),
                     source: <span class="macro">anyhow!</span>(source),
@@ -1240,71 +1232,42 @@
 <span class="kw">pub type </span>QueryLedgerStateProtocolParametersResponse = ProtocolParameters;
 
 <span class="attr">#[derive(Clone, Debug, Serialize, Deserialize)]
+#[serde(rename_all = <span class="string">"camelCase"</span>)]
 </span><span class="kw">pub struct </span>ProtocolParameters {
-    <span class="attr">#[serde(rename(deserialize = <span class="string">"minFeeCoefficient"</span>))]
-    </span><span class="kw">pub </span>min_fee_coefficient: u64,
-    <span class="attr">#[serde(rename(deserialize = <span class="string">"minFeeConstant"</span>))]
-    </span><span class="kw">pub </span>min_fee_constant: AdaOnly,
-    <span class="attr">#[serde(rename(deserialize = <span class="string">"minUtxoDepositCoefficient"</span>))]
-    </span><span class="kw">pub </span>min_utxo_deposit_coefficient: u64,
-    <span class="attr">#[serde(rename(deserialize = <span class="string">"minUtxoDepositConstant"</span>))]
-    </span><span class="kw">pub </span>min_utxo_deposit_constant: AdaOnly,
-    <span class="attr">#[serde(rename(deserialize = <span class="string">"maxBlockBodySize"</span>))]
-    </span><span class="kw">pub </span>max_block_body_size: Bytes,
-    <span class="attr">#[serde(rename(deserialize = <span class="string">"maxBlockHeaderSize"</span>))]
-    </span><span class="kw">pub </span>max_block_header_size: Bytes,
-    <span class="attr">#[serde(rename(deserialize = <span class="string">"maxTransactionSize"</span>))]
-    </span><span class="kw">pub </span>max_transaction_size: <span class="prelude-ty">Option</span>&lt;Bytes&gt;,
-    <span class="attr">#[serde(rename(deserialize = <span class="string">"maxValueSize"</span>))]
-    </span><span class="kw">pub </span>max_value_size: <span class="prelude-ty">Option</span>&lt;Bytes&gt;,
-    <span class="attr">#[serde(rename(deserialize = <span class="string">"extraEntropy"</span>))]
-    </span><span class="kw">pub </span>extra_entropy: <span class="prelude-ty">Option</span>&lt;Nonce&gt;,
-    <span class="attr">#[serde(rename(deserialize = <span class="string">"stakeCredentialDeposit"</span>))]
-    </span><span class="kw">pub </span>stake_credential_deposit: AdaOnly,
-    <span class="attr">#[serde(rename(deserialize = <span class="string">"stakePoolDeposit"</span>))]
-    </span><span class="kw">pub </span>stake_pool_deposit: AdaOnly,
-    <span class="attr">#[serde(rename(deserialize = <span class="string">"stakePoolRetirementEpochBound"</span>))]
-    </span><span class="kw">pub </span>stake_pool_retirement_epoch_bound: u64,
-    <span class="attr">#[serde(rename(deserialize = <span class="string">"stakePoolPledgeInfluence"</span>))]
-    </span><span class="kw">pub </span>stake_pool_pledge_influence: Ratio,
-    <span class="attr">#[serde(rename(deserialize = <span class="string">"minStakePoolCost"</span>))]
-    </span><span class="kw">pub </span>min_stake_pool_cost: AdaOnly,
-    <span class="attr">#[serde(rename(deserialize = <span class="string">"desiredNumberOfStakePools"</span>))]
-    </span><span class="kw">pub </span>desired_number_of_stake_pools: u64,
-    <span class="attr">#[serde(rename(deserialize = <span class="string">"federatedBlockProductionRatio"</span>))]
-    </span><span class="kw">pub </span>federated_block_production_ratio: <span class="prelude-ty">Option</span>&lt;Ratio&gt;,
-    <span class="attr">#[serde(rename(deserialize = <span class="string">"monetaryExpansion"</span>))]
-    </span><span class="kw">pub </span>monetary_expansion: Ratio,
-    <span class="attr">#[serde(rename(deserialize = <span class="string">"treasuryExpansion"</span>))]
-    </span><span class="kw">pub </span>treasury_expansion: Ratio,
-    <span class="attr">#[serde(rename(deserialize = <span class="string">"collateralPercentage"</span>))]
-    </span><span class="kw">pub </span>collateral_percentage: <span class="prelude-ty">Option</span>&lt;u64&gt;,
-    <span class="attr">#[serde(rename(deserialize = <span class="string">"maxCollateralInputs"</span>))]
-    </span><span class="kw">pub </span>max_collateral_inputs: <span class="prelude-ty">Option</span>&lt;u64&gt;,
-    <span class="attr">#[serde(rename(deserialize = <span class="string">"plutusCostModels"</span>))]
-    </span><span class="kw">pub </span>plutus_cost_models: <span class="prelude-ty">Option</span>&lt;CostModels&gt;,
-    <span class="attr">#[serde(rename(deserialize = <span class="string">"scriptExecutionPrices"</span>))]
-    </span><span class="kw">pub </span>script_execution_prices: <span class="prelude-ty">Option</span>&lt;ScriptExecutionPrices&gt;,
-    <span class="attr">#[serde(rename(deserialize = <span class="string">"maxExecutionUnitsPerTransaction"</span>))]
-    </span><span class="kw">pub </span>max_execution_units_per_transaction: <span class="prelude-ty">Option</span>&lt;ExecutionUnits&gt;,
-    <span class="attr">#[serde(rename(deserialize = <span class="string">"maxExecutionUnitsPerBlock"</span>))]
-    </span><span class="kw">pub </span>max_execution_units_per_block: <span class="prelude-ty">Option</span>&lt;ExecutionUnits&gt;,
-    <span class="attr">#[serde(rename(deserialize = <span class="string">"stakePoolVotingThresholds"</span>))]
-    </span><span class="kw">pub </span>stake_pool_voting_thresholds: <span class="prelude-ty">Option</span>&lt;StakePoolVotingThresholds&gt;,
-    <span class="attr">#[serde(rename(deserialize = <span class="string">"constitutionalCommitteeMinSize"</span>))]
-    </span><span class="kw">pub </span>constitutional_committee_min_size: <span class="prelude-ty">Option</span>&lt;u64&gt;,
-    <span class="attr">#[serde(rename(deserialize = <span class="string">"constitutionalCommitteeMaxTermLength"</span>))]
-    </span><span class="kw">pub </span>constitutional_committee_max_term_length: <span class="prelude-ty">Option</span>&lt;u64&gt;,
-    <span class="attr">#[serde(rename(deserialize = <span class="string">"governanceActionLifetime"</span>))]
-    </span><span class="kw">pub </span>governance_action_lifetime: <span class="prelude-ty">Option</span>&lt;Epoch&gt;,
-    <span class="attr">#[serde(rename(deserialize = <span class="string">"governanceActionDeposit"</span>))]
-    </span><span class="kw">pub </span>governance_action_deposit: <span class="prelude-ty">Option</span>&lt;AdaOnly&gt;,
-    <span class="attr">#[serde(rename(deserialize = <span class="string">"delegateRepresentativeVotingThresholds"</span>))]
-    </span><span class="kw">pub </span>delegate_representative_voting_thresholds: <span class="prelude-ty">Option</span>&lt;DelegateRepresentativeVotingThresholds&gt;,
-    <span class="attr">#[serde(rename(deserialize = <span class="string">"delegateRepresentativeDeposit"</span>))]
-    </span><span class="kw">pub </span>delegate_representative_deposit: <span class="prelude-ty">Option</span>&lt;AdaOnly&gt;,
-    <span class="attr">#[serde(rename(deserialize = <span class="string">"delegateRepresentativeMaxIdleTime"</span>))]
-    </span><span class="kw">pub </span>delegate_representative_max_idle_time: <span class="prelude-ty">Option</span>&lt;Epoch&gt;,
+    <span class="kw">pub </span>min_fee_coefficient: u64,
+    <span class="kw">pub </span>min_fee_constant: AdaOnly,
+    <span class="kw">pub </span>min_fee_reference_scripts: <span class="prelude-ty">Option</span>&lt;MinFeeReferenceScripts&gt;,
+    <span class="kw">pub </span>min_utxo_deposit_coefficient: u64,
+    <span class="kw">pub </span>min_utxo_deposit_constant: AdaOnly,
+    <span class="kw">pub </span>max_block_body_size: Bytes,
+    <span class="kw">pub </span>max_block_header_size: Bytes,
+    <span class="kw">pub </span>max_transaction_size: <span class="prelude-ty">Option</span>&lt;Bytes&gt;,
+    <span class="kw">pub </span>max_value_size: <span class="prelude-ty">Option</span>&lt;Bytes&gt;,
+    <span class="kw">pub </span>extra_entropy: <span class="prelude-ty">Option</span>&lt;Nonce&gt;,
+    <span class="kw">pub </span>stake_credential_deposit: AdaOnly,
+    <span class="kw">pub </span>stake_pool_deposit: AdaOnly,
+    <span class="kw">pub </span>stake_pool_retirement_epoch_bound: u64,
+    <span class="kw">pub </span>stake_pool_pledge_influence: Ratio,
+    <span class="kw">pub </span>min_stake_pool_cost: AdaOnly,
+    <span class="kw">pub </span>desired_number_of_stake_pools: u64,
+    <span class="kw">pub </span>federated_block_production_ratio: <span class="prelude-ty">Option</span>&lt;Ratio&gt;,
+    <span class="kw">pub </span>monetary_expansion: Ratio,
+    <span class="kw">pub </span>treasury_expansion: Ratio,
+    <span class="kw">pub </span>collateral_percentage: <span class="prelude-ty">Option</span>&lt;u64&gt;,
+    <span class="kw">pub </span>max_collateral_inputs: <span class="prelude-ty">Option</span>&lt;u64&gt;,
+    <span class="kw">pub </span>plutus_cost_models: <span class="prelude-ty">Option</span>&lt;CostModels&gt;,
+    <span class="kw">pub </span>script_execution_prices: <span class="prelude-ty">Option</span>&lt;ScriptExecutionPrices&gt;,
+    <span class="kw">pub </span>max_execution_units_per_transaction: <span class="prelude-ty">Option</span>&lt;ExecutionUnits&gt;,
+    <span class="kw">pub </span>max_execution_units_per_block: <span class="prelude-ty">Option</span>&lt;ExecutionUnits&gt;,
+    <span class="kw">pub </span>max_reference_scripts_size: Bytes,
+    <span class="kw">pub </span>stake_pool_voting_thresholds: <span class="prelude-ty">Option</span>&lt;StakePoolVotingThresholds&gt;,
+    <span class="kw">pub </span>constitutional_committee_min_size: <span class="prelude-ty">Option</span>&lt;u64&gt;,
+    <span class="kw">pub </span>constitutional_committee_max_term_length: <span class="prelude-ty">Option</span>&lt;u64&gt;,
+    <span class="kw">pub </span>governance_action_lifetime: <span class="prelude-ty">Option</span>&lt;Epoch&gt;,
+    <span class="kw">pub </span>governance_action_deposit: <span class="prelude-ty">Option</span>&lt;AdaOnly&gt;,
+    <span class="kw">pub </span>delegate_representative_voting_thresholds: <span class="prelude-ty">Option</span>&lt;DelegateRepresentativeVotingThresholds&gt;,
+    <span class="kw">pub </span>delegate_representative_deposit: <span class="prelude-ty">Option</span>&lt;AdaOnly&gt;,
+    <span class="kw">pub </span>delegate_representative_max_idle_time: <span class="prelude-ty">Option</span>&lt;Epoch&gt;,
     <span class="kw">pub </span>version: ProtocolVersion,
 }
 
@@ -1325,7 +1288,40 @@
 
 <span class="kw">pub type </span>Nonce = String;
 
-<span class="kw">pub type </span>Ratio = String;
+<span class="attr">#[derive(Clone, Debug)]
+</span><span class="kw">pub struct </span>Ratio {
+    numerator: u64,
+    denominator: u64,
+}
+
+<span class="kw">impl</span>&lt;<span class="lifetime">'de</span>&gt; serde::Deserialize&lt;<span class="lifetime">'de</span>&gt; <span class="kw">for </span>Ratio {
+    <span class="kw">fn </span>deserialize&lt;D&gt;(deserilizer: D) -&gt; std::result::Result&lt;Ratio, D::Error&gt;
+    <span class="kw">where
+        </span>D: serde::Deserializer&lt;<span class="lifetime">'de</span>&gt;,
+    {
+        <span class="kw">let </span>str = String::deserialize(deserilizer)<span class="question-mark">?</span>;
+        <span class="kw">let </span>(left, right) = str
+            .split_once(<span class="string">'/'</span>)
+            .ok_or(serde::de::Error::custom(<span class="string">"Not a valid ratio"</span>))<span class="question-mark">?</span>;
+        <span class="prelude-val">Ok</span>(Ratio {
+            numerator: FromStr::from_str(left).map_err(|err: std::num::ParseIntError| {
+                serde::de::Error::custom(<span class="macro">format!</span>(<span class="string">"Ratio numerator error: {:?}"</span>, err))
+            })<span class="question-mark">?</span>,
+            denominator: FromStr::from_str(right).map_err(|err: std::num::ParseIntError| {
+                serde::de::Error::custom(<span class="macro">format!</span>(<span class="string">"Ratio denominator error: {:?}"</span>, err))
+            })<span class="question-mark">?</span>,
+        })
+    }
+}
+
+<span class="kw">impl </span>Serialize <span class="kw">for </span>Ratio {
+    <span class="kw">fn </span>serialize&lt;S&gt;(<span class="kw-2">&amp;</span><span class="self">self</span>, serializer: S) -&gt; std::result::Result&lt;S::Ok, S::Error&gt;
+    <span class="kw">where
+        </span>S: serde::Serializer,
+    {
+        serializer.serialize_str(<span class="kw-2">&amp;</span><span class="macro">format!</span>(<span class="string">"{}/{}"</span>, <span class="self">self</span>.numerator, <span class="self">self</span>.denominator))
+    }
+}
 
 <span class="attr">#[derive(Clone, Debug, Serialize, Deserialize)]
 </span><span class="kw">pub struct </span>ScriptExecutionPrices {
@@ -1342,11 +1338,17 @@
 }
 
 <span class="attr">#[derive(Clone, Debug, Serialize, Deserialize)]
+</span><span class="kw">pub struct </span>MinFeeReferenceScripts {
+    range: u32,
+    base: f64,
+    multiplier: f64,
+}
+
+<span class="attr">#[derive(Clone, Debug, Serialize, Deserialize)]
+#[serde(rename_all = <span class="string">"camelCase"</span>)]
 </span><span class="kw">pub struct </span>StakePoolVotingThresholds {
-    <span class="attr">#[serde(rename(deserialize = <span class="string">"noConfidence"</span>))]
-    </span><span class="kw">pub </span>no_confidence: Ratio,
-    <span class="attr">#[serde(rename(deserialize = <span class="string">"constitutionalCommittee"</span>))]
-    </span><span class="kw">pub </span>constitutional_committee: ConstitutionalCommittee,
+    <span class="kw">pub </span>no_confidence: Ratio,
+    <span class="kw">pub </span>constitutional_committee: ConstitutionalCommittee,
 }
 
 <span class="attr">#[derive(Clone, Debug, Serialize, Deserialize)]
@@ -1358,18 +1360,14 @@
 <span class="kw">pub type </span>Epoch = u64;
 
 <span class="attr">#[derive(Clone, Debug, Serialize, Deserialize)]
+#[serde(rename_all = <span class="string">"camelCase"</span>)]
 </span><span class="kw">pub struct </span>DelegateRepresentativeVotingThresholds {
-    <span class="attr">#[serde(rename(deserialize = <span class="string">"noConfidence"</span>))]
-    </span><span class="kw">pub </span>no_confidence: Ratio,
+    <span class="kw">pub </span>no_confidence: Ratio,
     <span class="kw">pub </span>constitution: Ratio,
-    <span class="attr">#[serde(rename(deserialize = <span class="string">"constitutionalCommittee"</span>))]
-    </span><span class="kw">pub </span>constitutional_committee: ConstitutionalCommittee,
-    <span class="attr">#[serde(rename(deserialize = <span class="string">"hardforkInitiation"</span>))]
-    </span><span class="kw">pub </span>hardfork_initiation: Ratio,
-    <span class="attr">#[serde(rename(deserialize = <span class="string">"propocolParametersUpdate"</span>))]
-    </span><span class="kw">pub </span>propocol_parameters_update: ProtocolParametersUpdate,
-    <span class="attr">#[serde(rename(deserialize = <span class="string">"treasuryWithdrawals"</span>))]
-    </span><span class="kw">pub </span>treasury_withdrawals: Ratio,
+    <span class="kw">pub </span>constitutional_committee: ConstitutionalCommittee,
+    <span class="kw">pub </span>hard_fork_initiation: Ratio,
+    <span class="kw">pub </span>protocol_parameters_update: ProtocolParametersUpdate,
+    <span class="kw">pub </span>treasury_withdrawals: Ratio,
 }
 
 <span class="attr">#[derive(Clone, Debug, Serialize, Deserialize)]
@@ -1393,35 +1391,31 @@
     <span class="kw">fn </span>try_from(pparams: ProtocolParameters) -&gt; <span class="prelude-ty">Result</span>&lt;<span class="self">Self</span>&gt; {
         <span class="kw">let </span>script_execution_prices = <span class="kw">match </span>pparams.script_execution_prices {
             <span class="prelude-val">None </span>=&gt; <span class="prelude-val">None</span>,
-            <span class="prelude-val">Some</span>(ex_prices) =&gt; {
-                <span class="kw">let </span>mem_prices = parse_ratio(ex_prices.memory)<span class="question-mark">?</span>;
-                <span class="kw">let </span>cpu_prices = parse_ratio(ex_prices.cpu)<span class="question-mark">?</span>;
-                <span class="prelude-val">Some</span>(csl::plutus::ExUnitPrices::new(
-                    <span class="kw-2">&amp;</span>csl::UnitInterval::new(
-                        <span class="kw-2">&amp;</span>csl::utils::to_bignum(mem_prices.<span class="number">0</span>),
-                        <span class="kw-2">&amp;</span>csl::utils::to_bignum(mem_prices.<span class="number">1</span>),
-                    ),
-                    <span class="kw-2">&amp;</span>csl::UnitInterval::new(
-                        <span class="kw-2">&amp;</span>csl::utils::to_bignum(cpu_prices.<span class="number">0</span>),
-                        <span class="kw-2">&amp;</span>csl::utils::to_bignum(cpu_prices.<span class="number">1</span>),
-                    ),
-                ))
-            }
+            <span class="prelude-val">Some</span>(ex_prices) =&gt; <span class="prelude-val">Some</span>(csl::ExUnitPrices::new(
+                <span class="kw-2">&amp;</span>csl::UnitInterval::new(
+                    <span class="kw-2">&amp;</span>csl::BigNum::from(ex_prices.memory.numerator),
+                    <span class="kw-2">&amp;</span>csl::BigNum::from(ex_prices.memory.denominator),
+                ),
+                <span class="kw-2">&amp;</span>csl::UnitInterval::new(
+                    <span class="kw-2">&amp;</span>csl::BigNum::from(ex_prices.cpu.numerator),
+                    <span class="kw-2">&amp;</span>csl::BigNum::from(ex_prices.cpu.denominator),
+                ),
+            )),
         };
 
         <span class="prelude-val">Ok</span>(chain_query::ProtocolParameters {
-            min_fee_coefficient: csl::utils::to_bignum(pparams.min_fee_coefficient <span class="kw">as </span>u64),
-            min_fee_constant: csl::utils::to_bignum(pparams.min_fee_constant.ada.lovelace <span class="kw">as </span>u64),
-            min_utxo_deposit_coefficient: csl::utils::to_bignum(
-                pparams.min_utxo_deposit_coefficient <span class="kw">as </span>u64,
-            ),
-            min_utxo_deposit_constant: csl::utils::to_bignum(
+            min_fee_coefficient: csl::BigNum::from(pparams.min_fee_coefficient),
+            min_fee_constant: csl::BigNum::from(pparams.min_fee_constant.ada.lovelace <span class="kw">as </span>u64),
+            min_fee_reference_scripts: pparams
+                .min_fee_reference_scripts
+                .map(|min_fee| to_unit_interval(min_fee.base))
+                .transpose()<span class="question-mark">?</span>,
+            min_utxo_deposit_coefficient: csl::BigNum::from(pparams.min_utxo_deposit_coefficient),
+            min_utxo_deposit_constant: csl::BigNum::from(
                 pparams.min_utxo_deposit_constant.ada.lovelace <span class="kw">as </span>u64,
             ),
-            stake_pool_deposit: csl::utils::to_bignum(
-                pparams.stake_pool_deposit.ada.lovelace <span class="kw">as </span>u64,
-            ),
-            stake_credential_deposit: csl::utils::to_bignum(
+            stake_pool_deposit: csl::BigNum::from(pparams.stake_pool_deposit.ada.lovelace <span class="kw">as </span>u64),
+            stake_credential_deposit: csl::BigNum::from(
                 pparams.stake_credential_deposit.ada.lovelace <span class="kw">as </span>u64,
             ),
             max_value_size: pparams.max_value_size.map(|x| x.bytes <span class="kw">as </span>u32),
@@ -1433,38 +1427,42 @@
     }
 }
 
-<span class="kw">fn </span>parse_ratio(ratio: Ratio) -&gt; <span class="prelude-ty">Result</span>&lt;(u64, u64)&gt; {
-    <span class="kw">let </span>(left, right) = ratio.split_once(<span class="string">'/'</span>).ok_or(OgmiosError::ConversionError {
-        label: <span class="string">"Ratio"</span>.to_string(),
-        source: <span class="macro">anyhow!</span>(<span class="string">"Not a ratio"</span>),
-    })<span class="question-mark">?</span>;
-    <span class="prelude-val">Ok</span>((
-        FromStr::from_str(left).map_err(|source: std::num::ParseIntError| {
-            OgmiosError::ConversionError {
-                label: <span class="string">"Ratio numerator"</span>.to_string(),
-                source: <span class="macro">anyhow!</span>(source),
-            }
-        })<span class="question-mark">?</span>,
-        FromStr::from_str(right).map_err(|source: std::num::ParseIntError| {
-            OgmiosError::ConversionError {
-                label: <span class="string">"Ratio denumerator"</span>.to_string(),
-                source: <span class="macro">anyhow!</span>(source),
-            }
-        })<span class="question-mark">?</span>,
-    ))
+<span class="kw">fn </span>to_unit_interval(float: f64) -&gt; <span class="prelude-ty">Result</span>&lt;csl::UnitInterval&gt; {
+    num::rational::Ratio::from_float(float)
+        .ok_or(OgmiosError::ConversionError {
+            label: <span class="string">"UnitInterval"</span>.to_string(),
+            source: <span class="macro">anyhow!</span>(<span class="string">"Couldn't convert floating number to ratio."</span>,),
+        })
+        .and_then(|ratio| {
+            <span class="prelude-val">Ok</span>(csl::UnitInterval::new(
+                <span class="kw-2">&amp;</span>csl::BigNum::from(&lt;u64&gt;::try_from(ratio.numer()).map_err(|err| {
+                    OgmiosError::ConversionError {
+                        label: <span class="string">"UnitInterval"</span>.to_string(),
+                        source: <span class="macro">anyhow!</span>(err),
+                    }
+                })<span class="question-mark">?</span>),
+                <span class="kw-2">&amp;</span>csl::BigNum::from(&lt;u64&gt;::try_from(ratio.denom()).map_err(|err| {
+                    OgmiosError::ConversionError {
+                        label: <span class="string">"UnitInterval"</span>.to_string(),
+                        source: <span class="macro">anyhow!</span>(err),
+                    }
+                })<span class="question-mark">?</span>),
+            ))
+        })
 }
 
-<span class="kw">fn </span>to_costmdls(cost_models: CostModels) -&gt; csl::plutus::Costmdls {
-    <span class="kw">let </span><span class="kw-2">mut </span>costmdls = csl::plutus::Costmdls::new();
+<span class="kw">fn </span>to_costmdls(cost_models: CostModels) -&gt; csl::Costmdls {
+    <span class="kw">let </span><span class="kw-2">mut </span>costmdls = csl::Costmdls::new();
 
     cost_models.iter().for_each(|(lang, costs)| {
-        <span class="kw">let </span><span class="kw-2">mut </span>cost_model = csl::plutus::CostModel::new();
+        <span class="kw">let </span><span class="kw-2">mut </span>cost_model = csl::CostModel::new();
         costs.iter().enumerate().for_each(|(index, model)| {
             <span class="kw">let _ </span>= cost_model.set(index, <span class="kw-2">&amp;</span>model.try_to_csl().unwrap());
         });
         <span class="kw">let </span>language = <span class="kw">match </span><span class="kw-2">&amp;</span>lang[..] {
-            <span class="string">"plutus:v1" </span>=&gt; csl::plutus::Language::new_plutus_v1(),
-            <span class="string">"plutus:v2" </span>=&gt; csl::plutus::Language::new_plutus_v2(),
+            <span class="string">"plutus:v1" </span>=&gt; csl::Language::new_plutus_v1(),
+            <span class="string">"plutus:v2" </span>=&gt; csl::Language::new_plutus_v2(),
+            <span class="string">"plutus:v3" </span>=&gt; csl::Language::new_plutus_v3(),
             <span class="kw">_ </span>=&gt; <span class="macro">panic!</span>(<span class="string">"Unknown Plutus language version"</span>),
         };
         costmdls.insert(<span class="kw-2">&amp;</span>language, <span class="kw-2">&amp;</span>cost_model);
@@ -1472,12 +1470,12 @@
     costmdls
 }
 
-<span class="kw">pub fn </span>to_redeemer_tag(str: <span class="kw-2">&amp;</span>str) -&gt; <span class="prelude-ty">Result</span>&lt;csl::plutus::RedeemerTag&gt; {
+<span class="kw">pub fn </span>to_redeemer_tag(str: <span class="kw-2">&amp;</span>str) -&gt; <span class="prelude-ty">Result</span>&lt;csl::RedeemerTag&gt; {
     <span class="kw">match </span>str {
-        <span class="string">"spend" </span>=&gt; <span class="prelude-val">Ok</span>(csl::plutus::RedeemerTag::new_spend()),
-        <span class="string">"certificate" </span>=&gt; <span class="prelude-val">Ok</span>(csl::plutus::RedeemerTag::new_cert()),
-        <span class="string">"mint" </span>=&gt; <span class="prelude-val">Ok</span>(csl::plutus::RedeemerTag::new_mint()),
-        <span class="string">"withdrawal" </span>=&gt; <span class="prelude-val">Ok</span>(csl::plutus::RedeemerTag::new_reward()),
+        <span class="string">"spend" </span>=&gt; <span class="prelude-val">Ok</span>(csl::RedeemerTag::new_spend()),
+        <span class="string">"certificate" </span>=&gt; <span class="prelude-val">Ok</span>(csl::RedeemerTag::new_cert()),
+        <span class="string">"mint" </span>=&gt; <span class="prelude-val">Ok</span>(csl::RedeemerTag::new_mint()),
+        <span class="string">"withdrawal" </span>=&gt; <span class="prelude-val">Ok</span>(csl::RedeemerTag::new_reward()),
         <span class="kw">_ </span>=&gt; <span class="prelude-val">Err</span>(OgmiosError::ConversionError {
             label: <span class="string">"RedeemerTag"</span>.to_string(),
             source: <span class="macro">anyhow!</span>(<span class="string">"Invalid RedeemerTag"</span>),

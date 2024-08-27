@@ -263,6 +263,12 @@
 <a href="#261" id="261">261</a>
 <a href="#262" id="262">262</a>
 <a href="#263" id="263">263</a>
+<a href="#264" id="264">264</a>
+<a href="#265" id="265">265</a>
+<a href="#266" id="266">266</a>
+<a href="#267" id="267">267</a>
+<a href="#268" id="268">268</a>
+<a href="#269" id="269">269</a>
 </pre></div><pre class="rust"><code><span class="doccomment">//! Transaction Info builder
 
 </span><span class="kw">use </span>num_bigint::BigInt;
@@ -315,9 +321,8 @@
     }
 }
 
-<span class="kw">impl </span>TxScaffold {
-    <span class="doccomment">/// Start an empty scaffold
-    </span><span class="kw">pub fn </span>new() -&gt; <span class="self">Self </span>{
+<span class="kw">impl </span>Default <span class="kw">for </span>TxScaffold {
+    <span class="kw">fn </span>default() -&gt; <span class="self">Self </span>{
         TxScaffold {
             inputs: BTreeMap::new(),
             reference_inputs: BTreeMap::new(),
@@ -328,6 +333,13 @@
             valid_range: Interval::Always.into(),
             signatories: BTreeSet::new(),
         }
+    }
+}
+
+<span class="kw">impl </span>TxScaffold {
+    <span class="doccomment">/// Start an empty scaffold
+    </span><span class="kw">pub fn </span>new() -&gt; <span class="self">Self </span>{
+        <span class="self">Self</span>::default()
     }
 
     <span class="doccomment">/// Add a transaction input

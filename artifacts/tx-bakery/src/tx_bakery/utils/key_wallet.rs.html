@@ -136,18 +136,12 @@
 <a href="#134" id="134">134</a>
 <a href="#135" id="135">135</a>
 <a href="#136" id="136">136</a>
-<a href="#137" id="137">137</a>
-<a href="#138" id="138">138</a>
-<a href="#139" id="139">139</a>
 </pre></div><pre class="rust"><code><span class="doccomment">//! Simple wallet reading the signing key(s) from disk
 
 </span><span class="kw">use </span><span class="kw">super</span>::csl_to_pla::ToPLA;
 <span class="kw">use </span><span class="kw">crate</span>::wallet::{Wallet, WalletError};
 <span class="kw">use </span>anyhow::anyhow;
-<span class="kw">use </span>cardano_serialization_lib::crypto::PrivateKey;
-<span class="kw">use </span>cardano_serialization_lib::crypto::Vkeywitnesses;
-<span class="kw">use </span>cardano_serialization_lib::utils::{hash_transaction, make_vkey_witness};
-<span class="kw">use </span>cardano_serialization_lib::Transaction;
+<span class="kw">use </span>cardano_serialization_lib <span class="kw">as </span>csl;
 <span class="kw">use </span>data_encoding::HEXLOWER;
 <span class="kw">use </span>futures::future::OptionFuture;
 <span class="kw">use </span>plutus_ledger_api::v2::address::{Address, Credential, StakingCredential};
@@ -185,7 +179,7 @@
 
 <span class="doccomment">/// Simple wallet reading the signing key(s) from disk
 </span><span class="kw">pub struct </span>KeyWallet {
-    pay_priv_key: PrivateKey,
+    pay_priv_key: csl::PrivateKey,
     pay_pkh: Ed25519PubKeyHash,
     <span class="comment">// TODO: Use these to implement staking features
     // stk_priv_key: Option&lt;PrivateKey&gt;,
@@ -233,7 +227,7 @@
     </span>}
 
     <span class="doccomment">/// Get the private key
-    </span><span class="kw">async fn </span>read_priv_key(filepath: <span class="kw">impl </span>AsRef&lt;Path&gt;) -&gt; <span class="prelude-ty">Result</span>&lt;PrivateKey, KeyWalletError&gt; {
+    </span><span class="kw">async fn </span>read_priv_key(filepath: <span class="kw">impl </span>AsRef&lt;Path&gt;) -&gt; <span class="prelude-ty">Result</span>&lt;csl::PrivateKey, KeyWalletError&gt; {
         <span class="kw">let </span>skey_str = fs::read_to_string(<span class="kw-2">&amp;</span>filepath)
             .<span class="kw">await
             </span>.map_err(KeyWalletError::PrivateKeyReadError)<span class="question-mark">?</span>;
@@ -248,26 +242,26 @@
         ));
         <span class="kw">let </span>bytes: Vec&lt;u8&gt; = raw.bytes().unwrap();
 
-        PrivateKey::from_normal_bytes(<span class="kw-2">&amp;</span>bytes)
+        csl::PrivateKey::from_normal_bytes(<span class="kw-2">&amp;</span>bytes)
             .map_err(|err| KeyWalletError::PrivateKeyParseError(<span class="macro">anyhow!</span>(err)))
     }
 }
 
 <span class="kw">impl </span>Wallet <span class="kw">for </span>KeyWallet {
-    <span class="kw">fn </span>sign_transaction(<span class="kw-2">&amp;</span><span class="self">self</span>, tx: <span class="kw-2">&amp;</span>Transaction) -&gt; Transaction {
+    <span class="kw">fn </span>sign_transaction(<span class="kw-2">&amp;</span><span class="self">self</span>, tx: <span class="kw-2">&amp;</span>csl::Transaction) -&gt; csl::Transaction {
         <span class="kw">let </span>tx_body = tx.body();
         <span class="kw">let </span><span class="kw-2">mut </span>witness_set = tx.witness_set();
         <span class="kw">let </span>aux_data = tx.auxiliary_data();
 
-        <span class="kw">let </span><span class="kw-2">mut </span>vkey_witnesses = witness_set.vkeys().unwrap_or(Vkeywitnesses::new());
-        vkey_witnesses.add(<span class="kw-2">&amp;</span>make_vkey_witness(
-            <span class="kw-2">&amp;</span>hash_transaction(<span class="kw-2">&amp;</span>tx_body),
+        <span class="kw">let </span><span class="kw-2">mut </span>vkey_witnesses = witness_set.vkeys().unwrap_or(csl::Vkeywitnesses::new());
+        vkey_witnesses.add(<span class="kw-2">&amp;</span>csl::make_vkey_witness(
+            <span class="kw-2">&amp;</span>csl::hash_transaction(<span class="kw-2">&amp;</span>tx_body),
             <span class="kw-2">&amp;</span><span class="self">self</span>.pay_priv_key,
         ));
 
         witness_set.set_vkeys(<span class="kw-2">&amp;</span>vkey_witnesses);
 
-        Transaction::new(<span class="kw-2">&amp;</span>tx_body, <span class="kw-2">&amp;</span>witness_set, aux_data)
+        csl::Transaction::new(<span class="kw-2">&amp;</span>tx_body, <span class="kw-2">&amp;</span>witness_set, aux_data)
     }
 
     <span class="kw">fn </span>get_change_pkh(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; Ed25519PubKeyHash {

@@ -179,6 +179,8 @@
 <a href="#177" id="177">177</a>
 <a href="#178" id="178">178</a>
 <a href="#179" id="179">179</a>
+<a href="#180" id="180">180</a>
+<a href="#181" id="181">181</a>
 </pre></div><pre class="rust"><code><span class="doccomment">//! Trait for a Cardano chain query client
 
 </span><span class="kw">use </span><span class="kw">crate</span>::utils::csl_to_pla::ToPLA;
@@ -280,17 +282,18 @@
 /// building
 </span><span class="attr">#[derive(Debug, Clone)]
 </span><span class="kw">pub struct </span>ProtocolParameters {
-    <span class="kw">pub </span>min_fee_coefficient: csl::utils::Coin,
-    <span class="kw">pub </span>min_fee_constant: csl::utils::Coin,
-    <span class="kw">pub </span>min_utxo_deposit_coefficient: csl::utils::Coin,
-    <span class="kw">pub </span>min_utxo_deposit_constant: csl::utils::Coin,
+    <span class="kw">pub </span>min_fee_coefficient: csl::Coin,
+    <span class="kw">pub </span>min_fee_constant: csl::Coin,
+    <span class="kw">pub </span>min_fee_reference_scripts: <span class="prelude-ty">Option</span>&lt;csl::UnitInterval&gt;,
+    <span class="kw">pub </span>min_utxo_deposit_coefficient: csl::Coin,
+    <span class="kw">pub </span>min_utxo_deposit_constant: csl::Coin,
     <span class="comment">// pub max_block_body_size: Bytes,
     // pub max_block_header_size: Bytes,
     </span><span class="kw">pub </span>max_transaction_size: <span class="prelude-ty">Option</span>&lt;u32&gt;,
     <span class="kw">pub </span>max_value_size: <span class="prelude-ty">Option</span>&lt;u32&gt;,
     <span class="comment">// pub extra_entropy: Option&lt;Nonce&gt;,
-    </span><span class="kw">pub </span>stake_credential_deposit: csl::utils::Coin,
-    <span class="kw">pub </span>stake_pool_deposit: csl::utils::Coin,
+    </span><span class="kw">pub </span>stake_credential_deposit: csl::Coin,
+    <span class="kw">pub </span>stake_pool_deposit: csl::Coin,
     <span class="comment">// pub stake_pool_retirement_epoch_bound: u64,
     // pub stake_pool_pledge_influence: Ratio,
     // pub min_stake_pool_cost: LovelaceOnly,
@@ -300,10 +303,11 @@
     // pub treasury_expansion: Ratio,
     // pub collateral_percentage: Option&lt;u64&gt;,
     // pub max_collateral_inputs: Option&lt;u64&gt;,
-    </span><span class="kw">pub </span>plutus_cost_models: <span class="prelude-ty">Option</span>&lt;csl::plutus::Costmdls&gt;,
-    <span class="kw">pub </span>script_execution_prices: <span class="prelude-ty">Option</span>&lt;csl::plutus::ExUnitPrices&gt;,
+    </span><span class="kw">pub </span>plutus_cost_models: <span class="prelude-ty">Option</span>&lt;csl::Costmdls&gt;,
+    <span class="kw">pub </span>script_execution_prices: <span class="prelude-ty">Option</span>&lt;csl::ExUnitPrices&gt;,
     <span class="comment">// pub max_execution_units_per_transaction: Option&lt;ExecutionUnits&gt;,
     // pub max_execution_units_per_block: Option&lt;ExecutionUnits&gt;,
+    // pub max_reference_scripts_size: Bytes,
     // pub stake_pool_voting_thresholds: Option&lt;StakePoolVotingThresholds&gt;,
     // pub constitutional_committee_min_size: Option&lt;u64&gt;,
     // pub constitutional_committee_max_term_length: Option&lt;u64&gt;,

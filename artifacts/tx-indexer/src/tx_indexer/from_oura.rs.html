@@ -131,12 +131,8 @@
 <a href="#129" id="129">129</a>
 <a href="#130" id="130">130</a>
 <a href="#131" id="131">131</a>
-<a href="#132" id="132">132</a>
-<a href="#133" id="133">133</a>
-<a href="#134" id="134">134</a>
 </pre></div><pre class="rust"><code><span class="kw">use </span>::oura::model::{MintRecord, OutputAssetRecord};
 <span class="kw">use </span>anyhow::Context;
-<span class="kw">use </span>cardano_serialization_lib <span class="kw">as </span>csl;
 <span class="kw">use </span>data_encoding::HEXLOWER;
 <span class="kw">use </span>num_bigint::BigInt;
 <span class="kw">use </span>plutus_ledger_api::v2::{
@@ -148,6 +144,7 @@
     value::{CurrencySymbol, TokenName, Value},
 };
 <span class="kw">use </span>std::fmt::Debug;
+<span class="kw">use </span>tx_bakery::csl;
 <span class="kw">use </span>tx_bakery::utils::csl_to_pla::TryToPLA;
 
 <span class="attr">#[derive(thiserror::Error, Debug)]
@@ -214,11 +211,9 @@
 
 <span class="kw">impl </span>FromOura&lt;serde_json::Value&gt; <span class="kw">for </span>Datum {
     <span class="kw">fn </span>from_oura(value: serde_json::Value) -&gt; <span class="prelude-ty">Result</span>&lt;<span class="self">Self</span>, OuraParseError&gt; {
-        <span class="kw">let </span>csl_plutus_data = csl::plutus::encode_json_value_to_plutus_datum(
-            value,
-            csl::plutus::PlutusDatumSchema::DetailedSchema,
-        )
-        .with_context(|| <span class="string">"Parsing Datum from Oura"</span>)<span class="question-mark">?</span>;
+        <span class="kw">let </span>csl_plutus_data =
+            csl::encode_json_value_to_plutus_datum(value, csl::PlutusDatumSchema::DetailedSchema)
+                .with_context(|| <span class="string">"Parsing Datum from Oura"</span>)<span class="question-mark">?</span>;
 
         <span class="prelude-val">Ok</span>(Datum(
             csl_plutus_data
@@ -230,10 +225,9 @@
 
 <span class="kw">impl </span>FromOura&lt;String&gt; <span class="kw">for </span>Address {
     <span class="kw">fn </span>from_oura(value: String) -&gt; <span class="prelude-ty">Result</span>&lt;<span class="self">Self</span>, OuraParseError&gt; {
-        <span class="kw">let </span>csl_addr = csl::address::Address::from_bech32(<span class="kw-2">&amp;</span>value)
+        <span class="kw">let </span>csl_addr = csl::Address::from_bech32(<span class="kw-2">&amp;</span>value)
             .or_else(|<span class="kw">_</span>| {
-                csl::address::ByronAddress::from_base58(<span class="kw-2">&amp;</span>value)
-                    .map(|byron_addr| byron_addr.to_address())
+                csl::ByronAddress::from_base58(<span class="kw-2">&amp;</span>value).map(|byron_addr| byron_addr.to_address())
             })
             .with_context(|| <span class="string">"Parsing Address from Oura"</span>)<span class="question-mark">?</span>;
 
