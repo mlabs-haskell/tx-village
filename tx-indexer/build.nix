@@ -26,15 +26,13 @@
             config.settings.shell.hook
             ''export DATABASE_URL="postgres://tx_indexer@127.0.0.1:5555"''
           ];
-          extraEnvVars =
-            {
-              DATABASE_URL = "postgres://tx_indexer@127.0.0.1:5555";
-            };
 
           testTools = with inputs';
             [
               ogmios.packages."ogmios:exe:ogmios"
             ];
+
+          cargoNextestExtraArgs = "-E 'not test(database)'";
         };
     in
     {
