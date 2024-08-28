@@ -32,9 +32,9 @@ CREATE TYPE Credential AS (
 );
 
 CREATE TYPE ChainPointer AS (
-    slot_num INTEGER,
-    tx_idx INTEGER,
-    cert_idx INTEGER
+    slot_num BIGINT,
+    tx_idx BIGINT,
+    cert_idx BIGINT
 );
 
 
@@ -63,7 +63,9 @@ CREATE TYPE TransactionInput AS (
 
 CREATE TYPE OutputDatum AS (
     datum_hash DatumHash,
-    inline_datum PlutusData
+    -- FIXME(szg251): Couldn't use PlutusData domain type becauseof a
+    -- deserialization error: `expected value at line 1 column 1`
+    inline_datum JSONB
 );
 
 CREATE TYPE TransactionOutput AS (

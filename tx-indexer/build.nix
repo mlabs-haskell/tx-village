@@ -21,11 +21,20 @@
 
           inherit (commands) devShellTools;
 
-          devShellHook = config.settings.shell.hook;
+          devShellHook = pkgs.lib.concatLines [
 
-          testTools = with inputs'; [
-            ogmios.packages."ogmios:exe:ogmios"
+            config.settings.shell.hook
+            ''export DATABASE_URL="postgres://tx_indexer@127.0.0.1:5555"''
           ];
+          extraEnvVars =
+            {
+              DATABASE_URL = "postgres://tx_indexer@127.0.0.1:5555";
+            };
+
+          testTools = with inputs';
+            [
+              ogmios.packages."ogmios:exe:ogmios"
+            ];
         };
     in
     {
