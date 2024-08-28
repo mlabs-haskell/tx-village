@@ -21,11 +21,7 @@
 
           inherit (commands) devShellTools;
 
-          devShellHook = pkgs.lib.concatLines [
-
-            config.settings.shell.hook
-            ''export DATABASE_URL="postgres://tx_indexer@127.0.0.1:5555"''
-          ];
+          devShellHook = config.settings.shell.hook;
 
           testTools = with inputs';
             [
