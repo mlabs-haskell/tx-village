@@ -229,9 +229,9 @@ checksum = "8318a53db07bb3f8dca91a600466bdb3f2eaadeedfdbcf02e1accbad9271ba50"
 
 [[package]]
 name = "cardano-serialization-lib"
-version = "12.0.0-beta.9"
+version = "12.0.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "80eff56f4b31e5ef514490649462702cd2e10bcf7e686b3685174f78418b7993"
+checksum = "b56aa4b097f14cb1cf85a96f4ace6f347d3e5b5a19e047e2b7accd14e09902aa"
 dependencies = [
  "bech32",
  "cbor_event",
@@ -2232,7 +2232,7 @@ dependencies = [
 
 [[package]]
 name = "tx-bakery"
-version = "2.0.0-beta.1"
+version = "2.0.0-beta.2"
 dependencies = [
  "anyhow",
  "assertables",
@@ -2257,7 +2257,7 @@ dependencies = [
 
 [[package]]
 name = "tx-bakery-ogmios"
-version = "2.0.0-beta.1"
+version = "2.0.0-beta.2"
 dependencies = [
  "anyhow",
  "cbor_event",
