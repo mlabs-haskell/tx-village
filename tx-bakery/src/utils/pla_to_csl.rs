@@ -350,7 +350,7 @@ impl TryFromPLA<BTreeMap<TokenName, BigInt>> for csl::MintAssets {
     ) -> Result<Self, TryFromPLAError> {
         val.iter()
             .try_fold(csl::MintAssets::new(), |mut acc, (k, v)| {
-                acc.insert(&k.try_to_csl()?, v.try_to_csl()?)
+                acc.insert(&k.try_to_csl()?, &v.try_to_csl()?)
                     .map_err(TryFromPLAError::CSLJsError)?;
                 Ok(acc)
             })
