@@ -945,7 +945,7 @@
     ) -&gt; <span class="prelude-ty">Result</span>&lt;<span class="self">Self</span>, TryFromPLAError&gt; {
         val.iter()
             .try_fold(csl::MintAssets::new(), |<span class="kw-2">mut </span>acc, (k, v)| {
-                acc.insert(<span class="kw-2">&amp;</span>k.try_to_csl()<span class="question-mark">?</span>, v.try_to_csl()<span class="question-mark">?</span>)
+                acc.insert(<span class="kw-2">&amp;</span>k.try_to_csl()<span class="question-mark">?</span>, <span class="kw-2">&amp;</span>v.try_to_csl()<span class="question-mark">?</span>)
                     .map_err(TryFromPLAError::CSLJsError)<span class="question-mark">?</span>;
                 <span class="prelude-val">Ok</span>(acc)
             })
