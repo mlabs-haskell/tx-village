@@ -970,6 +970,69 @@ tests dummyScriptHash ledgerCfg =
               (AssocMap.fromList [(Minting invalidCurrencySymbol, Redeemer (toBuiltinData @Integer 1234))])
               AssocMap.empty
               dummyTxId
+    , ledgerTestCase "Non-disjoint Reference Inputs"
+        $ ledgerFailsBy
+          ( \case
+              LedgerSimError'Submission (SubmissionError'Validation [InvalidTxInfoError'Local (Local.InvalidTxInfoError'InvalidInputs (Local.InvalidInputsError'UsedAsRefInput 0))]) -> True
+              _ -> False
+          )
+        $ do
+          let datum = Datum $ toBuiltinData ()
+              datumHash = hashDatum . Datum $ toBuiltinData ()
+          currentTime <- getCurrentSlot
+          SubmissionResult txId _ <-
+            submitTx $
+              TxInfo
+                [dummyInput]
+                [dummyInput]
+                [ TxOut
+                    { txOutValue = Value.lovelaceValue 0
+                    , txOutReferenceScript = Nothing
+                    , txOutDatum = OutputDatumHash datumHash
+                    , txOutAddress = scriptHashAddress dummyScriptHash
+                    }
+                , txInInfoResolved dummyInput
+                ]
+                (Value.lovelaceValue 0)
+                (Value.lovelaceValue 0)
+                mempty
+                AssocMap.empty
+                (intervalValidRange currentTime (currentTime + 1))
+                [ownPubKeyHash]
+                AssocMap.empty
+                AssocMap.empty
+                dummyTxId
+          let newUTxORef = TxOutRef txId 0
+              newDummyInputRef = TxOutRef txId 1
+          currentTime' <- getCurrentSlot
+          newUTxO <-
+            lookupUTxO newUTxORef >>= \case
+              Just x -> pure x
+              Nothing -> throwAppError "Newly created utxo absent from ledger state"
+          void . submitTx $
+            TxInfo
+              [ TxInInfo newUTxORef newUTxO
+              , dummyInput
+                  { txInInfoOutRef = newDummyInputRef
+                  }
+              ]
+              mempty
+              [ TxOut
+                  { txOutValue = Value.lovelaceValue 0
+                  , txOutReferenceScript = Nothing
+                  , txOutDatum = NoOutputDatum
+                  , txOutAddress = ownAddress
+                  }
+              ]
+              (Value.lovelaceValue 0)
+              (Value.lovelaceValue 0)
+              mempty
+              AssocMap.empty
+              (intervalValidRange currentTime (currentTime' + 1))
+              [ownPubKeyHash]
+              (AssocMap.fromList [(Spending newUTxORef, Redeemer $ toBuiltinData ())])
+              (AssocMap.fromList [(datumHash, datum)])
+              dummyTxId
     ]
 
 intervalValidRange :: POSIXTime -> POSIXTime -> POSIXTimeRange
