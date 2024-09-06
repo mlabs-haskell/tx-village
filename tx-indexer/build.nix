@@ -3,7 +3,7 @@
     let
       commands = import ./commands.nix {
         inherit pkgs;
-        extraDDLs = [ ./db/utxo-indexer.sql ./db/testdb.sql ];
+        # extraDDLs = [ ./db/utxo-indexer.sql ./db/testdb.sql ];
       };
 
       rustFlake =
@@ -23,12 +23,12 @@
 
           devShellHook = config.settings.shell.hook;
 
-          testTools = with inputs';
-            [
-              ogmios.packages."ogmios:exe:ogmios"
-            ];
+          buildInputs = [ pkgs.postgresql ];
 
-          cargoNextestExtraArgs = "-E 'not test(database)'";
+          testTools = with inputs'; [
+            ogmios.packages."ogmios:exe:ogmios"
+            pkgs.diesel-cli
+          ];
         };
     in
     {

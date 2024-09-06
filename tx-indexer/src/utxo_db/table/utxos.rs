@@ -1,20 +1,19 @@
 use crate::utxo_db::error::UtxoIndexerError;
-use plutus_ledger_api::v2::{
-    address::Address,
-    transaction::{TransactionInput, TxInInfo},
-};
-use sqlx::{FromRow, PgConnection};
+use diesel::prelude::*;
+use plutus_ledger_api::v2::{address::Address, transaction::TxInInfo};
 use strum_macros::Display;
-use tracing::{event, span, Instrument, Level};
+use tracing::{error, info_span};
 use tx_indexer::database::plutus as db;
 
-#[derive(Debug, FromRow, PartialEq, Eq)]
+#[derive(
+    Clone, Debug, Eq, PartialEq, diesel::Queryable, diesel::Selectable, diesel::Insertable,
+)]
+#[diesel(table_name = tx_indexer::schema::utxos)]
 pub struct UtxosTable {
     pub utxo_ref: db::TransactionInput,
     pub value: db::Value,
     pub address: db::Address,
     pub datum: db::OutputDatum,
-
     pub created_at: db::Slot,
     pub deleted_at: Option<db::Slot>,
 }
@@ -41,127 +40,81 @@ impl UtxosTable {
         })
     }
 
-    pub async fn list_by_address(
-        address: Address,
-        conn: &mut PgConnection,
+    pub fn list_by_address(
+        addr: Address,
+        conn: &mut diesel::PgConnection,
     ) -> Result<Vec<Self>, UtxoIndexerError> {
-        let span = span!(Level::INFO, "Listing UTxOs by address", ?address);
-        async move {
-            sqlx::query_as::<_, Self>(
-                r#"
-                SELECT *
-                FROM utxos
-                "#,
-            )
-            .bind(db::Address::try_from(address)?)
-            .fetch_all(&mut *conn)
-            .await
+        use tx_indexer::schema::utxos::dsl::*;
+
+        utxos
+            .filter(address.eq(db::Address::try_from(addr)?))
+            .select(UtxosTable::as_select())
+            .load(conn)
             .map_err(|err| {
-                event!(Level::ERROR, label=%Event::SqlxError, ?err);
+                error!(%err);
                 UtxoIndexerError::DbError(err)
             })
-        }
-        .instrument(span)
-        .await
     }
 
-    pub async fn store(self, conn: &mut PgConnection) -> Result<(), UtxoIndexerError> {
-        let utxo_ref = TransactionInput::from(self.utxo_ref.clone());
-        let span = span!(Level::INFO, "StoringUTxO", ?utxo_ref);
-        async move {
-            sqlx::query(
-                r#"
-                INSERT INTO utxos (utxo_ref, value, address, datum, created_at)
-                VALUES ($1, $2, $3, $4, $5)
-                "#,
-            )
-            .bind(self.utxo_ref)
-            .bind(self.value)
-            .bind(self.address)
-            .bind(self.datum)
-            .bind(self.created_at)
+    pub fn store(self, conn: &mut diesel::PgConnection) -> Result<(), UtxoIndexerError> {
+        use tx_indexer::schema::utxos;
+
+        diesel::insert_into(utxos::table)
+            .values(self)
             .execute(conn)
-            .await
             .map_err(|err| {
-                event!(Level::ERROR, label=%Event::SqlxError, ?err);
+                error!(%err);
                 UtxoIndexerError::DbError(err)
             })?;
 
-            Ok(())
-        }
-        .instrument(span)
-        .await
+        Ok(())
     }
 
-    pub async fn rollback_after_block(
-        conn: &mut PgConnection,
+    pub fn rollback_after_block(
+        conn: &mut diesel::PgConnection,
         transaction_block: u64,
     ) -> Result<RollbackResult<UtxosTable>, UtxoIndexerError> {
-        let span = span!(Level::INFO, "Rollback", %transaction_block);
-        async move {
-            let deleted = sqlx::query_as::<_, Self>(
-                r#"
-                SELECT *
-                FROM utxos
-                WHERE created_at > $1
-                "#,
-            )
-            .bind(db::Slot::from(transaction_block))
-            .fetch_all(&mut *conn)
-            .await
+        use tx_indexer::schema::utxos::dsl::*;
+
+        let span = info_span!("Rollback", %transaction_block);
+        let _entered = span.enter();
+
+        let slot = db::Slot::from(transaction_block);
+        let deleted = utxos
+            .filter(created_at.gt(&slot))
+            .select(UtxosTable::as_select())
+            .load(conn)
             .map_err(|err| {
-                event!(Level::ERROR, label=%Event::SqlxError, ?err);
+                error!(label=%Event::SqlxError, ?err);
                 UtxoIndexerError::DbError(err)
             })?;
 
-            let recovered = sqlx::query_as::<_, Self>(
-                r#"
-                SELECT *
-                FROM utxos
-                WHERE deleted_at > $1
-                "#,
-            )
-            .bind(db::Slot::from(transaction_block))
-            .fetch_all(&mut *conn)
-            .await
+        let recovered = utxos
+            .filter(deleted_at.gt(&slot))
+            .select(UtxosTable::as_select())
+            .load(conn)
             .map_err(|err| {
-                event!(Level::ERROR, label=%Event::SqlxError, ?err);
+                error!(label=%Event::SqlxError, ?err);
                 UtxoIndexerError::DbError(err)
             })?;
 
-            sqlx::query(
-                r#"
-                UPDATE utxos
-                SET deleted_at = NULL
-                WHERE deleted_at > $1;
-                "#,
-            )
-            .bind(db::Slot::from(transaction_block))
-            .execute(&mut *conn)
-            .await
-            .map_err(|err| {
-                event!(Level::ERROR, label=%Event::SqlxError, ?err);
-                UtxoIndexerError::DbError(err)
-            })?;
+        let deleted_refs = deleted
+            .iter()
+            .map(|utxo| utxo.utxo_ref.clone())
+            .collect::<Vec<_>>();
 
-            sqlx::query(
-                r#"
-                DELETE FROM utxos
-                WHERE created_at > $1;
-                "#,
-            )
-            .bind(db::Slot::from(transaction_block))
-            .execute(&mut *conn)
-            .await
-            .map_err(|err| {
-                event!(Level::ERROR, label=%Event::SqlxError, ?err);
-                UtxoIndexerError::DbError(err)
-            })?;
+        diesel::delete(utxos.filter(utxo_ref.eq_any(deleted_refs))).execute(conn)?;
 
-            Ok(RollbackResult { deleted, recovered })
-        }
-        .instrument(span)
-        .await
+        let recovered_refs = recovered
+            .iter()
+            .map(|utxo| utxo.utxo_ref.clone())
+            .collect::<Vec<_>>();
+
+        diesel::update(utxos.filter(utxo_ref.eq_any(recovered_refs)))
+            .set(deleted_at.eq(None::<db::Slot>))
+            .execute(conn)?;
+
+        Ok(RollbackResult { deleted, recovered })
     }
 }
 

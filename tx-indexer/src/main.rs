@@ -1,18 +1,21 @@
 use anyhow::Result;
 use clap::Parser;
+use diesel::{
+    pg::PgConnection,
+    r2d2::{ConnectionManager, Pool},
+};
 use plutus_ledger_api::v2::{
     datum::OutputDatum,
     transaction::TransactionInput,
     value::{CurrencySymbol, Value},
 };
 use prettytable::{format, row, Table};
-use sqlx::{Acquire, PgPool};
 use std::{default::Default, fmt::Debug};
 use tracing::Level;
 use tx_indexer::{
     aux::{ParseAddress, ParseCurrencySymbol},
     config::{NetworkConfig, NetworkName, NodeAddress, TxIndexerConfig},
-    database::sync_progress::SyncProgressTable,
+    database::diesel::sync_progress::SyncProgressTable,
     filter::Filter,
     TxIndexer,
 };
@@ -141,12 +144,17 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
                     .or(network.map(NetworkConfig::WellKnown))
                     .unwrap();
 
-                let pg_pool = PgPool::connect(&postgres_url).await?;
+                let manager = ConnectionManager::<PgConnection>::new(&postgres_url);
 
-                let mut conn = pg_pool.acquire().await.unwrap();
-                let conn = conn.acquire().await.unwrap();
+                let pg_pool = Pool::builder()
+                    .test_on_check_out(true)
+                    .build(manager)
+                    .expect("Could not build connection pool");
+
+                let mut conn = pg_pool.get().unwrap();
+
                 let sync_progress =
-                    SyncProgressTable::get_or(conn, since_slot, since_block_hash).await?;
+                    SyncProgressTable::get_or(&mut conn, since_slot, since_block_hash)?;
 
                 let handler = UtxoIndexerHandler::new(pg_pool);
 
@@ -184,12 +192,16 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
                 postgres_url,
                 address,
             }) => {
-                let pg_pool = PgPool::connect(&postgres_url).await?;
+                let manager = ConnectionManager::<PgConnection>::new(postgres_url);
 
-                let mut conn = pg_pool.acquire().await.unwrap();
-                let conn = conn.acquire().await.unwrap();
+                let pg_pool = Pool::builder()
+                    .test_on_check_out(true)
+                    .build(manager)
+                    .expect("Could not build connection pool");
 
-                let utxos = UtxosTable::list_by_address(address.0, conn).await?;
+                let mut conn = pg_pool.get().unwrap();
+
+                let utxos = UtxosTable::list_by_address(address.0, &mut conn)?;
 
                 let mut table = Table::new();
                 table.set_titles(row!["UTxO", "Datum", "Value"]);

@@ -26,8 +26,7 @@ sqlx = { version = "0.8.2", features = [
   "json",
   "runtime-tokio",
   "tls-rustls",
-] }
-# errors, config
+], optional = true }
 anyhow = "1.0.68"
 log = "0.4.17"
 cbor_event = "2.4.0"
@@ -48,6 +47,11 @@ chrono = "0.4.38"
 url = "2.5.2"
 prettytable-rs = "0.10.0"
 futures = "0.3.30"
+diesel = { version = "2.2.4", features = [
+  "postgres",
+  "serde_json",
+  "r2d2",
+], optional = true }
 
 [dev-dependencies]
 serial_test = "3.1.1"
@@ -55,3 +59,8 @@ tx-bakery-ogmios = { path = ".extras/tx-bakery-ogmios-v2" }
 
 [build-dependencies]
 tokio = { version = "1.24.2", features = ["full"] }
+
+[features]
+default = ["diesel"]
+sqlx = ["dep:sqlx"]
+diesel = ["dep:diesel"]

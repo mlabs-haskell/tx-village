@@ -8,3 +8,4 @@ pub mod handler;
 pub use indexer::TxIndexer;
 mod indexer;
 pub mod progress_tracker;
+pub mod schema;

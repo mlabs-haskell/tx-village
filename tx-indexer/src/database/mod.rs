@@ -1,2 +1,5 @@
+#[cfg(feature = "diesel")]
+pub mod diesel;
 pub mod plutus;
-pub mod sync_progress;
+#[cfg(feature = "sqlx")]
+pub mod sqlx;
