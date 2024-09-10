@@ -1,6 +1,9 @@
 use crate::utxo_db::error::UtxoIndexerError;
 use diesel::prelude::*;
-use plutus_ledger_api::v2::{address::Address, transaction::TxInInfo};
+use plutus_ledger_api::v2::{
+    address::Address,
+    transaction::{TransactionInput, TxInInfo},
+};
 use strum_macros::Display;
 use tracing::{error, info_span};
 use tx_indexer::database::plutus as db;
@@ -54,6 +57,27 @@ impl UtxosTable {
                 error!(%err);
                 UtxoIndexerError::DbError(err)
             })
+    }
+
+    pub fn delete_by_id(
+        utxo_ref: TransactionInput,
+        slot: u64,
+        conn: &mut diesel::PgConnection,
+    ) -> Result<usize, UtxoIndexerError> {
+        use tx_indexer::schema::utxos::dsl::{deleted_at, utxos};
+
+        let utxo_ref: db::TransactionInput = utxo_ref.try_into()?;
+        let slot: db::Slot = slot.into();
+
+        let res = diesel::update(utxos.find(utxo_ref))
+            .set(deleted_at.eq(Some(slot)))
+            .execute(conn)
+            .map_err(|err| {
+                error!(%err);
+                UtxoIndexerError::DbError(err)
+            })?;
+
+        Ok(res)
     }
 
     pub fn store(self, conn: &mut diesel::PgConnection) -> Result<(), UtxoIndexerError> {

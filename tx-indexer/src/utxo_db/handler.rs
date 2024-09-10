@@ -30,12 +30,15 @@ impl EventHandler for UtxoIndexerHandler {
 
             match event {
                 ChainEvent::TransactionEvent { transaction, time } => {
-                    // TODO(chase): These unwraps shouldn't fail but maybe they should still be checked.
-                    let tx_block = time.block_number;
+                    let tx_slot = time.slot;
                     let span = span!(Level::DEBUG, "HandlingTransactionEvent", ?transaction.hash);
                     async move {
-                        for utxo in transaction.outputs {
-                            UtxosTable::new(utxo, tx_block)?.store(&mut conn)?;
+                        for new_utxo in transaction.outputs {
+                            UtxosTable::new(new_utxo, tx_slot)?.store(&mut conn)?;
+                        }
+
+                        for utxo_ref in transaction.inputs {
+                            UtxosTable::delete_by_id(utxo_ref, tx_slot, &mut conn)?;
                         }
 
                         event!(Level::INFO, name = "UTxO Stored");
