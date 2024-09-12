@@ -1,6 +1,5 @@
 #[cfg(test)]
 mod plutus_database_roundtrips {
-    use anyhow::{anyhow, Context, Result};
     use num_bigint::BigInt;
     use pla::goldens::{
         v1::{
@@ -8,79 +7,205 @@ mod plutus_database_roundtrips {
             sample_staking_credential, sample_token_name, sample_transaction_hash,
             sample_transaction_input, sample_value,
         },
-        v2::{sample_output_datum, sample_transaction_output},
+        v2::{sample_output_datum, sample_transaction_output, sample_tx_in_info},
     };
     use plutus_ledger_api as pla;
-    use sqlx::{FromRow, PgConnection, PgPool};
     use tx_indexer::database::plutus::*;
 
-    #[tokio::test]
-    async fn db_tests() {
-        let pg_pool = PgPool::connect("postgres://tx_indexer@127.0.0.1:5555")
-            .await
-            .unwrap();
-        let mut conn = pg_pool.acquire().await.unwrap();
-        clean(&mut conn).await.unwrap();
+    #[cfg(feature = "diesel")]
+    mod diesel_decoding {
+        use anyhow::{Context, Result};
+        use diesel::{Connection, PgConnection};
 
-        currency_symbol(&mut conn)
-            .await
-            .with_context(|| "CurrencySymbol")
-            .unwrap();
-        token_name(&mut conn)
-            .await
-            .with_context(|| "TokenName")
-            .unwrap();
-        tx_hash(&mut conn)
-            .await
-            .with_context(|| "TransactionHash")
-            .unwrap();
-        pub_key_hash(&mut conn)
-            .await
-            .with_context(|| "Ed25519PubKeyHash")
-            .unwrap();
-        script_hash(&mut conn)
-            .await
-            .with_context(|| "ScriptHash")
-            .unwrap();
-        datum_hash(&mut conn)
-            .await
-            .with_context(|| "DatumHash")
-            .unwrap();
-        slot(&mut conn).await.with_context(|| "Slot").unwrap();
-        plutus_data(&mut conn)
-            .await
-            .with_context(|| "PlutusData")
-            .unwrap();
-        cred(&mut conn).await.with_context(|| "Credential").unwrap();
-        chain_pointer(&mut conn)
-            .await
-            .with_context(|| "ChainPointer")
-            .unwrap();
-        staking_cred(&mut conn)
-            .await
-            .with_context(|| "StakingCredential")
-            .unwrap();
-        address(&mut conn).await.with_context(|| "Address").unwrap();
-        asset_quantity(&mut conn)
-            .await
-            .with_context(|| "AssetQuantity")
-            .unwrap();
-        value(&mut conn).await.with_context(|| "Value").unwrap();
-        tx_in(&mut conn)
-            .await
-            .with_context(|| "TransactionInput")
-            .unwrap();
-        datum(&mut conn)
-            .await
-            .with_context(|| "OutputDatum")
-            .unwrap();
-        tx_out(&mut conn)
-            .await
-            .with_context(|| "TransactionOutput")
-            .unwrap();
+        use super::TestDB;
+
+        #[test]
+        fn db_tests() {
+            use super::*;
+
+            let mut conn = PgConnection::establish("postgres://tx_indexer@127.0.0.1:5555").unwrap();
+
+            clean(&mut conn).unwrap();
+
+            let cases = [
+                (currency_symbol(), "CurrencySymbol"),
+                (token_name(), "TokenName"),
+                (tx_hash(), "TransactionHash"),
+                (pub_key_hash(), "Ed25519PubKeyHash"),
+                (script_hash(), "ScriptHash"),
+                (datum_hash(), "DatumHash"),
+                (slot(), "Slot"),
+                (plutus_data(), "PlutusData"),
+                (cred(), "Credential"),
+                (chain_pointer(), "ChainPointer"),
+                (staking_cred(), "StakingCredential"),
+                (address(), "Address"),
+                (asset_quantity(), "AssetQuantity"),
+                (value(), "Value"),
+                (tx_in(), "TransactionInput"),
+                (datum(), "OutputDatum"),
+                (tx_out(), "TransactionOutput"),
+                (tx_in_info(), "TxInInfo"),
+            ];
+
+            for (testdb_entry, name) in cases {
+                write_read_assert(testdb_entry.clone(), &mut conn)
+                    .with_context(|| name)
+                    .unwrap()
+            }
+        }
+
+        fn write(test: TestDB, conn: &mut PgConnection) -> Result<()> {
+            use diesel::prelude::*;
+            use tx_indexer::schema::testdb;
+
+            diesel::insert_into(testdb::table)
+                .values(test)
+                .execute(conn)?;
+
+            Ok(())
+        }
+
+        fn read(conn: &mut PgConnection) -> Result<TestDB> {
+            use diesel::prelude::*;
+
+            use tx_indexer::schema::testdb::dsl::*;
+
+            Ok(testdb.select(TestDB::as_select()).first(conn)?)
+        }
+
+        fn clean(conn: &mut PgConnection) -> Result<()> {
+            use diesel::prelude::*;
+
+            use tx_indexer::schema::testdb::dsl::*;
+
+            diesel::delete(testdb).execute(conn)?;
+
+            Ok(())
+        }
+
+        fn write_read_assert(testdb: TestDB, conn: &mut PgConnection) -> Result<()> {
+            write(testdb.clone(), &mut *conn)?;
+            assert_eq!(testdb, read(&mut *conn)?);
+            clean(&mut *conn)
+        }
     }
 
-    #[derive(Debug, Clone, FromRow, PartialEq, Eq, Default)]
+    #[cfg(feature = "sqlx")]
+    mod sqlx_decoding {
+        use anyhow::{anyhow, Context, Result};
+        use sqlx::{PgConnection, PgPool};
+
+        use super::*;
+
+        #[tokio::test]
+        async fn db_tests() {
+            let pg_pool = PgPool::connect("postgres://tx_indexer@127.0.0.1:5555")
+                .await
+                .unwrap();
+            let mut conn = pg_pool.acquire().await.unwrap();
+            clean(&mut conn).await.unwrap();
+
+            let cases = [
+                (currency_symbol(), "CurrencySymbol"),
+                (token_name(), "TokenName"),
+                (tx_hash(), "TransactionHash"),
+                (pub_key_hash(), "Ed25519PubKeyHash"),
+                (script_hash(), "ScriptHash"),
+                (datum_hash(), "DatumHash"),
+                (slot(), "Slot"),
+                (plutus_data(), "PlutusData"),
+                (cred(), "Credential"),
+                (chain_pointer(), "ChainPointer"),
+                (staking_cred(), "StakingCredential"),
+                (address(), "Address"),
+                (asset_quantity(), "AssetQuantity"),
+                (value(), "Value"),
+                (tx_in(), "TransactionInput"),
+                (datum(), "OutputDatum"),
+                (tx_out(), "TransactionOutput"),
+                (tx_in_info(), "TxInInfo"),
+            ];
+
+            for (testdb_entry, name) in cases {
+                dbg!(name);
+                write_read_assert(testdb_entry.clone(), &mut conn)
+                    .await
+                    .with_context(|| name)
+                    .unwrap()
+            }
+        }
+
+        async fn write(test: TestDB, conn: &mut PgConnection) -> Result<()> {
+            sqlx::query("INSERT INTO testdb (
+              id,
+              cur_sym,
+              token_name,
+              tx_hash,
+              pub_key_hash,
+              script_hash,
+              datum_hash,
+              slot,
+              plutus_data,
+              cred,
+              chain_pointer,
+              staking_cred,
+              address,
+              asset_quantity,
+              value,
+              tx_in,
+              datum,
+              tx_out,
+              tx_in_info) VALUES (0, $1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18)")
+              .bind(test.cur_sym)
+              .bind(test.token_name)
+              .bind(test.tx_hash)
+              .bind(test.pub_key_hash)
+              .bind(test.script_hash)
+              .bind(test.datum_hash)
+              .bind(test.slot)
+              .bind(test.plutus_data)
+              .bind(test.cred)
+              .bind(test.chain_pointer)
+              .bind(test.staking_cred)
+              .bind(test.address)
+              .bind(test.asset_quantity)
+              .bind(test.value)
+              .bind(test.tx_in)
+              .bind(test.datum)
+              .bind(test.tx_out)
+              .bind(test.tx_in_info)
+            .execute(conn)
+            .await?;
+            Ok(())
+        }
+
+        async fn read(conn: &mut PgConnection) -> Result<TestDB> {
+            sqlx::query_as("SELECT * FROM testdb")
+                .fetch_one(conn)
+                .await
+                .map_err(|err| anyhow!(err))
+        }
+
+        async fn clean(conn: &mut PgConnection) -> Result<()> {
+            sqlx::query("TRUNCATE testdb;").execute(conn).await?;
+            Ok(())
+        }
+
+        async fn write_read_assert(testdb: TestDB, conn: &mut PgConnection) -> Result<()> {
+            write(testdb.clone(), &mut *conn).await?;
+            assert_eq!(testdb, read(&mut *conn).await?);
+            clean(&mut *conn).await
+        }
+    }
+
+    #[derive(Debug, Clone, PartialEq, Eq, Default)]
+    #[cfg_attr(feature = "sqlx", derive(sqlx::FromRow))]
+    #[cfg_attr(
+        feature = "diesel",
+        derive(diesel::Queryable, diesel::Selectable, diesel::Insertable,)
+    )]
+    #[cfg_attr(feature = "diesel", diesel(table_name = tx_indexer::schema::testdb))]
     pub struct TestDB {
         cur_sym: Option<CurrencySymbol>,
         token_name: Option<TokenName>,
@@ -102,177 +227,92 @@ mod plutus_database_roundtrips {
         tx_in_info: Option<TxInInfo>,
     }
 
-    async fn write(test: TestDB, conn: &mut PgConnection) -> Result<()> {
-        sqlx::query("INSERT INTO testdb (
-              cur_sym,
-              token_name,
-              tx_hash,
-              pub_key_hash,
-              script_hash,
-              datum_hash,
-              slot,
-              plutus_data,
-              cred,
-              chain_pointer,
-              staking_cred,
-              address,
-              asset_quantity,
-              value,
-              tx_in,
-              datum,
-              tx_out,
-              tx_in_info) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18)")
-              .bind(test.cur_sym)
-              .bind(test.token_name)
-              .bind(test.tx_hash)
-              .bind(test.pub_key_hash)
-              .bind(test.script_hash)
-              .bind(test.datum_hash)
-              .bind(test.slot)
-              .bind(test.plutus_data)
-              .bind(test.cred)
-              .bind(test.chain_pointer)
-              .bind(test.staking_cred)
-              .bind(test.address)
-              .bind(test.asset_quantity)
-              .bind(test.value)
-              .bind(test.tx_in)
-              .bind(test.datum)
-              .bind(test.tx_out)
-              .bind(test.tx_in_info)
-            .execute(conn)
-            .await?;
-        Ok(())
-    }
-
-    async fn read(conn: &mut PgConnection) -> Result<TestDB> {
-        sqlx::query_as("SELECT * FROM testdb")
-            .fetch_one(conn)
-            .await
-            .map_err(|err| anyhow!(err))
-    }
-
-    async fn clean(conn: &mut PgConnection) -> Result<()> {
-        sqlx::query("TRUNCATE testdb;").execute(conn).await?;
-        Ok(())
-    }
-
-    async fn write_read_assert(testdb: TestDB, conn: &mut PgConnection) -> Result<()> {
-        write(testdb.clone(), &mut *conn).await?;
-        assert_eq!(testdb, read(&mut *conn).await?);
-        clean(&mut *conn).await
-    }
-
-    async fn currency_symbol(conn: &mut PgConnection) -> Result<()> {
-        let testdb = TestDB {
+    pub(super) fn currency_symbol() -> TestDB {
+        TestDB {
             cur_sym: Some(sample_currency_symbol().into()),
             ..Default::default()
-        };
-
-        write_read_assert(testdb.clone(), &mut *conn).await
+        }
     }
 
-    async fn token_name(conn: &mut PgConnection) -> Result<()> {
-        let testdb = TestDB {
+    fn token_name() -> TestDB {
+        TestDB {
             token_name: Some(sample_token_name().into()),
             ..Default::default()
-        };
-
-        write_read_assert(testdb.clone(), &mut *conn).await
+        }
     }
 
-    async fn tx_hash(conn: &mut PgConnection) -> Result<()> {
-        let testdb = TestDB {
+    fn tx_hash() -> TestDB {
+        TestDB {
             tx_hash: Some(sample_transaction_hash().into()),
             ..Default::default()
-        };
-
-        write_read_assert(testdb.clone(), &mut *conn).await
+        }
     }
 
-    async fn pub_key_hash(conn: &mut PgConnection) -> Result<()> {
-        let testdb = TestDB {
+    fn pub_key_hash() -> TestDB {
+        TestDB {
             pub_key_hash: Some(sample_ed25519_pub_key_hash().into()),
             ..Default::default()
-        };
-
-        write_read_assert(testdb.clone(), &mut *conn).await
+        }
     }
 
-    async fn script_hash(conn: &mut PgConnection) -> Result<()> {
-        let testdb = TestDB {
+    fn script_hash() -> TestDB {
+        TestDB {
             script_hash: Some(sample_script_hash().into()),
             ..Default::default()
-        };
-
-        write_read_assert(testdb.clone(), &mut *conn).await
+        }
     }
 
-    async fn datum_hash(conn: &mut PgConnection) -> Result<()> {
-        let testdb = TestDB {
+    fn datum_hash() -> TestDB {
+        TestDB {
             datum_hash: Some(sample_datum_hash().into()),
             ..Default::default()
-        };
-
-        write_read_assert(testdb.clone(), &mut *conn).await
+        }
     }
 
-    async fn slot(conn: &mut PgConnection) -> Result<()> {
-        let testdb = TestDB {
+    fn slot() -> TestDB {
+        TestDB {
             slot: Some(854321.into()),
             ..Default::default()
-        };
-
-        write_read_assert(testdb.clone(), &mut *conn).await
+        }
     }
 
-    async fn plutus_data(conn: &mut PgConnection) -> Result<()> {
-        let testdb = TestDB {
+    fn plutus_data() -> TestDB {
+        TestDB {
             plutus_data: Some(sample_plutus_data().try_into().unwrap()),
             ..Default::default()
-        };
-
-        write_read_assert(testdb.clone(), &mut *conn).await
+        }
     }
 
-    async fn cred(conn: &mut PgConnection) -> Result<()> {
-        let testdb = TestDB {
+    fn cred() -> TestDB {
+        TestDB {
             cred: Some(sample_credential().into()),
             ..Default::default()
-        };
-
-        write_read_assert(testdb.clone(), &mut *conn).await
+        }
     }
 
-    async fn chain_pointer(conn: &mut PgConnection) -> Result<()> {
-        let testdb = TestDB {
+    fn chain_pointer() -> TestDB {
+        TestDB {
             chain_pointer: Some(sample_chain_pointer().try_into().unwrap()),
             ..Default::default()
-        };
-
-        write_read_assert(testdb.clone(), &mut *conn).await
+        }
     }
 
-    async fn staking_cred(conn: &mut PgConnection) -> Result<()> {
-        let testdb = TestDB {
+    fn staking_cred() -> TestDB {
+        TestDB {
             staking_cred: Some(sample_staking_credential().try_into().unwrap()),
             ..Default::default()
-        };
-
-        write_read_assert(testdb.clone(), &mut *conn).await
+        }
     }
 
-    async fn address(conn: &mut PgConnection) -> Result<()> {
-        let testdb = TestDB {
+    fn address() -> TestDB {
+        TestDB {
             address: Some(sample_address().try_into().unwrap()),
             ..Default::default()
-        };
-
-        write_read_assert(testdb.clone(), &mut *conn).await
+        }
     }
 
-    async fn asset_quantity(conn: &mut PgConnection) -> Result<()> {
-        let testdb = TestDB {
+    fn asset_quantity() -> TestDB {
+        TestDB {
             asset_quantity: Some(
                 (
                     sample_currency_symbol(),
@@ -283,45 +323,42 @@ mod plutus_database_roundtrips {
                     .unwrap(),
             ),
             ..Default::default()
-        };
-
-        write_read_assert(testdb.clone(), &mut *conn).await
+        }
     }
 
-    async fn value(conn: &mut PgConnection) -> Result<()> {
-        let testdb = TestDB {
+    fn value() -> TestDB {
+        TestDB {
             value: Some(sample_value().try_into().unwrap()),
             ..Default::default()
-        };
-
-        write_read_assert(testdb.clone(), &mut *conn).await
+        }
     }
 
-    async fn tx_in(conn: &mut PgConnection) -> Result<()> {
-        let testdb = TestDB {
+    fn tx_in() -> TestDB {
+        TestDB {
             tx_in: Some(sample_transaction_input().try_into().unwrap()),
             ..Default::default()
-        };
-
-        write_read_assert(testdb.clone(), &mut *conn).await
+        }
     }
 
-    async fn datum(conn: &mut PgConnection) -> Result<()> {
-        let testdb = TestDB {
+    fn datum() -> TestDB {
+        TestDB {
             datum: Some(sample_output_datum().try_into().unwrap()),
             ..Default::default()
-        };
-
-        write_read_assert(testdb.clone(), &mut *conn).await
+        }
     }
 
-    async fn tx_out(conn: &mut PgConnection) -> Result<()> {
-        let testdb = TestDB {
+    fn tx_out() -> TestDB {
+        TestDB {
             tx_out: Some(sample_transaction_output().try_into().unwrap()),
             ..Default::default()
-        };
+        }
+    }
 
-        write_read_assert(testdb.clone(), &mut *conn).await
+    fn tx_in_info() -> TestDB {
+        TestDB {
+            tx_in_info: Some(sample_tx_in_info().try_into().unwrap()),
+            ..Default::default()
+        }
     }
 
     fn sample_plutus_data() -> pla::plutus_data::PlutusData {

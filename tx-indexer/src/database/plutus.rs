@@ -574,7 +574,7 @@ pub enum PlutusDataEncodingError {
 #[derive(Clone, Debug, PartialEq, Eq)]
 #[cfg_attr(feature = "sqlx", derive(sqlx::Encode, sqlx::Decode))]
 #[cfg_attr(feature = "diesel", derive(diesel::AsExpression, diesel::FromSqlRow))]
-#[cfg_attr(feature = "diesel", diesel(sql_type = PgValue))]
+#[cfg_attr(feature = "diesel", diesel(sql_type = PgPlutusData))]
 pub struct PlutusData(pub serde_json::Value);
 
 #[cfg(feature = "diesel")]
@@ -648,10 +648,10 @@ impl diesel::serialize::ToSql<PgPlutusData, diesel::pg::Pg> for PlutusData {
 //////////////////////
 
 #[derive(Clone, Debug, PartialEq, Eq)]
-#[cfg_attr(feature = "sqlx", derive(sqlx::Encode, sqlx::Decode))]
+#[cfg_attr(feature = "sqlx", derive(sqlx::Type))]
 #[cfg_attr(feature = "sqlx", sqlx(type_name = "Plutus.Credential"))]
 #[cfg_attr(feature = "diesel", derive(diesel::AsExpression, diesel::FromSqlRow))]
-#[cfg_attr(feature = "diesel", diesel(sql_type = PgEd25519PubKeyHash))]
+#[cfg_attr(feature = "diesel", diesel(sql_type = PgCredential))]
 pub struct Credential {
     pub_key_hash: Option<Ed25519PubKeyHash>,
     script_hash: Option<ScriptHash>,
@@ -728,7 +728,7 @@ impl diesel::serialize::ToSql<PgCredential, diesel::pg::Pg> for Credential {
 //////////////////////
 
 #[derive(Clone, Debug, PartialEq, Eq)]
-#[cfg_attr(feature = "sqlx", derive(sqlx::Encode, sqlx::Decode))]
+#[cfg_attr(feature = "sqlx", derive(sqlx::Type))]
 #[cfg_attr(feature = "sqlx", sqlx(type_name = "Plutus.ChainPointer"))]
 #[cfg_attr(feature = "diesel", derive(diesel::AsExpression, diesel::FromSqlRow))]
 #[cfg_attr(feature = "diesel", diesel(sql_type = PgChainPointer))]
@@ -807,7 +807,7 @@ impl diesel::serialize::ToSql<PgChainPointer, diesel::pg::Pg> for ChainPointer {
 //////////////////////
 
 #[derive(Clone, Debug, PartialEq, Eq)]
-#[cfg_attr(feature = "sqlx", derive(sqlx::Encode, sqlx::Decode))]
+#[cfg_attr(feature = "sqlx", derive(sqlx::Type))]
 #[cfg_attr(feature = "sqlx", sqlx(type_name = "Plutus.StakingCredential"))]
 #[cfg_attr(feature = "diesel", derive(diesel::AsExpression, diesel::FromSqlRow))]
 #[cfg_attr(feature = "diesel", diesel(sql_type = PgStakingCredential))]
@@ -887,7 +887,7 @@ impl diesel::serialize::ToSql<PgStakingCredential, diesel::pg::Pg> for StakingCr
 //////////////////////
 
 #[derive(Clone, Debug, PartialEq, Eq)]
-#[cfg_attr(feature = "sqlx", derive(sqlx::Encode, sqlx::Decode))]
+#[cfg_attr(feature = "sqlx", derive(sqlx::Type))]
 #[cfg_attr(feature = "sqlx", sqlx(type_name = "Plutus.Address"))]
 #[cfg_attr(feature = "diesel", derive(diesel::AsExpression, diesel::FromSqlRow))]
 #[cfg_attr(feature = "diesel", diesel(sql_type = PgAddress))]
@@ -958,7 +958,7 @@ impl diesel::serialize::ToSql<PgAddress, diesel::pg::Pg> for Address {
 //////////////////////
 
 #[derive(Clone, Debug, PartialEq, Eq)]
-#[cfg_attr(feature = "sqlx", derive(sqlx::Encode, sqlx::Decode))]
+#[cfg_attr(feature = "sqlx", derive(sqlx::Type))]
 #[cfg_attr(feature = "sqlx", sqlx(type_name = "Plutus.AssetQuantity"))]
 #[cfg_attr(feature = "diesel", derive(diesel::AsExpression, diesel::FromSqlRow))]
 #[cfg_attr(feature = "diesel", diesel(sql_type = PgAssetQuantity))]
@@ -1049,7 +1049,7 @@ impl diesel::serialize::ToSql<PgAssetQuantity, diesel::pg::Pg> for AssetQuantity
 //////////////////////
 
 #[derive(Clone, Debug, PartialEq, Eq)]
-#[cfg_attr(feature = "sqlx", derive(sqlx::Encode, sqlx::Decode))]
+#[cfg_attr(feature = "sqlx", derive(sqlx::Type))]
 #[cfg_attr(feature = "sqlx", sqlx(type_name = "Plutus.AssetQuantity[]"))]
 #[cfg_attr(feature = "diesel", derive(diesel::AsExpression, diesel::FromSqlRow))]
 #[cfg_attr(feature = "diesel", diesel(sql_type = PgValue))]
@@ -1120,7 +1120,7 @@ impl diesel::serialize::ToSql<PgValue, diesel::pg::Pg> for Value {
 //////////////////////
 
 #[derive(Clone, Debug, PartialEq, Eq)]
-#[cfg_attr(feature = "sqlx", derive(sqlx::Encode, sqlx::Decode))]
+#[cfg_attr(feature = "sqlx", derive(sqlx::Type))]
 #[cfg_attr(feature = "sqlx", sqlx(type_name = "Plutus.TransactionInput"))]
 #[cfg_attr(feature = "diesel", derive(diesel::AsExpression, diesel::FromSqlRow))]
 #[cfg_attr(feature = "diesel", diesel(sql_type = PgTransactionInput))]
@@ -1182,7 +1182,7 @@ impl diesel::serialize::ToSql<PgTransactionInput, diesel::pg::Pg> for Transactio
 //////////////////////
 
 #[derive(Clone, Debug, PartialEq, Eq)]
-#[cfg_attr(feature = "sqlx", derive(sqlx::Encode, sqlx::Decode))]
+#[cfg_attr(feature = "sqlx", derive(sqlx::Type))]
 #[cfg_attr(feature = "sqlx", sqlx(type_name = "Plutus.OutputDatum"))]
 #[cfg_attr(feature = "diesel", derive(diesel::AsExpression, diesel::FromSqlRow))]
 #[cfg_attr(feature = "diesel", diesel(sql_type = PgOutputDatum))]
@@ -1266,7 +1266,7 @@ impl diesel::serialize::ToSql<PgOutputDatum, diesel::pg::Pg> for OutputDatum {
 //////////////////////
 
 #[derive(Clone, Debug, PartialEq, Eq)]
-#[cfg_attr(feature = "sqlx", derive(sqlx::Encode, sqlx::Decode))]
+#[cfg_attr(feature = "sqlx", derive(sqlx::Type))]
 #[cfg_attr(feature = "sqlx", sqlx(type_name = "Plutus.TransactionOutput"))]
 #[cfg_attr(feature = "diesel", derive(diesel::AsExpression, diesel::FromSqlRow))]
 #[cfg_attr(feature = "diesel", diesel(sql_type = PgTransactionOutput))]
@@ -1340,7 +1340,7 @@ impl diesel::serialize::ToSql<PgTransactionOutput, diesel::pg::Pg> for Transacti
 //////////////////////
 
 #[derive(Clone, Debug, PartialEq, Eq)]
-#[cfg_attr(feature = "sqlx", derive(sqlx::Encode, sqlx::Decode))]
+#[cfg_attr(feature = "sqlx", derive(sqlx::Type))]
 #[cfg_attr(feature = "sqlx", sqlx(type_name = "Plutus.TxInInfo"))]
 #[cfg_attr(feature = "diesel", derive(diesel::AsExpression, diesel::FromSqlRow))]
 #[cfg_attr(feature = "diesel", diesel(sql_type = PgTxInInfo))]
