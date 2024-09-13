@@ -51,9 +51,15 @@ mod plutus_database_roundtrips {
             ];
 
             for (testdb_entry, name) in cases {
-                write_read_assert(testdb_entry.clone(), &mut conn)
+                let result = write_read(testdb_entry.clone(), &mut conn)
                     .with_context(|| name)
-                    .unwrap()
+                    .unwrap();
+
+                assert_eq!(
+                    testdb_entry, result,
+                    "{} read back from database does not equal original",
+                    name
+                );
             }
         }
 
@@ -86,10 +92,11 @@ mod plutus_database_roundtrips {
             Ok(())
         }
 
-        fn write_read_assert(testdb: TestDB, conn: &mut PgConnection) -> Result<()> {
+        fn write_read(testdb: TestDB, conn: &mut PgConnection) -> Result<TestDB> {
             write(testdb.clone(), &mut *conn)?;
-            assert_eq!(testdb, read(&mut *conn)?);
-            clean(&mut *conn)
+            let result = read(&mut *conn)?;
+            clean(&mut *conn)?;
+            Ok(result)
         }
     }
 
@@ -132,11 +139,16 @@ mod plutus_database_roundtrips {
             ];
 
             for (testdb_entry, name) in cases {
-                dbg!(name);
-                write_read_assert(testdb_entry.clone(), &mut conn)
+                let result = write_read(testdb_entry.clone(), &mut conn)
                     .await
                     .with_context(|| name)
-                    .unwrap()
+                    .unwrap();
+
+                assert_eq!(
+                    testdb_entry, result,
+                    "{} read back from database does not equal original",
+                    name
+                );
             }
         }
 
@@ -196,10 +208,11 @@ mod plutus_database_roundtrips {
             Ok(())
         }
 
-        async fn write_read_assert(testdb: TestDB, conn: &mut PgConnection) -> Result<()> {
+        async fn write_read(testdb: TestDB, conn: &mut PgConnection) -> Result<TestDB> {
             write(testdb.clone(), &mut *conn).await?;
-            assert_eq!(testdb, read(&mut *conn).await?);
-            clean(&mut *conn).await
+            let result = read(&mut *conn).await?;
+            clean(&mut *conn).await?;
+            Ok(result)
         }
     }
 
