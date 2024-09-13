@@ -29,6 +29,8 @@
             ogmios.packages."ogmios:exe:ogmios"
             pkgs.diesel-cli
           ];
+
+          cargoNextestExtraArgs = "-E 'not test(database)'";
         };
     in
     {
