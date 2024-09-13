@@ -8,3 +8,4 @@ result
 .pre-commit-config.yaml
 .extras
 target
+.DS_Store

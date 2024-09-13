@@ -1,24 +1,23 @@
 -- Your SQL goes here
 
 CREATE TABLE testdb (
-  id INT8,
-  cur_sym Plutus.CurrencySymbol,
-  token_name Plutus.TokenName,
-  tx_hash Plutus.TransactionHash,
-  pub_key_hash Plutus.Ed25519PubKeyHash,
-  script_hash Plutus.ScriptHash,
-  datum_hash Plutus.DatumHash,
-  slot Plutus.Slot,
-  plutus_data Plutus.PlutusData,
-  cred Plutus.Credential,
-  chain_pointer Plutus.ChainPointer,
-  staking_cred Plutus.StakingCredential,
-  address Plutus.Address,
-  asset_quantity Plutus.AssetQuantity,
-  value Plutus.Value,
-  tx_in Plutus.TransactionInput,
-  datum Plutus.OutputDatum,
-  tx_out Plutus.TransactionOutput,
-  tx_in_info Plutus.TxInInfo
+  id INT8 PRIMARY KEY,
+  cur_sym PLUTUS.CURRENCY_SYMBOL,
+  token_name PLUTUS.TOKEN_NAME,
+  tx_hash PLUTUS.TRANSACTION_HASH,
+  pub_key_hash PLUTUS.ED25519_PUBKEYHASH,
+  script_hash PLUTUS.SCRIPT_HASH,
+  datum_hash PLUTUS.DATUM_HASH,
+  slot PLUTUS.SLOT,
+  plutus_data PLUTUS.PLUTUS_DATA,
+  cred PLUTUS.CREDENTIAL,
+  chain_pointer PLUTUS.CHAIN_POINTER,
+  staking_cred PLUTUS.STAKING_CREDENTIAL,
+  address PLUTUS.ADDRESS,
+  asset_quantity PLUTUS.ASSET_QUANTITY,
+  value PLUTUS.VALUE,
+  tx_in PLUTUS.TRANSACTION_INPUT,
+  datum PLUTUS.OUTPUT_DATUM,
+  tx_out PLUTUS.TRANSACTION_OUTPUT,
+  tx_in_info PLUTUS.TX_IN_INFO
 );
-

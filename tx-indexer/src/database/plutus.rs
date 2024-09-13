@@ -1,5 +1,5 @@
 #[cfg(feature = "diesel")]
-use diesel::sql_types::{Array, BigInt as PgBigInt, Bytea, Jsonb, Nullable};
+use diesel::sql_types::{Array, Bytea, Jsonb, Nullable};
 use num_bigint::BigInt;
 use plutus_ledger_api as pla;
 use thiserror::Error;
@@ -28,7 +28,7 @@ pub enum DBTypeConversionError {
 #[derive(Clone, Debug, PartialEq, Eq)]
 #[cfg_attr(feature = "sqlx", derive(sqlx::Encode, sqlx::Decode))]
 #[cfg_attr(feature = "diesel", derive(diesel::AsExpression, diesel::FromSqlRow))]
-#[cfg_attr(feature = "diesel", diesel(sql_type = PgHash28))]
+#[cfg_attr(feature = "diesel", diesel(sql_type = tx_indexer::schema::Hash28))]
 pub struct Hash28(pub Vec<u8>);
 
 #[cfg(feature = "diesel")]
@@ -59,7 +59,7 @@ impl ::sqlx::Type<::sqlx::postgres::Postgres> for Hash28 {
 }
 
 #[cfg(feature = "diesel")]
-impl diesel::deserialize::FromSql<PgHash28, diesel::pg::Pg> for Hash28 {
+impl diesel::deserialize::FromSql<tx_indexer::schema::Hash28, diesel::pg::Pg> for Hash28 {
     fn from_sql(bytes: diesel::pg::PgValue) -> diesel::deserialize::Result<Self> {
         let inner = diesel::deserialize::FromSql::<Bytea, diesel::pg::Pg>::from_sql(bytes)?;
         Ok(Self(inner))
@@ -67,7 +67,7 @@ impl diesel::deserialize::FromSql<PgHash28, diesel::pg::Pg> for Hash28 {
 }
 
 #[cfg(feature = "diesel")]
-impl diesel::serialize::ToSql<PgHash28, diesel::pg::Pg> for Hash28 {
+impl diesel::serialize::ToSql<tx_indexer::schema::Hash28, diesel::pg::Pg> for Hash28 {
     fn to_sql<'b>(
         &'b self,
         out: &mut diesel::serialize::Output<'b, '_, diesel::pg::Pg>,
@@ -86,7 +86,7 @@ impl diesel::serialize::ToSql<PgHash28, diesel::pg::Pg> for Hash28 {
 #[derive(Clone, Debug, PartialEq, Eq)]
 #[cfg_attr(feature = "sqlx", derive(sqlx::Encode, sqlx::Decode))]
 #[cfg_attr(feature = "diesel", derive(diesel::AsExpression, diesel::FromSqlRow))]
-#[cfg_attr(feature = "diesel", diesel(sql_type = PgHash32))]
+#[cfg_attr(feature = "diesel", diesel(sql_type = tx_indexer::schema::Hash32))]
 pub struct Hash32(pub Vec<u8>);
 
 #[cfg(feature = "diesel")]
@@ -117,7 +117,7 @@ impl ::sqlx::Type<::sqlx::postgres::Postgres> for Hash32 {
 }
 
 #[cfg(feature = "diesel")]
-impl diesel::deserialize::FromSql<PgHash32, diesel::pg::Pg> for Hash32 {
+impl diesel::deserialize::FromSql<tx_indexer::schema::Hash32, diesel::pg::Pg> for Hash32 {
     fn from_sql(bytes: diesel::pg::PgValue) -> diesel::deserialize::Result<Self> {
         let inner = diesel::deserialize::FromSql::<Bytea, diesel::pg::Pg>::from_sql(bytes)?;
         Ok(Self(inner))
@@ -125,7 +125,7 @@ impl diesel::deserialize::FromSql<PgHash32, diesel::pg::Pg> for Hash32 {
 }
 
 #[cfg(feature = "diesel")]
-impl diesel::serialize::ToSql<PgHash32, diesel::pg::Pg> for Hash32 {
+impl diesel::serialize::ToSql<tx_indexer::schema::Hash32, diesel::pg::Pg> for Hash32 {
     fn to_sql<'b>(
         &'b self,
         out: &mut diesel::serialize::Output<'b, '_, diesel::pg::Pg>,
@@ -144,7 +144,7 @@ impl diesel::serialize::ToSql<PgHash32, diesel::pg::Pg> for Hash32 {
 #[derive(Clone, Debug, PartialEq, Eq)]
 #[cfg_attr(feature = "sqlx", derive(sqlx::Encode, sqlx::Decode))]
 #[cfg_attr(feature = "diesel", derive(diesel::AsExpression, diesel::FromSqlRow))]
-#[cfg_attr(feature  = "diesel", diesel(sql_type = PgCurrencySymbol))]
+#[cfg_attr(feature  = "diesel", diesel(sql_type = tx_indexer::schema::CurrencySymbol))]
 pub struct CurrencySymbol(pub Vec<u8>);
 
 #[cfg(feature = "diesel")]
@@ -187,7 +187,9 @@ impl ::sqlx::Type<::sqlx::postgres::Postgres> for CurrencySymbol {
 }
 
 #[cfg(feature = "diesel")]
-impl diesel::deserialize::FromSql<PgCurrencySymbol, diesel::pg::Pg> for CurrencySymbol {
+impl diesel::deserialize::FromSql<tx_indexer::schema::CurrencySymbol, diesel::pg::Pg>
+    for CurrencySymbol
+{
     fn from_sql(bytes: diesel::pg::PgValue) -> diesel::deserialize::Result<Self> {
         let inner = diesel::deserialize::FromSql::<Bytea, diesel::pg::Pg>::from_sql(bytes)?;
         Ok(Self(inner))
@@ -195,7 +197,9 @@ impl diesel::deserialize::FromSql<PgCurrencySymbol, diesel::pg::Pg> for Currency
 }
 
 #[cfg(feature = "diesel")]
-impl diesel::serialize::ToSql<PgCurrencySymbol, diesel::pg::Pg> for CurrencySymbol {
+impl diesel::serialize::ToSql<tx_indexer::schema::CurrencySymbol, diesel::pg::Pg>
+    for CurrencySymbol
+{
     fn to_sql<'b>(
         &'b self,
         out: &mut diesel::serialize::Output<'b, '_, diesel::pg::Pg>,
@@ -214,7 +218,7 @@ impl diesel::serialize::ToSql<PgCurrencySymbol, diesel::pg::Pg> for CurrencySymb
 #[derive(Clone, Debug, PartialEq, Eq)]
 #[cfg_attr(feature = "sqlx", derive(sqlx::Encode, sqlx::Decode))]
 #[cfg_attr(feature = "diesel", derive(diesel::AsExpression, diesel::FromSqlRow))]
-#[cfg_attr(feature  = "diesel", diesel(sql_type = PgTokenName))]
+#[cfg_attr(feature  = "diesel", diesel(sql_type = tx_indexer::schema::TokenName))]
 pub struct TokenName(pub Vec<u8>);
 
 #[cfg(feature = "diesel")]
@@ -245,7 +249,7 @@ impl ::sqlx::Type<::sqlx::postgres::Postgres> for TokenName {
 }
 
 #[cfg(feature = "diesel")]
-impl diesel::deserialize::FromSql<PgTokenName, diesel::pg::Pg> for TokenName {
+impl diesel::deserialize::FromSql<tx_indexer::schema::TokenName, diesel::pg::Pg> for TokenName {
     fn from_sql(bytes: diesel::pg::PgValue) -> diesel::deserialize::Result<Self> {
         let inner = diesel::deserialize::FromSql::<Bytea, diesel::pg::Pg>::from_sql(bytes)?;
         Ok(Self(inner))
@@ -253,7 +257,7 @@ impl diesel::deserialize::FromSql<PgTokenName, diesel::pg::Pg> for TokenName {
 }
 
 #[cfg(feature = "diesel")]
-impl diesel::serialize::ToSql<PgTokenName, diesel::pg::Pg> for TokenName {
+impl diesel::serialize::ToSql<tx_indexer::schema::TokenName, diesel::pg::Pg> for TokenName {
     fn to_sql<'b>(
         &'b self,
         out: &mut diesel::serialize::Output<'b, '_, diesel::pg::Pg>,
@@ -272,7 +276,7 @@ impl diesel::serialize::ToSql<PgTokenName, diesel::pg::Pg> for TokenName {
 #[derive(Clone, Debug, PartialEq, Eq)]
 #[cfg_attr(feature = "sqlx", derive(sqlx::Encode, sqlx::Decode))]
 #[cfg_attr(feature = "diesel", derive(diesel::AsExpression, diesel::FromSqlRow))]
-#[cfg_attr(feature  = "diesel", diesel(sql_type = PgTransactionHash))]
+#[cfg_attr(feature  = "diesel", diesel(sql_type = tx_indexer::schema::TransactionHash))]
 pub struct TransactionHash(pub Hash32);
 
 #[cfg(feature = "diesel")]
@@ -303,7 +307,9 @@ impl ::sqlx::Type<::sqlx::postgres::Postgres> for TransactionHash {
 }
 
 #[cfg(feature = "diesel")]
-impl diesel::deserialize::FromSql<PgTransactionHash, diesel::pg::Pg> for TransactionHash {
+impl diesel::deserialize::FromSql<tx_indexer::schema::TransactionHash, diesel::pg::Pg>
+    for TransactionHash
+{
     fn from_sql(bytes: diesel::pg::PgValue) -> diesel::deserialize::Result<Self> {
         let inner = diesel::deserialize::FromSql::from_sql(bytes)?;
         Ok(Self(inner))
@@ -311,12 +317,14 @@ impl diesel::deserialize::FromSql<PgTransactionHash, diesel::pg::Pg> for Transac
 }
 
 #[cfg(feature = "diesel")]
-impl diesel::serialize::ToSql<PgTransactionHash, diesel::pg::Pg> for TransactionHash {
+impl diesel::serialize::ToSql<tx_indexer::schema::TransactionHash, diesel::pg::Pg>
+    for TransactionHash
+{
     fn to_sql<'b>(
         &'b self,
         out: &mut diesel::serialize::Output<'b, '_, diesel::pg::Pg>,
     ) -> diesel::serialize::Result {
-        <Hash32 as diesel::serialize::ToSql<PgHash32, diesel::pg::Pg>>::to_sql(
+        <Hash32 as diesel::serialize::ToSql<tx_indexer::schema::Hash32, diesel::pg::Pg>>::to_sql(
             &self.0,
             &mut out.reborrow(),
         )
@@ -330,7 +338,7 @@ impl diesel::serialize::ToSql<PgTransactionHash, diesel::pg::Pg> for Transaction
 #[derive(Clone, Debug, PartialEq, Eq)]
 #[cfg_attr(feature = "sqlx", derive(sqlx::Encode, sqlx::Decode))]
 #[cfg_attr(feature = "diesel", derive(diesel::AsExpression, diesel::FromSqlRow))]
-#[cfg_attr(feature  = "diesel", diesel(sql_type = PgEd25519PubKeyHash))]
+#[cfg_attr(feature  = "diesel", diesel(sql_type = tx_indexer::schema::Ed25519PubKeyHash))]
 pub struct Ed25519PubKeyHash(pub Hash28);
 
 #[cfg(feature = "diesel")]
@@ -361,7 +369,9 @@ impl ::sqlx::Type<::sqlx::postgres::Postgres> for Ed25519PubKeyHash {
 }
 
 #[cfg(feature = "diesel")]
-impl diesel::deserialize::FromSql<PgEd25519PubKeyHash, diesel::pg::Pg> for Ed25519PubKeyHash {
+impl diesel::deserialize::FromSql<tx_indexer::schema::Ed25519PubKeyHash, diesel::pg::Pg>
+    for Ed25519PubKeyHash
+{
     fn from_sql(bytes: diesel::pg::PgValue) -> diesel::deserialize::Result<Self> {
         let inner = diesel::deserialize::FromSql::from_sql(bytes)?;
         Ok(Self(inner))
@@ -369,12 +379,14 @@ impl diesel::deserialize::FromSql<PgEd25519PubKeyHash, diesel::pg::Pg> for Ed255
 }
 
 #[cfg(feature = "diesel")]
-impl diesel::serialize::ToSql<PgEd25519PubKeyHash, diesel::pg::Pg> for Ed25519PubKeyHash {
+impl diesel::serialize::ToSql<tx_indexer::schema::Ed25519PubKeyHash, diesel::pg::Pg>
+    for Ed25519PubKeyHash
+{
     fn to_sql<'b>(
         &'b self,
         out: &mut diesel::serialize::Output<'b, '_, diesel::pg::Pg>,
     ) -> diesel::serialize::Result {
-        <Hash28 as diesel::serialize::ToSql<PgHash28, diesel::pg::Pg>>::to_sql(
+        <Hash28 as diesel::serialize::ToSql<tx_indexer::schema::Hash28, diesel::pg::Pg>>::to_sql(
             &self.0,
             &mut out.reborrow(),
         )
@@ -388,7 +400,7 @@ impl diesel::serialize::ToSql<PgEd25519PubKeyHash, diesel::pg::Pg> for Ed25519Pu
 #[derive(Clone, Debug, PartialEq, Eq)]
 #[cfg_attr(feature = "sqlx", derive(sqlx::Encode, sqlx::Decode))]
 #[cfg_attr(feature = "diesel", derive(diesel::AsExpression, diesel::FromSqlRow))]
-#[cfg_attr(feature  = "diesel", diesel(sql_type = PgScriptHash))]
+#[cfg_attr(feature  = "diesel", diesel(sql_type = tx_indexer::schema::ScriptHash))]
 pub struct ScriptHash(pub Hash28);
 
 #[cfg(feature = "diesel")]
@@ -419,7 +431,7 @@ impl ::sqlx::Type<::sqlx::postgres::Postgres> for ScriptHash {
 }
 
 #[cfg(feature = "diesel")]
-impl diesel::deserialize::FromSql<PgScriptHash, diesel::pg::Pg> for ScriptHash {
+impl diesel::deserialize::FromSql<tx_indexer::schema::ScriptHash, diesel::pg::Pg> for ScriptHash {
     fn from_sql(bytes: diesel::pg::PgValue) -> diesel::deserialize::Result<Self> {
         let inner = diesel::deserialize::FromSql::from_sql(bytes)?;
         Ok(Self(inner))
@@ -427,12 +439,12 @@ impl diesel::deserialize::FromSql<PgScriptHash, diesel::pg::Pg> for ScriptHash {
 }
 
 #[cfg(feature = "diesel")]
-impl diesel::serialize::ToSql<PgScriptHash, diesel::pg::Pg> for ScriptHash {
+impl diesel::serialize::ToSql<tx_indexer::schema::ScriptHash, diesel::pg::Pg> for ScriptHash {
     fn to_sql<'b>(
         &'b self,
         out: &mut diesel::serialize::Output<'b, '_, diesel::pg::Pg>,
     ) -> diesel::serialize::Result {
-        <Hash28 as diesel::serialize::ToSql<PgHash28, diesel::pg::Pg>>::to_sql(
+        <Hash28 as diesel::serialize::ToSql<tx_indexer::schema::Hash28, diesel::pg::Pg>>::to_sql(
             &self.0,
             &mut out.reborrow(),
         )
@@ -446,7 +458,7 @@ impl diesel::serialize::ToSql<PgScriptHash, diesel::pg::Pg> for ScriptHash {
 #[derive(Clone, Debug, PartialEq, Eq)]
 #[cfg_attr(feature = "sqlx", derive(sqlx::Encode, sqlx::Decode))]
 #[cfg_attr(feature = "diesel", derive(diesel::AsExpression, diesel::FromSqlRow))]
-#[cfg_attr(feature = "diesel", diesel(sql_type = PgDatumHash))]
+#[cfg_attr(feature = "diesel", diesel(sql_type = tx_indexer::schema::DatumHash))]
 pub struct DatumHash(pub Hash32);
 
 #[cfg(feature = "diesel")]
@@ -477,7 +489,7 @@ impl ::sqlx::Type<::sqlx::postgres::Postgres> for DatumHash {
 }
 
 #[cfg(feature = "diesel")]
-impl diesel::deserialize::FromSql<PgDatumHash, diesel::pg::Pg> for DatumHash {
+impl diesel::deserialize::FromSql<tx_indexer::schema::DatumHash, diesel::pg::Pg> for DatumHash {
     fn from_sql(bytes: diesel::pg::PgValue) -> diesel::deserialize::Result<Self> {
         let inner = diesel::deserialize::FromSql::from_sql(bytes)?;
         Ok(Self(inner))
@@ -485,12 +497,12 @@ impl diesel::deserialize::FromSql<PgDatumHash, diesel::pg::Pg> for DatumHash {
 }
 
 #[cfg(feature = "diesel")]
-impl diesel::serialize::ToSql<PgDatumHash, diesel::pg::Pg> for DatumHash {
+impl diesel::serialize::ToSql<tx_indexer::schema::DatumHash, diesel::pg::Pg> for DatumHash {
     fn to_sql<'b>(
         &'b self,
         out: &mut diesel::serialize::Output<'b, '_, diesel::pg::Pg>,
     ) -> diesel::serialize::Result {
-        <Hash32 as diesel::serialize::ToSql<PgHash32, diesel::pg::Pg>>::to_sql(
+        <Hash32 as diesel::serialize::ToSql<tx_indexer::schema::Hash32, diesel::pg::Pg>>::to_sql(
             &self.0,
             &mut out.reborrow(),
         )
@@ -504,7 +516,7 @@ impl diesel::serialize::ToSql<PgDatumHash, diesel::pg::Pg> for DatumHash {
 #[derive(Clone, Debug, PartialEq, Eq)]
 #[cfg_attr(feature = "sqlx", derive(sqlx::Encode, sqlx::Decode))]
 #[cfg_attr(feature = "diesel", derive(diesel::AsExpression, diesel::FromSqlRow))]
-#[cfg_attr(feature = "diesel", diesel(sql_type = PgSlot))]
+#[cfg_attr(feature = "diesel", diesel(sql_type = tx_indexer::schema::Slot))]
 pub struct Slot(pub i64);
 
 #[cfg(feature = "diesel")]
@@ -535,7 +547,7 @@ impl ::sqlx::Type<::sqlx::postgres::Postgres> for Slot {
 }
 
 #[cfg(feature = "diesel")]
-impl diesel::deserialize::FromSql<PgSlot, diesel::pg::Pg> for Slot {
+impl diesel::deserialize::FromSql<tx_indexer::schema::Slot, diesel::pg::Pg> for Slot {
     fn from_sql(bytes: diesel::pg::PgValue) -> diesel::deserialize::Result<Self> {
         let slot = diesel::deserialize::FromSql::from_sql(bytes)?;
         Ok(Self(slot))
@@ -543,12 +555,12 @@ impl diesel::deserialize::FromSql<PgSlot, diesel::pg::Pg> for Slot {
 }
 
 #[cfg(feature = "diesel")]
-impl diesel::serialize::ToSql<PgSlot, diesel::pg::Pg> for Slot {
+impl diesel::serialize::ToSql<tx_indexer::schema::Slot, diesel::pg::Pg> for Slot {
     fn to_sql<'b>(
         &'b self,
         out: &mut diesel::serialize::Output<'b, '_, diesel::pg::Pg>,
     ) -> diesel::serialize::Result {
-        <i64 as diesel::serialize::ToSql<PgBigInt, diesel::pg::Pg>>::to_sql(
+        <i64 as diesel::serialize::ToSql<diesel::sql_types::BigInt, diesel::pg::Pg>>::to_sql(
             &self.0,
             &mut out.reborrow(),
         )
@@ -574,7 +586,7 @@ pub enum PlutusDataEncodingError {
 #[derive(Clone, Debug, PartialEq, Eq)]
 #[cfg_attr(feature = "sqlx", derive(sqlx::Encode, sqlx::Decode))]
 #[cfg_attr(feature = "diesel", derive(diesel::AsExpression, diesel::FromSqlRow))]
-#[cfg_attr(feature = "diesel", diesel(sql_type = PgPlutusData))]
+#[cfg_attr(feature = "diesel", diesel(sql_type = tx_indexer::schema::PlutusData))]
 pub struct PlutusData(pub serde_json::Value);
 
 #[cfg(feature = "diesel")]
@@ -623,7 +635,7 @@ impl ::sqlx::Type<::sqlx::postgres::Postgres> for PlutusData {
 }
 
 #[cfg(feature = "diesel")]
-impl diesel::deserialize::FromSql<PgPlutusData, diesel::pg::Pg> for PlutusData {
+impl diesel::deserialize::FromSql<tx_indexer::schema::PlutusData, diesel::pg::Pg> for PlutusData {
     fn from_sql(bytes: diesel::pg::PgValue) -> diesel::deserialize::Result<Self> {
         let inner = diesel::deserialize::FromSql::<Jsonb, diesel::pg::Pg>::from_sql(bytes)?;
         Ok(Self(inner))
@@ -631,7 +643,7 @@ impl diesel::deserialize::FromSql<PgPlutusData, diesel::pg::Pg> for PlutusData {
 }
 
 #[cfg(feature = "diesel")]
-impl diesel::serialize::ToSql<PgPlutusData, diesel::pg::Pg> for PlutusData {
+impl diesel::serialize::ToSql<tx_indexer::schema::PlutusData, diesel::pg::Pg> for PlutusData {
     fn to_sql<'b>(
         &'b self,
         out: &mut diesel::serialize::Output<'b, '_, diesel::pg::Pg>,
@@ -651,7 +663,7 @@ impl diesel::serialize::ToSql<PgPlutusData, diesel::pg::Pg> for PlutusData {
 #[cfg_attr(feature = "sqlx", derive(sqlx::Type))]
 #[cfg_attr(feature = "sqlx", sqlx(type_name = "Plutus.Credential"))]
 #[cfg_attr(feature = "diesel", derive(diesel::AsExpression, diesel::FromSqlRow))]
-#[cfg_attr(feature = "diesel", diesel(sql_type = PgCredential))]
+#[cfg_attr(feature = "diesel", diesel(sql_type = tx_indexer::schema::Credential))]
 pub struct Credential {
     pub_key_hash: Option<Ed25519PubKeyHash>,
     script_hash: Option<ScriptHash>,
@@ -700,7 +712,7 @@ impl TryFrom<Credential> for pla::v2::address::Credential {
 }
 
 #[cfg(feature = "diesel")]
-impl diesel::deserialize::FromSql<PgCredential, diesel::pg::Pg> for Credential {
+impl diesel::deserialize::FromSql<tx_indexer::schema::Credential, diesel::pg::Pg> for Credential {
     fn from_sql(bytes: diesel::pg::PgValue) -> diesel::deserialize::Result<Self> {
         let (pub_key_hash, script_hash) = diesel::deserialize::FromSql::from_sql(bytes)?;
         Ok(Self {
@@ -711,12 +723,15 @@ impl diesel::deserialize::FromSql<PgCredential, diesel::pg::Pg> for Credential {
 }
 
 #[cfg(feature = "diesel")]
-impl diesel::serialize::ToSql<PgCredential, diesel::pg::Pg> for Credential {
+impl diesel::serialize::ToSql<tx_indexer::schema::Credential, diesel::pg::Pg> for Credential {
     fn to_sql<'b>(
         &'b self,
         out: &mut diesel::serialize::Output<'b, '_, diesel::pg::Pg>,
     ) -> diesel::serialize::Result {
-        diesel::serialize::WriteTuple::<(Nullable<PgEd25519PubKeyHash>, Nullable<PgScriptHash>)>::write_tuple(
+        diesel::serialize::WriteTuple::<(
+            Nullable<tx_indexer::schema::Ed25519PubKeyHash>,
+            Nullable<tx_indexer::schema::ScriptHash>,
+        )>::write_tuple(
             &(self.pub_key_hash.clone(), self.script_hash.clone()),
             &mut out.reborrow(),
         )
@@ -731,7 +746,7 @@ impl diesel::serialize::ToSql<PgCredential, diesel::pg::Pg> for Credential {
 #[cfg_attr(feature = "sqlx", derive(sqlx::Type))]
 #[cfg_attr(feature = "sqlx", sqlx(type_name = "Plutus.ChainPointer"))]
 #[cfg_attr(feature = "diesel", derive(diesel::AsExpression, diesel::FromSqlRow))]
-#[cfg_attr(feature = "diesel", diesel(sql_type = PgChainPointer))]
+#[cfg_attr(feature = "diesel", diesel(sql_type = tx_indexer::schema::ChainPointer))]
 pub struct ChainPointer {
     slot_num: i64,
     tx_idx: i64,
@@ -778,7 +793,9 @@ impl From<ChainPointer> for pla::v2::address::ChainPointer {
 }
 
 #[cfg(feature = "diesel")]
-impl diesel::deserialize::FromSql<PgChainPointer, diesel::pg::Pg> for ChainPointer {
+impl diesel::deserialize::FromSql<tx_indexer::schema::ChainPointer, diesel::pg::Pg>
+    for ChainPointer
+{
     fn from_sql(bytes: diesel::pg::PgValue) -> diesel::deserialize::Result<Self> {
         let (slot_num, tx_idx, cert_idx) = diesel::deserialize::FromSql::from_sql(bytes)?;
         Ok(Self {
@@ -790,12 +807,16 @@ impl diesel::deserialize::FromSql<PgChainPointer, diesel::pg::Pg> for ChainPoint
 }
 
 #[cfg(feature = "diesel")]
-impl diesel::serialize::ToSql<PgChainPointer, diesel::pg::Pg> for ChainPointer {
+impl diesel::serialize::ToSql<tx_indexer::schema::ChainPointer, diesel::pg::Pg> for ChainPointer {
     fn to_sql<'b>(
         &'b self,
         out: &mut diesel::serialize::Output<'b, '_, diesel::pg::Pg>,
     ) -> diesel::serialize::Result {
-        diesel::serialize::WriteTuple::<(PgBigInt, PgBigInt, PgBigInt)>::write_tuple(
+        diesel::serialize::WriteTuple::<(
+            diesel::sql_types::BigInt,
+            diesel::sql_types::BigInt,
+            diesel::sql_types::BigInt,
+        )>::write_tuple(
             &(self.slot_num, self.tx_idx, self.cert_idx),
             &mut out.reborrow(),
         )
@@ -810,7 +831,7 @@ impl diesel::serialize::ToSql<PgChainPointer, diesel::pg::Pg> for ChainPointer {
 #[cfg_attr(feature = "sqlx", derive(sqlx::Type))]
 #[cfg_attr(feature = "sqlx", sqlx(type_name = "Plutus.StakingCredential"))]
 #[cfg_attr(feature = "diesel", derive(diesel::AsExpression, diesel::FromSqlRow))]
-#[cfg_attr(feature = "diesel", diesel(sql_type = PgStakingCredential))]
+#[cfg_attr(feature = "diesel", diesel(sql_type = tx_indexer::schema::StakingCredential))]
 pub struct StakingCredential {
     staking_hash: Option<Credential>,
     staking_ptr: Option<ChainPointer>,
@@ -859,7 +880,9 @@ impl TryFrom<StakingCredential> for pla::v2::address::StakingCredential {
 }
 
 #[cfg(feature = "diesel")]
-impl diesel::deserialize::FromSql<PgStakingCredential, diesel::pg::Pg> for StakingCredential {
+impl diesel::deserialize::FromSql<tx_indexer::schema::StakingCredential, diesel::pg::Pg>
+    for StakingCredential
+{
     fn from_sql(bytes: diesel::pg::PgValue) -> diesel::deserialize::Result<Self> {
         let (staking_hash, staking_ptr) = diesel::deserialize::FromSql::from_sql(bytes)?;
         Ok(Self {
@@ -870,12 +893,17 @@ impl diesel::deserialize::FromSql<PgStakingCredential, diesel::pg::Pg> for Staki
 }
 
 #[cfg(feature = "diesel")]
-impl diesel::serialize::ToSql<PgStakingCredential, diesel::pg::Pg> for StakingCredential {
+impl diesel::serialize::ToSql<tx_indexer::schema::StakingCredential, diesel::pg::Pg>
+    for StakingCredential
+{
     fn to_sql<'b>(
         &'b self,
         out: &mut diesel::serialize::Output<'b, '_, diesel::pg::Pg>,
     ) -> diesel::serialize::Result {
-        diesel::serialize::WriteTuple::<(Nullable<PgCredential>, Nullable<PgChainPointer>)>::write_tuple(
+        diesel::serialize::WriteTuple::<(
+            Nullable<tx_indexer::schema::Credential>,
+            Nullable<tx_indexer::schema::ChainPointer>,
+        )>::write_tuple(
             &(self.staking_hash.clone(), self.staking_ptr.clone()),
             &mut out.reborrow(),
         )
@@ -930,7 +958,7 @@ impl TryFrom<Address> for pla::v2::address::Address {
 }
 
 #[cfg(feature = "diesel")]
-impl diesel::deserialize::FromSql<PgAddress, diesel::pg::Pg> for Address {
+impl diesel::deserialize::FromSql<tx_indexer::schema::Address, diesel::pg::Pg> for Address {
     fn from_sql(bytes: diesel::pg::PgValue) -> diesel::deserialize::Result<Self> {
         let (credential, staking_credential) = diesel::deserialize::FromSql::from_sql(bytes)?;
         Ok(Self {
@@ -941,12 +969,15 @@ impl diesel::deserialize::FromSql<PgAddress, diesel::pg::Pg> for Address {
 }
 
 #[cfg(feature = "diesel")]
-impl diesel::serialize::ToSql<PgAddress, diesel::pg::Pg> for Address {
+impl diesel::serialize::ToSql<tx_indexer::schema::Address, diesel::pg::Pg> for Address {
     fn to_sql<'b>(
         &'b self,
         out: &mut diesel::serialize::Output<'b, '_, diesel::pg::Pg>,
     ) -> diesel::serialize::Result {
-        diesel::serialize::WriteTuple::<(PgCredential, Nullable<PgStakingCredential>)>::write_tuple(
+        diesel::serialize::WriteTuple::<(
+            tx_indexer::schema::Credential,
+            Nullable<tx_indexer::schema::StakingCredential>,
+        )>::write_tuple(
             &(self.credential.clone(), self.staking_credential.clone()),
             &mut out.reborrow(),
         )
@@ -961,7 +992,7 @@ impl diesel::serialize::ToSql<PgAddress, diesel::pg::Pg> for Address {
 #[cfg_attr(feature = "sqlx", derive(sqlx::Type))]
 #[cfg_attr(feature = "sqlx", sqlx(type_name = "Plutus.AssetQuantity"))]
 #[cfg_attr(feature = "diesel", derive(diesel::AsExpression, diesel::FromSqlRow))]
-#[cfg_attr(feature = "diesel", diesel(sql_type = PgAssetQuantity))]
+#[cfg_attr(feature = "diesel", diesel(sql_type = tx_indexer::schema::AssetQuantity))]
 pub struct AssetQuantity {
     currency_symbol: CurrencySymbol,
     token_name: TokenName,
@@ -1017,7 +1048,9 @@ impl From<AssetQuantity>
 }
 
 #[cfg(feature = "diesel")]
-impl diesel::deserialize::FromSql<PgAssetQuantity, diesel::pg::Pg> for AssetQuantity {
+impl diesel::deserialize::FromSql<tx_indexer::schema::AssetQuantity, diesel::pg::Pg>
+    for AssetQuantity
+{
     fn from_sql(bytes: diesel::pg::PgValue) -> diesel::deserialize::Result<Self> {
         let (currency_symbol, token_name, amount) = diesel::deserialize::FromSql::from_sql(bytes)?;
         Ok(Self {
@@ -1029,12 +1062,16 @@ impl diesel::deserialize::FromSql<PgAssetQuantity, diesel::pg::Pg> for AssetQuan
 }
 
 #[cfg(feature = "diesel")]
-impl diesel::serialize::ToSql<PgAssetQuantity, diesel::pg::Pg> for AssetQuantity {
+impl diesel::serialize::ToSql<tx_indexer::schema::AssetQuantity, diesel::pg::Pg> for AssetQuantity {
     fn to_sql<'b>(
         &'b self,
         out: &mut diesel::serialize::Output<'b, '_, diesel::pg::Pg>,
     ) -> diesel::serialize::Result {
-        diesel::serialize::WriteTuple::<(PgCurrencySymbol, PgTokenName, PgBigInt)>::write_tuple(
+        diesel::serialize::WriteTuple::<(
+            tx_indexer::schema::CurrencySymbol,
+            tx_indexer::schema::TokenName,
+            diesel::sql_types::BigInt,
+        )>::write_tuple(
             &(
                 self.currency_symbol.clone(),
                 self.token_name.clone(),
@@ -1111,7 +1148,10 @@ impl diesel::serialize::ToSql<PgValue, diesel::pg::Pg> for Value {
         &'b self,
         out: &mut diesel::serialize::Output<'b, '_, diesel::pg::Pg>,
     ) -> diesel::serialize::Result {
-        <Vec<AssetQuantity> as diesel::serialize::ToSql<Array<PgAssetQuantity>, diesel::pg::Pg>>::to_sql(&self.0, &mut out.reborrow())
+        <Vec<AssetQuantity> as diesel::serialize::ToSql<
+            Array<tx_indexer::schema::AssetQuantity>,
+            diesel::pg::Pg,
+        >>::to_sql(&self.0, &mut out.reborrow())
     }
 }
 
@@ -1123,7 +1163,7 @@ impl diesel::serialize::ToSql<PgValue, diesel::pg::Pg> for Value {
 #[cfg_attr(feature = "sqlx", derive(sqlx::Type))]
 #[cfg_attr(feature = "sqlx", sqlx(type_name = "Plutus.TransactionInput"))]
 #[cfg_attr(feature = "diesel", derive(diesel::AsExpression, diesel::FromSqlRow))]
-#[cfg_attr(feature = "diesel", diesel(sql_type = PgTransactionInput))]
+#[cfg_attr(feature = "diesel", diesel(sql_type = tx_indexer::schema::TransactionInput))]
 pub struct TransactionInput {
     tx_id: TransactionHash,
     tx_idx: i64,
@@ -1158,22 +1198,26 @@ impl From<TransactionInput> for pla::v2::transaction::TransactionInput {
 }
 
 #[cfg(feature = "diesel")]
-impl diesel::deserialize::FromSql<PgTransactionInput, diesel::pg::Pg> for TransactionInput {
+impl diesel::deserialize::FromSql<tx_indexer::schema::TransactionInput, diesel::pg::Pg>
+    for TransactionInput
+{
     fn from_sql(bytes: diesel::pg::PgValue) -> diesel::deserialize::Result<Self> {
         let (tx_id, tx_idx) = diesel::deserialize::FromSql::from_sql(bytes)?;
         Ok(Self { tx_id, tx_idx })
     }
 }
 #[cfg(feature = "diesel")]
-impl diesel::serialize::ToSql<PgTransactionInput, diesel::pg::Pg> for TransactionInput {
+impl diesel::serialize::ToSql<tx_indexer::schema::TransactionInput, diesel::pg::Pg>
+    for TransactionInput
+{
     fn to_sql<'b>(
         &'b self,
         out: &mut diesel::serialize::Output<'b, '_, diesel::pg::Pg>,
     ) -> diesel::serialize::Result {
-        diesel::serialize::WriteTuple::<(PgTransactionHash, PgBigInt)>::write_tuple(
-            &(self.tx_id.clone(), self.tx_idx),
-            &mut out.reborrow(),
-        )
+        diesel::serialize::WriteTuple::<(
+            tx_indexer::schema::TransactionHash,
+            diesel::sql_types::BigInt,
+        )>::write_tuple(&(self.tx_id.clone(), self.tx_idx), &mut out.reborrow())
     }
 }
 
@@ -1185,16 +1229,11 @@ impl diesel::serialize::ToSql<PgTransactionInput, diesel::pg::Pg> for Transactio
 #[cfg_attr(feature = "sqlx", derive(sqlx::Type))]
 #[cfg_attr(feature = "sqlx", sqlx(type_name = "Plutus.OutputDatum"))]
 #[cfg_attr(feature = "diesel", derive(diesel::AsExpression, diesel::FromSqlRow))]
-#[cfg_attr(feature = "diesel", diesel(sql_type = PgOutputDatum))]
+#[cfg_attr(feature = "diesel", diesel(sql_type = tx_indexer::schema::OutputDatum))]
 pub struct OutputDatum {
     datum_hash: Option<DatumHash>,
     inline_datum: Option<PlutusData>,
 }
-
-#[cfg(feature = "diesel")]
-#[derive(diesel::SqlType, diesel::QueryId)]
-#[diesel(postgres_type(schema = "plutus", name = "outputdatum"))]
-pub struct PgOutputDatum;
 
 impl TryFrom<pla::v2::datum::OutputDatum> for OutputDatum {
     type Error = DBTypeConversionError;
@@ -1238,7 +1277,7 @@ impl TryFrom<OutputDatum> for pla::v2::datum::OutputDatum {
 }
 
 #[cfg(feature = "diesel")]
-impl diesel::deserialize::FromSql<PgOutputDatum, diesel::pg::Pg> for OutputDatum {
+impl diesel::deserialize::FromSql<tx_indexer::schema::OutputDatum, diesel::pg::Pg> for OutputDatum {
     fn from_sql(bytes: diesel::pg::PgValue) -> diesel::deserialize::Result<Self> {
         let (datum_hash, inline_datum) = diesel::deserialize::FromSql::from_sql(bytes)?;
         Ok(Self {
@@ -1249,12 +1288,15 @@ impl diesel::deserialize::FromSql<PgOutputDatum, diesel::pg::Pg> for OutputDatum
 }
 
 #[cfg(feature = "diesel")]
-impl diesel::serialize::ToSql<PgOutputDatum, diesel::pg::Pg> for OutputDatum {
+impl diesel::serialize::ToSql<tx_indexer::schema::OutputDatum, diesel::pg::Pg> for OutputDatum {
     fn to_sql<'b>(
         &'b self,
         out: &mut diesel::serialize::Output<'b, '_, diesel::pg::Pg>,
     ) -> diesel::serialize::Result {
-        diesel::serialize::WriteTuple::<(Nullable<PgDatumHash>, Nullable<PgPlutusData>)>::write_tuple(
+        diesel::serialize::WriteTuple::<(
+            Nullable<tx_indexer::schema::DatumHash>,
+            Nullable<tx_indexer::schema::PlutusData>,
+        )>::write_tuple(
             &(self.datum_hash.clone(), self.inline_datum.clone()),
             &mut out.reborrow(),
         )
@@ -1269,7 +1311,7 @@ impl diesel::serialize::ToSql<PgOutputDatum, diesel::pg::Pg> for OutputDatum {
 #[cfg_attr(feature = "sqlx", derive(sqlx::Type))]
 #[cfg_attr(feature = "sqlx", sqlx(type_name = "Plutus.TransactionOutput"))]
 #[cfg_attr(feature = "diesel", derive(diesel::AsExpression, diesel::FromSqlRow))]
-#[cfg_attr(feature = "diesel", diesel(sql_type = PgTransactionOutput))]
+#[cfg_attr(feature = "diesel", diesel(sql_type = tx_indexer::schema::TransactionOutput))]
 pub struct TransactionOutput {
     address: Address,
     assets: Value,
@@ -1309,7 +1351,9 @@ impl TryFrom<TransactionOutput> for pla::v2::transaction::TransactionOutput {
 }
 
 #[cfg(feature = "diesel")]
-impl diesel::deserialize::FromSql<PgTransactionOutput, diesel::pg::Pg> for TransactionOutput {
+impl diesel::deserialize::FromSql<tx_indexer::schema::TransactionOutput, diesel::pg::Pg>
+    for TransactionOutput
+{
     fn from_sql(bytes: diesel::pg::PgValue) -> diesel::deserialize::Result<Self> {
         let (address, assets, datum, reference_script) =
             diesel::deserialize::FromSql::from_sql(bytes)?;
@@ -1323,13 +1367,25 @@ impl diesel::deserialize::FromSql<PgTransactionOutput, diesel::pg::Pg> for Trans
 }
 
 #[cfg(feature = "diesel")]
-impl diesel::serialize::ToSql<PgTransactionOutput, diesel::pg::Pg> for TransactionOutput {
+impl diesel::serialize::ToSql<crate::schema::sql_types::Transactionoutput, diesel::pg::Pg>
+    for TransactionOutput
+{
     fn to_sql<'b>(
         &'b self,
         out: &mut diesel::serialize::Output<'b, '_, diesel::pg::Pg>,
     ) -> diesel::serialize::Result {
-        diesel::serialize::WriteTuple::<(PgAddress, PgValue, PgOutputDatum,Nullable<PgScriptHash>)>::write_tuple(
-            &(self.address.clone(), self.assets.clone(), self.datum.clone(), self.reference_script.clone()),
+        diesel::serialize::WriteTuple::<(
+            crate::schema::sql_types::Address,
+            crate::schema::sql_types::Value,
+            crate::schema::sql_types::OutputDatum,
+            Nullable<crateschema::ScriptHash>,
+        )>::write_tuple(
+            &(
+                self.address.clone(),
+                self.assets.clone(),
+                self.datum.clone(),
+                self.reference_script.clone(),
+            ),
             &mut out.reborrow(),
         )
     }
@@ -1343,16 +1399,11 @@ impl diesel::serialize::ToSql<PgTransactionOutput, diesel::pg::Pg> for Transacti
 #[cfg_attr(feature = "sqlx", derive(sqlx::Type))]
 #[cfg_attr(feature = "sqlx", sqlx(type_name = "Plutus.TxInInfo"))]
 #[cfg_attr(feature = "diesel", derive(diesel::AsExpression, diesel::FromSqlRow))]
-#[cfg_attr(feature = "diesel", diesel(sql_type = PgTxInInfo))]
+#[cfg_attr(feature = "diesel", diesel(sql_type = tx_indexer::schema::TxInInfo))]
 pub struct TxInInfo {
     reference: TransactionInput,
     output: TransactionOutput,
 }
-
-#[cfg(feature = "diesel")]
-#[derive(diesel::SqlType, diesel::QueryId)]
-#[diesel(postgres_type(schema = "plutus", name = "txininfo"))]
-pub struct PgTxInInfo;
 
 impl TryFrom<pla::v2::transaction::TxInInfo> for TxInInfo {
     type Error = DBTypeConversionError;
@@ -1377,7 +1428,7 @@ impl TryFrom<TxInInfo> for pla::v2::transaction::TxInInfo {
 }
 
 #[cfg(feature = "diesel")]
-impl diesel::deserialize::FromSql<PgTxInInfo, diesel::pg::Pg> for TxInInfo {
+impl diesel::deserialize::FromSql<tx_indexer::schema::TxInInfo, diesel::pg::Pg> for TxInInfo {
     fn from_sql(bytes: diesel::pg::PgValue) -> diesel::deserialize::Result<Self> {
         let (reference, output) = diesel::deserialize::FromSql::from_sql(bytes)?;
         Ok(Self { reference, output })
@@ -1385,12 +1436,15 @@ impl diesel::deserialize::FromSql<PgTxInInfo, diesel::pg::Pg> for TxInInfo {
 }
 
 #[cfg(feature = "diesel")]
-impl diesel::serialize::ToSql<PgTxInInfo, diesel::pg::Pg> for TxInInfo {
+impl diesel::serialize::ToSql<tx_indexer::schema::TxInInfo, diesel::pg::Pg> for TxInInfo {
     fn to_sql<'b>(
         &'b self,
         out: &mut diesel::serialize::Output<'b, '_, diesel::pg::Pg>,
     ) -> diesel::serialize::Result {
-        diesel::serialize::WriteTuple::<(PgTransactionInput, PgTransactionOutput)>::write_tuple(
+        diesel::serialize::WriteTuple::<(
+            tx_indexer::schema::TransactionInput,
+            tx_indexer::schema::TransactionOutput,
+        )>::write_tuple(
             &(self.reference.clone(), self.output.clone()),
             &mut out.reborrow(),
         )

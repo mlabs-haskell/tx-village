@@ -28,10 +28,24 @@ let
         ${extraPostgresConf}
       '';
 
-  ddls = [ ./db/plutus.sql ./db/sync_progress.sql ] ++ extraDDLs;
+  ddls = [
+    ./migrations/00000000000001_plutus/up.sql
+    ./migrations/00000000000002_sync_progress/up.sql
+  ] ++ extraDDLs;
 
   init-db = pkgs.writeShellApplication {
     name = "init-db";
+    runtimeInputs = [ postgresql ];
+    runtimeEnv = {
+      LC_CTYPE = "en_US.UTF-8";
+      LC_ALL = "en_US.UTF-8";
+      LANG = "en_US.UTF-8";
+    };
+    text = "init-empty-db; " + pkgs.lib.concatMapStringsSep "\n" (ddl: "pg < ${ddl}") ddls;
+  };
+
+  init-empty-db = pkgs.writeShellApplication {
+    name = "init-empty-db";
     runtimeInputs = [ postgresql ];
     runtimeEnv = {
       LC_CTYPE = "en_US.UTF-8";
@@ -46,7 +60,7 @@ let
       start-db
       echo "CREATE DATABASE ${pgUser}" | psql -p "${pgPort}" -U "${pgUser}" postgres
 
-    '' + pkgs.lib.concatMapStringsSep "\n" (ddl: "pg < ${ddl}") ddls;
+    '';
   };
 
   start-db = pkgs.writeShellApplication {
@@ -79,6 +93,6 @@ let
 in
 {
   inherit postgresConf;
-  devShellTools = [ init-db start-db stop-db pg ];
+  devShellTools = [ init-db start-db stop-db pg init-empty-db ];
 }
 
