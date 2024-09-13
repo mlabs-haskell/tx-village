@@ -16,10 +16,12 @@ mod plutus_database_roundtrips {
     mod diesel_decoding {
         use anyhow::{Context, Result};
         use diesel::{Connection, PgConnection};
+        use serial_test::serial;
 
         use super::TestDB;
 
         #[test]
+        #[serial]
         fn db_tests() {
             use super::*;
 
@@ -94,11 +96,13 @@ mod plutus_database_roundtrips {
     #[cfg(feature = "sqlx")]
     mod sqlx_decoding {
         use anyhow::{anyhow, Context, Result};
+        use serial_test::serial;
         use sqlx::{PgConnection, PgPool};
 
         use super::*;
 
         #[tokio::test]
+        #[serial]
         async fn db_tests() {
             let pg_pool = PgPool::connect("postgres://tx_indexer@127.0.0.1:5555")
                 .await
