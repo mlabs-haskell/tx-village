@@ -5,7 +5,7 @@ CREATE TABLE testdb (
   cur_sym PLUTUS.CURRENCY_SYMBOL,
   token_name PLUTUS.TOKEN_NAME,
   tx_hash PLUTUS.TRANSACTION_HASH,
-  pub_key_hash PLUTUS.ED25519_PUBKEYHASH,
+  pub_key_hash PLUTUS.ED25519_PUB_KEY_HASH,
   script_hash PLUTUS.SCRIPT_HASH,
   datum_hash PLUTUS.DATUM_HASH,
   slot PLUTUS.SLOT,

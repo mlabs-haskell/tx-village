@@ -37,7 +37,6 @@ impl UtxosTable {
             value: utxo.output.value.try_into()?,
             address: utxo.output.address.try_into()?,
             datum: utxo.output.datum.try_into()?,
-
             created_at: created_at.into(),
             deleted_at: None,
         })

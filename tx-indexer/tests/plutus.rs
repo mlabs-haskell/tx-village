@@ -224,6 +224,7 @@ mod plutus_database_roundtrips {
     )]
     #[cfg_attr(feature = "diesel", diesel(table_name = tx_indexer::schema::testdb))]
     pub struct TestDB {
+        id: i64,
         cur_sym: Option<CurrencySymbol>,
         token_name: Option<TokenName>,
         tx_hash: Option<TransactionHash>,
