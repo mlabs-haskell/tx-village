@@ -3,18 +3,18 @@ use quote::quote;
 use syn::{self, parse_macro_input, DeriveInput};
 
 #[derive(deluxe::ExtractAttributes)]
-#[deluxe(attributes(diesel_derive))]
+#[deluxe(attributes(diesel_derive_pg))]
 struct Opts {
     sql_type: syn::Type,
 }
 
 #[derive(deluxe::ExtractAttributes)]
-#[deluxe(attributes(diesel_derive))]
+#[deluxe(attributes(diesel_derive_pg))]
 struct FieldAttrs {
     sql_type: syn::Type,
 }
 
-#[proc_macro_derive(PgCustomType, attributes(diesel_derive))]
+#[proc_macro_derive(PgCustomType, attributes(diesel_derive_pg))]
 pub fn derive_sql_fn(input: TokenStream) -> TokenStream {
     let mut ast = parse_macro_input!(input as DeriveInput);
     let opts: Opts = deluxe::extract_attributes(&mut ast).expect("Wrong options");

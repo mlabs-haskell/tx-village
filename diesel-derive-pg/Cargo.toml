@@ -1,7 +1,10 @@
 [package]
-name = "diesel-derive"
+name = "diesel-derive-pg"
 version = "0.1.0"
 edition = "2021"
+license = "Apache-2.0"
+description = "Derive ToSql and FromSql trait implementations for Postgres custom types"
+repository = "https://github.com/mlabs-haskell/tx-village"
 
 [lib]
 proc-macro = true

@@ -3,7 +3,10 @@
     let
       commands = import ./commands.nix {
         inherit pkgs;
-        extraDDLs = [ ./db/utxo-indexer.sql ./db/testdb.sql ];
+        extraDDLs =
+          builtins.filter builtins.pathExists
+            (map ({ name, ... }: ./${name}/up.sql)
+              (pkgs.lib.attrsToList (builtins.readDir ./app-migrations)));
       };
 
       rustFlake =
@@ -17,6 +20,7 @@
 
             config.packages.tx-bakery-rust-src
             config.packages.tx-bakery-ogmios-rust-src
+            config.packages.diesel-derive-pg-rust-src
           ];
 
           inherit (commands) devShellTools;

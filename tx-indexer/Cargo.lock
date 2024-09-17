@@ -915,7 +915,7 @@ dependencies = [
 ]
 
 [[package]]
-name = "diesel-derive"
+name = "diesel-derive-pg"
 version = "0.1.0"
 dependencies = [
  "deluxe",
@@ -4656,7 +4656,7 @@ dependencies = [
  "clap 4.5.7",
  "data-encoding",
  "diesel",
- "diesel-derive",
+ "diesel-derive-pg",
  "frunk",
  "futures",
  "log",
