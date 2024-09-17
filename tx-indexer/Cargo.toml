@@ -9,6 +9,7 @@ repository = "https://github.com/mlabs-haskell/tx-village"
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
+diesel-derive = { path = "./diesel-derive/", optional = true }
 data-encoding = "2.4.0"
 num-bigint = "0.4.4"
 proptest = "1.3.1"
@@ -63,4 +64,4 @@ tokio = { version = "1.24.2", features = ["full"] }
 [features]
 default = ["diesel"]
 sqlx = ["dep:sqlx"]
-diesel = ["dep:diesel"]
+diesel = ["dep:diesel", "dep:diesel-derive"]
