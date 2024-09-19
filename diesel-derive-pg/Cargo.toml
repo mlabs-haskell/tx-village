@@ -17,4 +17,3 @@ syn = "2.0.77"
 
 [dev-dependencies]
 diesel = { version = "2.2.4", features = ["postgres"] }
-trybuild = "1.0.99"

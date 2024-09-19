@@ -1,3 +1,4 @@
+//! PostgreSQL custom type ToSql and FromSql derive macro
 use proc_macro::TokenStream;
 use quote::quote;
 use syn::{self, parse_macro_input, DeriveInput};
@@ -13,6 +14,35 @@ struct Opts {
 struct FieldAttrs {
     sql_type: syn::Type,
 }
+
+/// Derive ToSql and FromSql trait implementations for
+/// PostgreSQL custom types (composite and domain types)
+///
+/// Example:
+/// ```
+/// use diesel_derive_pg::PgCustomType;
+///
+/// struct SqlType;
+/// struct SqlInnerType;
+///
+/// // Implementation for the following domain type:
+/// // CREATE DOMAIN NEWTYPE AS TEXT;
+/// #[derive(Debug, PgCustomType)]
+/// #[diesel_derive_pg(sql_type = SqlType)]
+/// pub struct Newtype(#[diesel_derive_pg(sql_type = diesel::sql_types::Text)] pub String);
+///
+/// // Implementation for the following composite type:
+/// // CREATE TYPE STRUCT AS (field_one TEXT, field_two INT);
+/// #[derive(Debug, PgCustomType)]
+/// #[diesel_derive_pg(sql_type = SqlType)]
+/// pub struct Struct {
+///     #[diesel_derive_pg(sql_type  = diesel::sql_types::Text)]
+///     field_one: String,
+///
+///     #[diesel_derive_pg(sql_type  = diesel::sql_types::BigInt)]
+///     field_two: i64,
+/// }
+/// ```
 
 #[proc_macro_derive(PgCustomType, attributes(diesel_derive_pg))]
 pub fn derive_sql_fn(input: TokenStream) -> TokenStream {
