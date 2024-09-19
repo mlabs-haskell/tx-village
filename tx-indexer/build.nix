@@ -27,7 +27,7 @@
 
           devShellHook = config.settings.shell.hook;
 
-          buildInputs = [ pkgs.libpqxx ];
+          buildInputs = [ pkgs.postgresql ];
 
           testTools = with inputs'; [
             ogmios.packages."ogmios:exe:ogmios"
