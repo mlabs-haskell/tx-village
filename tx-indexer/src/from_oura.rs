@@ -54,6 +54,12 @@ impl FromOura<String> for DatumHash {
     }
 }
 
+impl FromOura<String> for ScriptHash {
+    fn from_oura(value: String) -> Result<Self, OuraParseError> {
+        Ok(ScriptHash(LedgerBytes::from_oura(value)?))
+    }
+}
+
 impl FromOura<String> for CurrencySymbol {
     fn from_oura(value: String) -> Result<Self, OuraParseError> {
         Ok(if value.is_empty() {

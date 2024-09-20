@@ -18278,6 +18278,23 @@
         "type": "github"
       }
     },
+    "oura": {
+      "flake": false,
+      "locked": {
+        "lastModified": 1726835858,
+        "narHash": "sha256-nFGej2bCbZHoF993AXcHU4nJ2r9vem5/xayGAbgm1sg=",
+        "owner": "szg251",
+        "repo": "oura",
+        "rev": "f07f7950c17da3a0a4a4ef67b75907c47bd38fc0",
+        "type": "github"
+      },
+      "original": {
+        "owner": "szg251",
+        "ref": "szg251/add-ref-script",
+        "repo": "oura",
+        "type": "github"
+      }
+    },
     "plutarch": {
       "flake": false,
       "locked": {
@@ -18896,6 +18913,7 @@
           "nixpkgs"
         ],
         "ogmios": "ogmios_3",
+        "oura": "oura",
         "plutarch": [
           "lbf",
           "plutarch"

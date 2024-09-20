@@ -25,6 +25,11 @@
     # Light-weight wrapper around cardano-node
     ogmios.url = "github:mlabs-haskell/ogmios-nix?ref=6.6.0";
 
+    oura = {
+      flake = false;
+      url = "github:szg251/oura?ref=szg251/add-ref-script";
+    };
+
   };
   outputs = inputs@{ flake-parts, ... }:
     flake-parts.lib.mkFlake { inherit inputs; } {

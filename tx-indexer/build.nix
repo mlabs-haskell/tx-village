@@ -9,6 +9,16 @@
               (pkgs.lib.attrsToList (builtins.readDir ./app-migrations)));
       };
 
+      oura = pkgs.stdenv.mkDerivation {
+        src = "${inputs.oura.outPath}";
+        name = "oura-v1";
+        unpackPhase = ''
+          mkdir $out
+          cp -r $src/* $out
+          cd $out
+        '';
+      };
+
       rustFlake =
         inputs.flake-lang.lib.${system}.rustFlake {
           src = ./.;
@@ -17,6 +27,7 @@
             # LB base schema and runtime libs
             inputs'.lbf.packages.lbf-prelude-rust
             inputs'.lbf.packages.lbf-plutus-rust
+            oura
 
             config.packages.tx-bakery-rust-src
             config.packages.tx-bakery-ogmios-rust-src
