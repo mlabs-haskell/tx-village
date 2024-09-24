@@ -15,6 +15,7 @@ import Data.Functor.Contravariant (Contravariant (contramap))
 import Data.Functor.Contravariant.Divisible (Decidable (choose))
 import Data.List qualified as L
 import Data.Maybe (mapMaybe)
+import Data.Set qualified as Set
 import Ledger.Sim.Validation.Validator (
   Validator,
   contramapAndMapErr,
@@ -45,6 +46,7 @@ import PlutusLedgerApi.V2 (
     txInfoMint,
     txInfoOutputs,
     txInfoRedeemers,
+    txInfoReferenceInputs,
     txInfoSignatories
   ),
   TxOut (txOutAddress, txOutDatum, txOutValue),
@@ -101,13 +103,26 @@ validateInputSpendable txInfo =
 
 data InvalidInputsError
   = InvalidInputsError'UnspendableInput Int UnspendableInputError
+  | InvalidInputsError'UsedAsRefInput Int
   deriving stock (Show, Eq)
 
 validateInputs :: TxInfo -> Validator InvalidInputsError [TxInInfo]
-validateInputs =
-  validateListAndAnnotateErrWithIdx InvalidInputsError'UnspendableInput
-    . contramap txInInfoResolved
-    . validateInputSpendable
+validateInputs txInfo =
+  mconcat
+    [ validateListAndAnnotateErrWithIdx InvalidInputsError'UnspendableInput
+        . contramap txInInfoResolved
+        . validateInputSpendable
+        $ txInfo
+    , validateDisjoinRefInputs $ txInfoReferenceInputs txInfo
+    ]
+  where
+    validateDisjoinRefInputs :: [TxInInfo] -> Validator InvalidInputsError [TxInInfo]
+    validateDisjoinRefInputs refInputs =
+      let refInputRefSet = Set.fromList $ txInInfoOutRef <$> refInputs
+       in validateListAndAnnotateErrWithIdx
+            (const . InvalidInputsError'UsedAsRefInput)
+            $ validateIf (not . (`Set.member` refInputRefSet) . txInInfoOutRef)
+            $ const ()
 
 --------------------------------------------------------------------------------
 
