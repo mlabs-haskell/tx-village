@@ -1,18 +1,21 @@
 use super::{error::UtxoIndexerError, table::utxos::UtxosTable};
-use sqlx::{Acquire, Connection, PgPool};
-use tracing::{event, span, Instrument, Level};
+use diesel::{
+    r2d2::{ConnectionManager, Pool},
+    Connection, PgConnection,
+};
+use tracing::{event, span, warn, Instrument, Level};
 use tx_indexer::{
-    database::sync_progress::SyncProgressTable,
+    database::diesel::sync_progress::SyncProgressTable,
     handler::{callback::EventHandler, chain_event::ChainEvent},
 };
 
 #[derive(Clone)]
 pub struct UtxoIndexerHandler {
-    pg_pool: PgPool,
+    pg_pool: Pool<ConnectionManager<PgConnection>>,
 }
 
 impl UtxoIndexerHandler {
-    pub fn new(pg_pool: PgPool) -> Self {
+    pub fn new(pg_pool: Pool<ConnectionManager<PgConnection>>) -> Self {
         UtxoIndexerHandler { pg_pool }
     }
 }
@@ -23,17 +26,19 @@ impl EventHandler for UtxoIndexerHandler {
     async fn handle(&self, event: ChainEvent) -> Result<(), Self::Error> {
         let span = span!(Level::DEBUG, "HandlingEvent", event=?event);
         async move {
-            let mut conn = self.pg_pool.acquire().await.unwrap();
-            let conn = conn.acquire().await.unwrap();
+            let mut conn = self.pg_pool.get().unwrap();
 
             match event {
                 ChainEvent::TransactionEvent { transaction, time } => {
-                    // TODO(chase): These unwraps shouldn't fail but maybe they should still be checked.
-                    let tx_block = time.block_number;
+                    let tx_slot = time.slot;
                     let span = span!(Level::DEBUG, "HandlingTransactionEvent", ?transaction.hash);
                     async move {
-                        for utxo in transaction.outputs {
-                            UtxosTable::new(utxo, tx_block)?.store(conn).await?;
+                        for new_utxo in transaction.outputs {
+                            UtxosTable::new(new_utxo, tx_slot)?.store(&mut conn)?;
+                        }
+
+                        for utxo_ref in transaction.inputs {
+                            UtxosTable::delete_by_id(utxo_ref, tx_slot, &mut conn)?;
                         }
 
                         event!(Level::INFO, name = "UTxO Stored");
@@ -42,24 +47,17 @@ impl EventHandler for UtxoIndexerHandler {
                     .instrument(span)
                     .await
                 }
-                ChainEvent::RollbackEvent { block_slot, .. } => {
-                    conn.transaction(|txn| {
-                        Box::pin(async move {
-                            let rollback_result =
-                                UtxosTable::rollback_after_block(txn, block_slot).await?;
+                ChainEvent::RollbackEvent { block_slot, .. } => conn.transaction(|txn| {
+                    let rollback_result = UtxosTable::rollback_after_block(txn, block_slot)?;
 
-                            event!(
-                                Level::WARN,
-                                name = "RollbackHandled",
-                                ?rollback_result.deleted,
-                                ?rollback_result.recovered,
-                            );
+                    warn!(
+                    name = "RollbackHandled",
+                    ?rollback_result.deleted,
+                    ?rollback_result.recovered,
+                    );
 
-                            Ok::<(), Self::Error>(())
-                        })
-                    })
-                    .await
-                }
+                    Ok::<(), Self::Error>(())
+                }),
                 ChainEvent::SyncProgressEvent {
                     block_slot,
                     block_hash,
@@ -67,8 +65,7 @@ impl EventHandler for UtxoIndexerHandler {
                 } => {
                     SyncProgressTable::new(block_slot, block_hash)
                         .map_err(UtxoIndexerError::Internal)?
-                        .store(conn)
-                        .await?;
+                        .store(&mut conn)?;
 
                     Ok(())
                 }

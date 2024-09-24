@@ -7,7 +7,7 @@ description = "Cardano transaction builder"
 repository = "https://github.com/mlabs-haskell/tx-village"
 
 [dependencies]
-cardano-serialization-lib = "12.0.1"
+cardano-serialization-lib = "12.1.0"
 plutus-ledger-api = { version = "1.0.0", features = ["lbf", "chrono"] }
 num-bigint = { version = "0.4.4", features = ["serde"] }
 serde_json = { version = "1.0.111", features = ["raw_value"] }
@@ -36,7 +36,6 @@ tracing = "0.1.40"
 
 [dev-dependencies]
 proptest = "1.4.0"
-serial_test = "3.0.0"
 lbf-tx-bakery-tests-config-api = { path = ".extras/lbf-tx-bakery-tests-config-api-0.1.0" }
 lbf-tx-bakery-tests-plutus-api = { path = ".extras/lbf-tx-bakery-tests-plutus-api-0.1.0" }
 lbr-prelude = { version = "0.1.1", features = ["derive"] }

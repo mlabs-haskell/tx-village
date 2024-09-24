@@ -23,7 +23,12 @@
     plutarch.follows = "lbf/plutarch";
 
     # Light-weight wrapper around cardano-node
-    ogmios.url = "github:mlabs-haskell/ogmios-nix?ref=6.6.0";
+    ogmios.url = "github:mlabs-haskell/ogmios-nix?ref=v6.6.0";
+
+    oura = {
+      flake = false;
+      url = "github:szg251/oura?ref=szg251/add-ref-script";
+    };
 
   };
   outputs = inputs@{ flake-parts, ... }:
@@ -37,6 +42,7 @@
         # Libraries
         ./tx-bakery/build.nix
         ./tx-bakery-ogmios/build.nix
+        ./extras/diesel-derive-pg/build.nix
         ./extras/tx-bakery-testsuite/api/build.nix
         ./tx-indexer/build.nix
         ./ledger-sim/build.nix

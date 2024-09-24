@@ -1,0 +1,2 @@
+-- Drop the schema
+DROP SCHEMA IF EXISTS PLUTUS CASCADE;

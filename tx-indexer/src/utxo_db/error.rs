@@ -7,7 +7,7 @@ use tx_indexer::{
 #[derive(Error, Debug)]
 pub enum UtxoIndexerError {
     #[error(transparent)]
-    DbError(#[from] sqlx::error::Error),
+    DbError(#[from] diesel::result::Error),
 
     #[error(transparent)]
     DBTypeConversionError(#[from] DBTypeConversionError),

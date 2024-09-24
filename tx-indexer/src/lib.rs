@@ -8,3 +8,5 @@ pub mod handler;
 pub use indexer::TxIndexer;
 mod indexer;
 pub mod progress_tracker;
+#[cfg(feature = "diesel")]
+pub mod schema;

@@ -1,3 +1,5 @@
+#[cfg(feature = "diesel")]
+use diesel::sql_types::{Array, Bytea, Nullable};
 use num_bigint::BigInt;
 use plutus_ledger_api as pla;
 use thiserror::Error;
@@ -19,13 +21,175 @@ pub enum DBTypeConversionError {
     PlutusDataEncodingError(#[from] PlutusDataEncodingError),
 }
 
+#[cfg(feature = "diesel")]
+pub mod sql_types {
+
+    #[derive(diesel::QueryId, diesel::SqlType)]
+    #[diesel(postgres_type(name = "address", schema = "plutus"))]
+    pub struct Address;
+
+    #[derive(diesel::QueryId, diesel::SqlType)]
+    #[diesel(postgres_type(name = "asset_quantity", schema = "plutus"))]
+    pub struct AssetQuantity;
+
+    #[derive(diesel::QueryId, diesel::SqlType)]
+    #[diesel(postgres_type(name = "chain_pointer", schema = "plutus"))]
+    pub struct ChainPointer;
+
+    #[derive(diesel::QueryId, diesel::SqlType)]
+    #[diesel(postgres_type(name = "credential", schema = "plutus"))]
+    pub struct Credential;
+
+    #[derive(diesel::QueryId, diesel::SqlType)]
+    #[diesel(postgres_type(name = "currency_symbol", schema = "plutus"))]
+    pub struct CurrencySymbol;
+
+    #[derive(diesel::QueryId, diesel::SqlType)]
+    #[diesel(postgres_type(name = "datum_hash", schema = "plutus"))]
+    pub struct DatumHash;
+
+    #[derive(diesel::QueryId, diesel::SqlType)]
+    #[diesel(postgres_type(name = "ed25519_pub_key_hash", schema = "plutus"))]
+    pub struct Ed25519PubKeyHash;
+
+    #[derive(diesel::QueryId, diesel::SqlType)]
+    #[diesel(postgres_type(name = "hash28", schema = "plutus"))]
+    pub struct Hash28;
+
+    #[derive(diesel::QueryId, diesel::SqlType)]
+    #[diesel(postgres_type(name = "hash32", schema = "plutus"))]
+    pub struct Hash32;
+
+    #[derive(diesel::QueryId, diesel::SqlType)]
+    #[diesel(postgres_type(name = "output_datum", schema = "plutus"))]
+    pub struct OutputDatum;
+
+    #[derive(diesel::QueryId, diesel::SqlType)]
+    #[diesel(postgres_type(name = "plutus_data", schema = "plutus"))]
+    pub struct PlutusData;
+
+    #[derive(diesel::QueryId, diesel::SqlType)]
+    #[diesel(postgres_type(name = "script_hash", schema = "plutus"))]
+    pub struct ScriptHash;
+
+    #[derive(diesel::QueryId, diesel::SqlType)]
+    #[diesel(postgres_type(name = "slot", schema = "plutus"))]
+    pub struct Slot;
+
+    #[derive(diesel::QueryId, diesel::SqlType)]
+    #[diesel(postgres_type(name = "staking_credential", schema = "plutus"))]
+    pub struct StakingCredential;
+
+    #[derive(diesel::QueryId, diesel::SqlType)]
+    #[diesel(postgres_type(name = "token_name", schema = "plutus"))]
+    pub struct TokenName;
+
+    #[derive(diesel::QueryId, diesel::SqlType)]
+    #[diesel(postgres_type(name = "transaction_hash", schema = "plutus"))]
+    pub struct TransactionHash;
+
+    #[derive(diesel::QueryId, diesel::SqlType)]
+    #[diesel(postgres_type(name = "transaction_input", schema = "plutus"))]
+    pub struct TransactionInput;
+
+    #[derive(diesel::QueryId, diesel::SqlType)]
+    #[diesel(postgres_type(name = "transaction_output", schema = "plutus"))]
+    pub struct TransactionOutput;
+
+    #[derive(diesel::QueryId, diesel::SqlType)]
+    #[diesel(postgres_type(name = "tx_in_info", schema = "plutus"))]
+    pub struct TxInInfo;
+
+    #[derive(diesel::QueryId, diesel::SqlType)]
+    #[diesel(postgres_type(name = "value", schema = "plutus"))]
+    pub struct Value;
+}
+
+//////////////////////
+/// Hash28
+//////////////////////
+
+#[derive(Clone, Debug, PartialEq, Eq)]
+#[cfg_attr(feature = "sqlx", derive(sqlx::Encode, sqlx::Decode))]
+#[cfg_attr(
+    feature = "diesel",
+    derive(diesel::AsExpression, diesel::FromSqlRow, diesel_derive_pg::PgCustomType),
+    diesel(sql_type = sql_types::Hash28), 
+    diesel_derive_pg(sql_type = sql_types::Hash28)
+)]
+pub struct Hash28(#[diesel_derive_pg(sql_type = Bytea)] pub Vec<u8>);
+
+impl From<pla::v2::crypto::LedgerBytes> for Hash28 {
+    fn from(item: pla::v2::crypto::LedgerBytes) -> Self {
+        Hash28(item.0)
+    }
+}
+
+impl From<Hash28> for pla::v2::crypto::LedgerBytes {
+    fn from(item: Hash28) -> Self {
+        pla::v2::crypto::LedgerBytes(item.0)
+    }
+}
+
+#[cfg(feature = "sqlx")]
+impl ::sqlx::Type<::sqlx::postgres::Postgres> for Hash28 {
+    fn type_info() -> ::sqlx::postgres::PgTypeInfo {
+        ::sqlx::postgres::PgTypeInfo::with_name("plutus.hash28")
+    }
+    fn compatible(ty: &sqlx::postgres::PgTypeInfo) -> ::std::primitive::bool {
+        Self::type_info() == *ty || <Vec<u8> as ::sqlx::Type<::sqlx::Postgres>>::compatible(ty)
+    }
+}
+
+//////////////////////
+/// Hash32
+//////////////////////
+
+#[derive(Clone, Debug, PartialEq, Eq)]
+#[cfg_attr(feature = "sqlx", derive(sqlx::Encode, sqlx::Decode))]
+#[cfg_attr(
+    feature = "diesel",
+    derive(diesel::AsExpression, diesel::FromSqlRow, diesel_derive_pg::PgCustomType),
+    diesel(sql_type = sql_types::Hash32),
+    diesel_derive_pg(sql_type = sql_types::Hash32)
+)]
+pub struct Hash32(#[diesel_derive_pg(sql_type = Bytea)] pub Vec<u8>);
+
+impl From<pla::v2::crypto::LedgerBytes> for Hash32 {
+    fn from(item: pla::v2::crypto::LedgerBytes) -> Self {
+        Hash32(item.0)
+    }
+}
+
+impl From<Hash32> for pla::v2::crypto::LedgerBytes {
+    fn from(item: Hash32) -> Self {
+        pla::v2::crypto::LedgerBytes(item.0)
+    }
+}
+
+#[cfg(feature = "sqlx")]
+impl ::sqlx::Type<::sqlx::postgres::Postgres> for Hash32 {
+    fn type_info() -> ::sqlx::postgres::PgTypeInfo {
+        ::sqlx::postgres::PgTypeInfo::with_name("plutus.hash32")
+    }
+    fn compatible(ty: &sqlx::postgres::PgTypeInfo) -> ::std::primitive::bool {
+        Self::type_info() == *ty || <Vec<u8> as ::sqlx::Type<::sqlx::Postgres>>::compatible(ty)
+    }
+}
+
 //////////////////////
 /// CurrencySymbol
 //////////////////////
 
-#[derive(sqlx::Type, Clone, Debug, PartialEq, Eq)]
-#[sqlx(type_name = "Plutus.CurrencySymbol")]
-pub struct CurrencySymbol(pub Vec<u8>);
+#[derive(Clone, Debug, PartialEq, Eq)]
+#[cfg_attr(feature = "sqlx", derive(sqlx::Encode, sqlx::Decode))]
+#[cfg_attr(
+    feature = "diesel",
+    derive(diesel::AsExpression, diesel::FromSqlRow, diesel_derive_pg::PgCustomType),
+    diesel(sql_type = sql_types::CurrencySymbol),
+    diesel_derive_pg(sql_type = sql_types::CurrencySymbol)
+)]
+pub struct CurrencySymbol(#[diesel_derive_pg(sql_type = Bytea)] pub Vec<u8>);
 
 impl From<pla::v2::value::CurrencySymbol> for CurrencySymbol {
     fn from(item: pla::v2::value::CurrencySymbol) -> Self {
@@ -51,13 +215,29 @@ impl From<CurrencySymbol> for pla::v2::value::CurrencySymbol {
     }
 }
 
+#[cfg(feature = "sqlx")]
+impl ::sqlx::Type<::sqlx::postgres::Postgres> for CurrencySymbol {
+    fn type_info() -> ::sqlx::postgres::PgTypeInfo {
+        ::sqlx::postgres::PgTypeInfo::with_name("plutus.currency_symbol")
+    }
+    fn compatible(ty: &sqlx::postgres::PgTypeInfo) -> ::std::primitive::bool {
+        Self::type_info() == *ty || <Vec<u8> as ::sqlx::Type<::sqlx::Postgres>>::compatible(ty)
+    }
+}
+
 //////////////////////
 /// TokenName
 //////////////////////
 
-#[derive(sqlx::Type, Clone, Debug, PartialEq, Eq)]
-#[sqlx(type_name = "Plutus.TokenName")]
-pub struct TokenName(pub Vec<u8>);
+#[derive(Clone, Debug, PartialEq, Eq)]
+#[cfg_attr(feature = "sqlx", derive(sqlx::Encode, sqlx::Decode))]
+#[cfg_attr(
+    feature = "diesel",
+    derive(diesel::AsExpression, diesel::FromSqlRow, diesel_derive_pg::PgCustomType),
+    diesel(sql_type = sql_types::TokenName),
+    diesel_derive_pg(sql_type = sql_types::TokenName)
+)]
+pub struct TokenName(#[diesel_derive_pg(sql_type = Bytea)] pub Vec<u8>);
 
 impl From<pla::v2::value::TokenName> for TokenName {
     fn from(item: pla::v2::value::TokenName) -> Self {
@@ -71,23 +251,49 @@ impl From<TokenName> for pla::v2::value::TokenName {
     }
 }
 
+#[cfg(feature = "sqlx")]
+impl ::sqlx::Type<::sqlx::postgres::Postgres> for TokenName {
+    fn type_info() -> ::sqlx::postgres::PgTypeInfo {
+        ::sqlx::postgres::PgTypeInfo::with_name("plutus.token_name")
+    }
+    fn compatible(ty: &sqlx::postgres::PgTypeInfo) -> ::std::primitive::bool {
+        Self::type_info() == *ty || <Vec<u8> as ::sqlx::Type<::sqlx::Postgres>>::compatible(ty)
+    }
+}
+
 //////////////////////
 /// TransactionHash
 //////////////////////
 
-#[derive(sqlx::Type, Clone, Debug, PartialEq, Eq)]
-#[sqlx(type_name = "Plutus.TransactionHash")]
-pub struct TransactionHash(pub Vec<u8>);
+#[derive(Clone, Debug, PartialEq, Eq)]
+#[cfg_attr(feature = "sqlx", derive(sqlx::Encode, sqlx::Decode))]
+#[cfg_attr(
+    feature = "diesel",
+    derive(diesel::AsExpression, diesel::FromSqlRow, diesel_derive_pg::PgCustomType),
+    diesel(sql_type = sql_types::TransactionHash),
+    diesel_derive_pg(sql_type = sql_types::TransactionHash)
+)]
+pub struct TransactionHash(#[diesel_derive_pg(sql_type = sql_types::Hash32)] pub Hash32);
 
 impl From<pla::v2::transaction::TransactionHash> for TransactionHash {
     fn from(item: pla::v2::transaction::TransactionHash) -> Self {
-        TransactionHash(item.0 .0)
+        TransactionHash(item.0.into())
     }
 }
 
 impl From<TransactionHash> for pla::v2::transaction::TransactionHash {
     fn from(item: TransactionHash) -> Self {
-        pla::v2::transaction::TransactionHash(pla::v2::crypto::LedgerBytes(item.0))
+        pla::v2::transaction::TransactionHash(item.0.into())
+    }
+}
+
+#[cfg(feature = "sqlx")]
+impl ::sqlx::Type<::sqlx::postgres::Postgres> for TransactionHash {
+    fn type_info() -> ::sqlx::postgres::PgTypeInfo {
+        ::sqlx::postgres::PgTypeInfo::with_name("plutus.transaction_hash")
+    }
+    fn compatible(ty: &sqlx::postgres::PgTypeInfo) -> ::std::primitive::bool {
+        Self::type_info() == *ty || <Hash32 as ::sqlx::Type<::sqlx::Postgres>>::compatible(ty)
     }
 }
 
@@ -95,19 +301,35 @@ impl From<TransactionHash> for pla::v2::transaction::TransactionHash {
 /// Ed25519PubKeyHash
 //////////////////////
 
-#[derive(sqlx::Type, Clone, Debug, PartialEq, Eq)]
-#[sqlx(type_name = "Plutus.Ed25519PubKeyHash")]
-pub struct Ed25519PubKeyHash(pub Vec<u8>);
+#[derive(Clone, Debug, PartialEq, Eq)]
+#[cfg_attr(feature = "sqlx", derive(sqlx::Encode, sqlx::Decode))]
+#[cfg_attr(
+    feature = "diesel",
+    derive(diesel::AsExpression, diesel::FromSqlRow, diesel_derive_pg::PgCustomType),
+    diesel(sql_type = sql_types::Ed25519PubKeyHash),
+    diesel_derive_pg(sql_type = sql_types::Ed25519PubKeyHash)
+)]
+pub struct Ed25519PubKeyHash(#[diesel_derive_pg(sql_type = sql_types::Hash28)] pub Hash28);
 
 impl From<pla::v2::crypto::Ed25519PubKeyHash> for Ed25519PubKeyHash {
     fn from(item: pla::v2::crypto::Ed25519PubKeyHash) -> Self {
-        Ed25519PubKeyHash(item.0 .0)
+        Ed25519PubKeyHash(item.0.into())
     }
 }
 
 impl From<Ed25519PubKeyHash> for pla::v2::crypto::Ed25519PubKeyHash {
     fn from(item: Ed25519PubKeyHash) -> Self {
-        pla::v2::crypto::Ed25519PubKeyHash(pla::v2::crypto::LedgerBytes(item.0))
+        pla::v2::crypto::Ed25519PubKeyHash(item.0.into())
+    }
+}
+
+#[cfg(feature = "sqlx")]
+impl ::sqlx::Type<::sqlx::postgres::Postgres> for Ed25519PubKeyHash {
+    fn type_info() -> ::sqlx::postgres::PgTypeInfo {
+        ::sqlx::postgres::PgTypeInfo::with_name("plutus.ed25519_pub_key_hash")
+    }
+    fn compatible(ty: &sqlx::postgres::PgTypeInfo) -> ::std::primitive::bool {
+        Self::type_info() == *ty || <Hash28 as ::sqlx::Type<::sqlx::Postgres>>::compatible(ty)
     }
 }
 
@@ -115,19 +337,35 @@ impl From<Ed25519PubKeyHash> for pla::v2::crypto::Ed25519PubKeyHash {
 /// ScriptHash
 //////////////////////
 
-#[derive(sqlx::Type, Clone, Debug, PartialEq, Eq)]
-#[sqlx(type_name = "Plutus.ScriptHash")]
-pub struct ScriptHash(pub Vec<u8>);
+#[derive(Clone, Debug, PartialEq, Eq)]
+#[cfg_attr(feature = "sqlx", derive(sqlx::Encode, sqlx::Decode))]
+#[cfg_attr(
+    feature = "diesel",
+    derive(diesel::AsExpression, diesel::FromSqlRow, diesel_derive_pg::PgCustomType),
+    diesel(sql_type = sql_types::ScriptHash),
+    diesel_derive_pg(sql_type = sql_types::ScriptHash)
+)]
+pub struct ScriptHash(#[diesel_derive_pg(sql_type = sql_types::Hash28)] pub Hash28);
 
 impl From<pla::v2::script::ScriptHash> for ScriptHash {
     fn from(item: pla::v2::script::ScriptHash) -> Self {
-        ScriptHash(item.0 .0)
+        ScriptHash(item.0.into())
     }
 }
 
 impl From<ScriptHash> for pla::v2::script::ScriptHash {
     fn from(item: ScriptHash) -> Self {
-        pla::v2::script::ScriptHash(pla::v2::crypto::LedgerBytes(item.0))
+        pla::v2::script::ScriptHash(item.0.into())
+    }
+}
+
+#[cfg(feature = "sqlx")]
+impl ::sqlx::Type<::sqlx::postgres::Postgres> for ScriptHash {
+    fn type_info() -> ::sqlx::postgres::PgTypeInfo {
+        ::sqlx::postgres::PgTypeInfo::with_name("plutus.script_hash")
+    }
+    fn compatible(ty: &sqlx::postgres::PgTypeInfo) -> ::std::primitive::bool {
+        Self::type_info() == *ty || <Hash28 as ::sqlx::Type<::sqlx::Postgres>>::compatible(ty)
     }
 }
 
@@ -135,19 +373,35 @@ impl From<ScriptHash> for pla::v2::script::ScriptHash {
 /// DatumHash
 //////////////////////
 
-#[derive(sqlx::Type, Clone, Debug, PartialEq, Eq)]
-#[sqlx(type_name = "Plutus.DatumHash")]
-pub struct DatumHash(pub Vec<u8>);
+#[derive(Clone, Debug, PartialEq, Eq)]
+#[cfg_attr(feature = "sqlx", derive(sqlx::Encode, sqlx::Decode))]
+#[cfg_attr(
+    feature = "diesel",
+    derive(diesel::AsExpression, diesel::FromSqlRow, diesel_derive_pg::PgCustomType),
+    diesel(sql_type = sql_types::DatumHash),
+    diesel_derive_pg(sql_type = sql_types::DatumHash)
+    )]
+pub struct DatumHash(#[diesel_derive_pg(sql_type = sql_types::Hash32)] pub Hash32);
 
 impl From<pla::v2::datum::DatumHash> for DatumHash {
     fn from(item: pla::v2::datum::DatumHash) -> Self {
-        DatumHash(item.0 .0)
+        DatumHash(item.0.into())
     }
 }
 
 impl From<DatumHash> for pla::v2::datum::DatumHash {
     fn from(item: DatumHash) -> Self {
-        pla::v2::datum::DatumHash(pla::v2::crypto::LedgerBytes(item.0))
+        pla::v2::datum::DatumHash(item.0.into())
+    }
+}
+
+#[cfg(feature = "sqlx")]
+impl ::sqlx::Type<::sqlx::postgres::Postgres> for DatumHash {
+    fn type_info() -> ::sqlx::postgres::PgTypeInfo {
+        ::sqlx::postgres::PgTypeInfo::with_name("plutus.datum_hash")
+    }
+    fn compatible(ty: &sqlx::postgres::PgTypeInfo) -> ::std::primitive::bool {
+        Self::type_info() == *ty || <Hash32 as ::sqlx::Type<::sqlx::Postgres>>::compatible(ty)
     }
 }
 
@@ -155,9 +409,15 @@ impl From<DatumHash> for pla::v2::datum::DatumHash {
 /// Slot
 //////////////////////
 
-#[derive(sqlx::Type, Clone, Debug, PartialEq, Eq, PartialOrd, Ord)]
-#[sqlx(type_name = "Plutus.Slot")]
-pub struct Slot(pub i64);
+#[derive(Clone, Debug, PartialEq, Eq)]
+#[cfg_attr(feature = "sqlx", derive(sqlx::Encode, sqlx::Decode))]
+#[cfg_attr(
+    feature = "diesel",
+    derive(diesel::AsExpression, diesel::FromSqlRow, diesel_derive_pg::PgCustomType),
+    diesel(sql_type = sql_types::Slot),
+    diesel_derive_pg(sql_type = sql_types::Slot)
+)]
+pub struct Slot(#[diesel_derive_pg(sql_type = diesel::sql_types::BigInt)] pub i64);
 
 impl From<u64> for Slot {
     fn from(item: u64) -> Self {
@@ -170,6 +430,17 @@ impl From<&Slot> for u64 {
         item.0 as u64
     }
 }
+
+#[cfg(feature = "sqlx")]
+impl ::sqlx::Type<::sqlx::postgres::Postgres> for Slot {
+    fn type_info() -> ::sqlx::postgres::PgTypeInfo {
+        ::sqlx::postgres::PgTypeInfo::with_name("plutus.slot")
+    }
+    fn compatible(ty: &sqlx::postgres::PgTypeInfo) -> ::std::primitive::bool {
+        Self::type_info() == *ty || <i64 as ::sqlx::Type<::sqlx::Postgres>>::compatible(ty)
+    }
+}
+
 
 //////////////////////
 /// PlutusData
@@ -187,9 +458,15 @@ pub enum PlutusDataEncodingError {
     TryFromCSLError(#[from] TryFromCSLError),
 }
 
-#[derive(sqlx::Type, Clone, Debug, PartialEq, Eq)]
-#[sqlx(type_name = "Plutus.PlutusData")]
-pub struct PlutusData(pub serde_json::Value);
+#[derive(Clone, Debug, PartialEq, Eq)]
+#[cfg_attr(feature = "sqlx", derive(sqlx::Encode, sqlx::Decode))]
+#[cfg_attr(
+    feature = "diesel",
+    derive(diesel::AsExpression, diesel::FromSqlRow, diesel_derive_pg::PgCustomType),
+    diesel(sql_type = sql_types::PlutusData),
+    diesel_derive_pg(sql_type = sql_types::PlutusData)
+)]
+pub struct PlutusData(#[diesel_derive_pg(sql_type = diesel::sql_types::Jsonb)] pub serde_json::Value);
 
 impl TryFrom<pla::plutus_data::PlutusData> for PlutusData {
     type Error = DBTypeConversionError;
@@ -220,14 +497,35 @@ impl TryFrom<PlutusData> for pla::plutus_data::PlutusData {
     }
 }
 
+#[cfg(feature = "sqlx")]
+impl ::sqlx::Type<::sqlx::postgres::Postgres> for PlutusData {
+    fn type_info() -> ::sqlx::postgres::PgTypeInfo {
+        ::sqlx::postgres::PgTypeInfo::with_name("plutus.plutus_data")
+    }
+    fn compatible(ty: &sqlx::postgres::PgTypeInfo) -> ::std::primitive::bool {
+        Self::type_info() == *ty
+            || <serde_json::Value as ::sqlx::Type<::sqlx::Postgres>>::compatible(ty)
+    }
+}
+
 //////////////////////
 /// Credential
 //////////////////////
 
-#[derive(sqlx::Type, Clone, Debug, PartialEq, Eq)]
-#[sqlx(type_name = "Plutus.Credential")]
+#[derive(Clone, Debug, PartialEq, Eq)]
+#[cfg_attr(feature = "sqlx", derive(sqlx::Type))]
+#[cfg_attr(feature = "sqlx", sqlx(type_name = "plutus.credential"))]
+#[cfg_attr(
+    feature = "diesel",
+    derive(diesel::AsExpression, diesel::FromSqlRow, diesel_derive_pg::PgCustomType),
+    diesel(sql_type = sql_types::Credential),
+    diesel_derive_pg(sql_type = sql_types::Credential)
+)]
 pub struct Credential {
+    #[diesel_derive_pg(sql_type = Nullable<sql_types::Ed25519PubKeyHash>)]
     pub_key_hash: Option<Ed25519PubKeyHash>,
+
+    #[diesel_derive_pg(sql_type = Nullable<sql_types::ScriptHash>)]
     script_hash: Option<ScriptHash>,
 }
 
@@ -272,11 +570,23 @@ impl TryFrom<Credential> for pla::v2::address::Credential {
 /// ChainPointer
 //////////////////////
 
-#[derive(sqlx::Type, Clone, Debug, PartialEq, Eq)]
-#[sqlx(type_name = "Plutus.ChainPointer")]
+#[derive(Clone, Debug, PartialEq, Eq)]
+#[cfg_attr(feature = "sqlx", derive(sqlx::Type))]
+#[cfg_attr(feature = "sqlx", sqlx(type_name = "plutus.chain_pointer"))]
+#[cfg_attr(
+    feature = "diesel",
+    derive(diesel::AsExpression, diesel::FromSqlRow, diesel_derive_pg::PgCustomType),
+    diesel(sql_type = sql_types::ChainPointer),
+    diesel_derive_pg(sql_type = sql_types::ChainPointer)
+)]
 pub struct ChainPointer {
+    #[diesel_derive_pg(sql_type = diesel::sql_types::BigInt)]
     slot_num: i64,
+
+    #[diesel_derive_pg(sql_type = diesel::sql_types::BigInt)]
     tx_idx: i64,
+
+    #[diesel_derive_pg(sql_type = diesel::sql_types::BigInt)]
     cert_idx: i64,
 }
 
@@ -318,10 +628,19 @@ impl From<ChainPointer> for pla::v2::address::ChainPointer {
 /// StakingCredential
 //////////////////////
 
-#[derive(sqlx::Type, Clone, Debug, PartialEq, Eq)]
-#[sqlx(type_name = "Plutus.StakingCredential")]
+#[derive(Clone, Debug, PartialEq, Eq)]
+#[cfg_attr(feature = "sqlx", derive(sqlx::Type), sqlx(type_name = "plutus.staking_credential"))]
+#[cfg_attr(
+    feature = "diesel",
+    derive(diesel::AsExpression, diesel::FromSqlRow, diesel_derive_pg::PgCustomType),
+    diesel(sql_type = sql_types::StakingCredential),
+    diesel_derive_pg(sql_type = sql_types::StakingCredential)
+)]
 pub struct StakingCredential {
+    #[diesel_derive_pg(sql_type = Nullable<sql_types::Credential>)]
     staking_hash: Option<Credential>,
+
+    #[diesel_derive_pg(sql_type = Nullable<sql_types::ChainPointer>)]
     staking_ptr: Option<ChainPointer>,
 }
 
@@ -367,10 +686,23 @@ impl TryFrom<StakingCredential> for pla::v2::address::StakingCredential {
 /// Address
 //////////////////////
 
-#[derive(sqlx::Type, Clone, Debug, PartialEq, Eq)]
-#[sqlx(type_name = "Plutus.Address")]
+#[derive(Clone, Debug, PartialEq, Eq)]
+#[cfg_attr(
+    feature = "sqlx", 
+    derive(sqlx::Type),
+    sqlx(type_name = "plutus.address")
+)]
+#[cfg_attr(
+    feature = "diesel",
+    derive(diesel::AsExpression, diesel::FromSqlRow, diesel_derive_pg::PgCustomType),
+    diesel(sql_type = sql_types::Address),
+    diesel_derive_pg(sql_type = sql_types::Address)
+)]
 pub struct Address {
+    #[diesel_derive_pg(sql_type = sql_types::Credential)]
     credential: Credential,
+
+    #[diesel_derive_pg(sql_type = Nullable<sql_types::StakingCredential>)]
     staking_credential: Option<StakingCredential>,
 }
 
@@ -406,11 +738,25 @@ impl TryFrom<Address> for pla::v2::address::Address {
 /// AssetQuantity
 //////////////////////
 
-#[derive(sqlx::Type, Clone, Debug, PartialEq, Eq)]
-#[sqlx(type_name = "Plutus.AssetQuantity")]
+#[derive(Clone, Debug, PartialEq, Eq)]
+#[cfg_attr(
+    feature = "sqlx", derive(sqlx::Type),
+    sqlx(type_name = "plutus.asset_quantity")
+)]
+#[cfg_attr(
+    feature = "diesel",
+    derive(diesel::AsExpression, diesel::FromSqlRow, diesel_derive_pg::PgCustomType),
+    diesel(sql_type = sql_types::AssetQuantity),
+    diesel_derive_pg(sql_type = sql_types::AssetQuantity)
+)]
 pub struct AssetQuantity {
+    #[diesel_derive_pg(sql_type = sql_types::CurrencySymbol)]
     currency_symbol: CurrencySymbol,
+
+    #[diesel_derive_pg(sql_type = sql_types::TokenName)]
     token_name: TokenName,
+
+    #[diesel_derive_pg(sql_type = diesel::sql_types::BigInt)]
     amount: i64,
 }
 
@@ -461,9 +807,19 @@ impl From<AssetQuantity>
 /// Value
 //////////////////////
 
-#[derive(sqlx::Type, Clone, Debug, PartialEq, Eq)]
-#[sqlx(type_name = "Plutus.Value")]
-pub struct Value(pub Vec<AssetQuantity>);
+#[derive(Clone, Debug, PartialEq, Eq)]
+#[cfg_attr(
+    feature = "sqlx",
+    derive(sqlx::Type),
+    sqlx(type_name = "plutus.asset_quantity[]")
+)]
+#[cfg_attr(
+    feature = "diesel",
+    derive(diesel::AsExpression, diesel::FromSqlRow, diesel_derive_pg::PgCustomType),
+    diesel(sql_type = sql_types::Value),
+    diesel_derive_pg(sql_type = sql_types::Value)
+)]
+pub struct Value(#[diesel_derive_pg(sql_type = Array<sql_types::AssetQuantity>)] pub Vec<AssetQuantity>);
 
 impl TryFrom<pla::v2::value::Value> for Value {
     type Error = DBTypeConversionError;
@@ -506,10 +862,23 @@ impl From<Value> for pla::v2::value::Value {
 /// TransactionInput
 //////////////////////
 
-#[derive(sqlx::Type, Clone, Debug, PartialEq, Eq)]
-#[sqlx(type_name = "Plutus.TransactionInput")]
+#[derive(Clone, Debug, PartialEq, Eq)]
+#[cfg_attr(
+    feature = "sqlx",
+    derive(sqlx::Type),
+    sqlx(type_name = "plutus.transaction_input")
+)]
+#[cfg_attr(
+    feature = "diesel",
+    derive(diesel::AsExpression, diesel::FromSqlRow, diesel_derive_pg::PgCustomType),
+    diesel(sql_type = sql_types::TransactionInput),
+    diesel_derive_pg(sql_type = sql_types::TransactionInput)
+)]
 pub struct TransactionInput {
+    #[diesel_derive_pg(sql_type = sql_types::TransactionHash)]
     tx_id: TransactionHash,
+
+    #[diesel_derive_pg(sql_type = diesel::sql_types::BigInt)]
     tx_idx: i64,
 }
 
@@ -540,10 +909,23 @@ impl From<TransactionInput> for pla::v2::transaction::TransactionInput {
 /// OutputDatum
 //////////////////////
 
-#[derive(sqlx::Type, Clone, Debug, PartialEq, Eq)]
-#[sqlx(type_name = "Plutus.OutputDatum")]
+#[derive(Clone, Debug, PartialEq, Eq)]
+#[cfg_attr(
+    feature = "sqlx",
+    derive(sqlx::Type),
+    sqlx(type_name = "plutus.output_datum")
+)]
+#[cfg_attr(
+    feature = "diesel",
+    derive(diesel::AsExpression, diesel::FromSqlRow, diesel_derive_pg::PgCustomType),
+    diesel(sql_type = sql_types::OutputDatum),
+    diesel_derive_pg(sql_type = sql_types::OutputDatum)
+)]
 pub struct OutputDatum {
+    #[diesel_derive_pg(sql_type = Nullable<sql_types::DatumHash>)]
     datum_hash: Option<DatumHash>,
+
+    #[diesel_derive_pg(sql_type = Nullable<sql_types::PlutusData>)]
     inline_datum: Option<PlutusData>,
 }
 
@@ -592,12 +974,29 @@ impl TryFrom<OutputDatum> for pla::v2::datum::OutputDatum {
 /// TransactionOutput
 //////////////////////
 
-#[derive(sqlx::Type, Clone, Debug, PartialEq, Eq)]
-#[sqlx(type_name = "Plutus.TransactionOutput")]
+#[derive(Clone, Debug, PartialEq, Eq)]
+#[cfg_attr(
+    feature = "sqlx",
+    derive(sqlx::Type),
+    sqlx(type_name = "plutus.transaction_output")
+)]
+#[cfg_attr(
+    feature = "diesel",
+    derive(diesel::AsExpression, diesel::FromSqlRow, diesel_derive_pg::PgCustomType),
+    diesel(sql_type = sql_types::TransactionOutput),
+    diesel_derive_pg(sql_type = sql_types::TransactionOutput)
+)]
 pub struct TransactionOutput {
+    #[diesel_derive_pg(sql_type = sql_types::Address)]
     address: Address,
+
+    #[diesel_derive_pg(sql_type = sql_types::Value)]
     assets: Value,
+
+    #[diesel_derive_pg(sql_type = sql_types::OutputDatum)]
     datum: OutputDatum,
+
+    #[diesel_derive_pg(sql_type = Nullable<sql_types::ScriptHash>)]
     reference_script: Option<ScriptHash>,
 }
 
@@ -631,10 +1030,23 @@ impl TryFrom<TransactionOutput> for pla::v2::transaction::TransactionOutput {
 /// TxInInfo
 //////////////////////
 
-#[derive(sqlx::Type, Clone, Debug, PartialEq, Eq)]
-#[sqlx(type_name = "Plutus.TxInInfo")]
+#[derive(Clone, Debug, PartialEq, Eq)]
+#[cfg_attr(
+    feature = "sqlx",
+    derive(sqlx::Type),
+    sqlx(type_name = "plutus.tx_in_info")
+)]
+#[cfg_attr(
+    feature = "diesel",
+    derive(diesel::AsExpression, diesel::FromSqlRow, diesel_derive_pg::PgCustomType),
+    diesel(sql_type = sql_types::TxInInfo),
+    diesel_derive_pg(sql_type = sql_types::TxInInfo)
+)]
 pub struct TxInInfo {
+    #[diesel_derive_pg(sql_type = sql_types::TransactionInput)]
     reference: TransactionInput,
+
+    #[diesel_derive_pg(sql_type = sql_types::TransactionOutput)]
     output: TransactionOutput,
 }
 
@@ -659,3 +1071,4 @@ impl TryFrom<TxInInfo> for pla::v2::transaction::TxInInfo {
         })
     }
 }
+

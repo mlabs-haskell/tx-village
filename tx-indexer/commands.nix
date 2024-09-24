@@ -5,6 +5,7 @@
 , pgDir ? ".pg"
 , postgresql ? pkgs.postgresql_16
 , extraPostgresConf ? ""
+, schemaDumpIncludePlutus ? false
 }:
 let
   postgresConf =
@@ -28,10 +29,24 @@ let
         ${extraPostgresConf}
       '';
 
-  ddls = [ ./db/plutus.sql ./db/sync_progress.sql ] ++ extraDDLs;
+  ddls = [
+    ./lib-migrations/00000000000001_plutus/up.sql
+    ./lib-migrations/00000000000002_sync_progress/up.sql
+  ] ++ extraDDLs;
 
   init-db = pkgs.writeShellApplication {
     name = "init-db";
+    runtimeInputs = [ postgresql ];
+    runtimeEnv = {
+      LC_CTYPE = "en_US.UTF-8";
+      LC_ALL = "en_US.UTF-8";
+      LANG = "en_US.UTF-8";
+    };
+    text = "init-empty-db; " + pkgs.lib.concatMapStringsSep "\n" (ddl: "pg < ${ddl}") ddls;
+  };
+
+  init-empty-db = pkgs.writeShellApplication {
+    name = "init-empty-db";
     runtimeInputs = [ postgresql ];
     runtimeEnv = {
       LC_CTYPE = "en_US.UTF-8";
@@ -46,7 +61,7 @@ let
       start-db
       echo "CREATE DATABASE ${pgUser}" | psql -p "${pgPort}" -U "${pgUser}" postgres
 
-    '' + pkgs.lib.concatMapStringsSep "\n" (ddl: "pg < ${ddl}") ddls;
+    '';
   };
 
   start-db = pkgs.writeShellApplication {
@@ -76,9 +91,21 @@ let
     '';
   };
 
+  dump-schema = pkgs.writeShellApplication {
+    name = "dump-schema";
+    runtimeInputs = [ postgresql ];
+    text = ''
+      pg_dump -sx \
+        -U ${pgUser} \
+        -h 127.0.0.1 \
+        -p ${pgPort} \
+        ${pkgs.lib.optionalString (! schemaDumpIncludePlutus) "-N plutus" }
+    '';
+  };
+
 in
 {
   inherit postgresConf;
-  devShellTools = [ init-db start-db stop-db pg ];
+  devShellTools = [ init-db start-db stop-db pg init-empty-db dump-schema ];
 }
 

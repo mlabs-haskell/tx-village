@@ -1,0 +1,23 @@
+-- Your SQL goes here
+
+CREATE TABLE testdb (
+  id INT8 PRIMARY KEY,
+  cur_sym PLUTUS.CURRENCY_SYMBOL,
+  token_name PLUTUS.TOKEN_NAME,
+  tx_hash PLUTUS.TRANSACTION_HASH,
+  pub_key_hash PLUTUS.ED25519_PUB_KEY_HASH,
+  script_hash PLUTUS.SCRIPT_HASH,
+  datum_hash PLUTUS.DATUM_HASH,
+  slot PLUTUS.SLOT,
+  plutus_data PLUTUS.PLUTUS_DATA,
+  cred PLUTUS.CREDENTIAL,
+  chain_pointer PLUTUS.CHAIN_POINTER,
+  staking_cred PLUTUS.STAKING_CREDENTIAL,
+  address PLUTUS.ADDRESS,
+  asset_quantity PLUTUS.ASSET_QUANTITY,
+  value PLUTUS.VALUE,
+  tx_in PLUTUS.TRANSACTION_INPUT,
+  datum PLUTUS.OUTPUT_DATUM,
+  tx_out PLUTUS.TRANSACTION_OUTPUT,
+  tx_in_info PLUTUS.TX_IN_INFO
+);

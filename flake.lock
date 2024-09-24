@@ -4330,11 +4330,11 @@
         "rust-overlay": "rust-overlay"
       },
       "locked": {
-        "lastModified": 1723452500,
-        "narHash": "sha256-cahAcyj4b8bUxfXp/J/UBJRiCEYTfygKyBngJywTqp4=",
+        "lastModified": 1727178379,
+        "narHash": "sha256-tnpDsS0R9KTu3SxPsuatAVysGe39F0SwwS82XxWHfT0=",
         "owner": "mlabs-haskell",
         "repo": "flake-lang.nix",
-        "rev": "9c7246f26c17c4ec4683c30f41c03d393b1d158c",
+        "rev": "185572ca12812f009456b212f5a6cae4e3e5baf8",
         "type": "github"
       },
       "original": {
@@ -17918,7 +17918,7 @@
       },
       "original": {
         "owner": "mlabs-haskell",
-        "ref": "6.6.0",
+        "ref": "v6.6.0",
         "repo": "ogmios-nix",
         "type": "github"
       }
@@ -18275,6 +18275,23 @@
       "original": {
         "owner": "input-output-hk",
         "repo": "ops-lib",
+        "type": "github"
+      }
+    },
+    "oura": {
+      "flake": false,
+      "locked": {
+        "lastModified": 1726835858,
+        "narHash": "sha256-nFGej2bCbZHoF993AXcHU4nJ2r9vem5/xayGAbgm1sg=",
+        "owner": "szg251",
+        "repo": "oura",
+        "rev": "f07f7950c17da3a0a4a4ef67b75907c47bd38fc0",
+        "type": "github"
+      },
+      "original": {
+        "owner": "szg251",
+        "ref": "szg251/add-ref-script",
+        "repo": "oura",
         "type": "github"
       }
     },
@@ -18896,6 +18913,7 @@
           "nixpkgs"
         ],
         "ogmios": "ogmios_3",
+        "oura": "oura",
         "plutarch": [
           "lbf",
           "plutarch"
