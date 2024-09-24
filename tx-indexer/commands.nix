@@ -5,6 +5,7 @@
 , pgDir ? ".pg"
 , postgresql ? pkgs.postgresql_16
 , extraPostgresConf ? ""
+, schemaDumpIncludePlutus ? false
 }:
 let
   postgresConf =
@@ -90,9 +91,21 @@ let
     '';
   };
 
+  dump-schema = pkgs.writeShellApplication {
+    name = "dump-schema";
+    runtimeInputs = [ postgresql ];
+    text = ''
+      pg_dump -sx \
+        -U ${pgUser} \
+        -h 127.0.0.1 \
+        -p ${pgPort} \
+        ${pkgs.lib.optionalString (! schemaDumpIncludePlutus) "-N plutus" }
+    '';
+  };
+
 in
 {
   inherit postgresConf;
-  devShellTools = [ init-db start-db stop-db pg init-empty-db ];
+  devShellTools = [ init-db start-db stop-db pg init-empty-db dump-schema ];
 }
 

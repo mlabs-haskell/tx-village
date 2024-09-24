@@ -7,6 +7,8 @@
           builtins.filter builtins.pathExists
             (map ({ name, ... }: ./${name}/up.sql)
               (pkgs.lib.attrsToList (builtins.readDir ./app-migrations)));
+
+        schemaDumpIncludePlutus = true;
       };
 
       oura = pkgs.stdenv.mkDerivation {
