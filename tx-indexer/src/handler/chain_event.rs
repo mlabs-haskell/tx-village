@@ -7,6 +7,7 @@ use oura::model as oura;
 use plutus_ledger_api::v2::{
     address::Address,
     datum::{Datum, DatumHash, OutputDatum},
+    script::ScriptHash,
     transaction::{TransactionHash, TransactionInput, TransactionOutput, TxInInfo},
     value::Value,
 };
@@ -171,6 +172,7 @@ impl FromOura<oura::TransactionRecord> for TransactionEventRecord {
                             assets,
                             datum_hash,
                             inline_datum,
+                            reference_script,
                         },
                     )| {
                         let reference = TransactionInput {
@@ -187,7 +189,9 @@ impl FromOura<oura::TransactionRecord> for TransactionEventRecord {
                                 (Some(dh), _) => OutputDatum::DatumHash(DatumHash::from_oura(dh)?),
                             },
                             // NOTE(chase): There is currently no way to know about reference scripts with Oura.
-                            reference_script: None,
+                            reference_script: reference_script
+                                .map(ScriptHash::from_oura)
+                                .transpose()?,
                             value: Value::ada_value(&BigInt::from(amount))
                                 + Value::from_oura(assets.unwrap_or_default())?,
                         };

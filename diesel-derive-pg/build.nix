@@ -9,6 +9,8 @@
           buildInputs = [ pkgs.postgresql.lib ];
 
           devShellHook = config.settings.shell.hook;
+
+          generateDocs = false;
         };
     in
     {
