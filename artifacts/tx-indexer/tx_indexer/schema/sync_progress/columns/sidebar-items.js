@@ -1,0 +1,1 @@
+window.SIDEBAR_ITEMS = {"struct":["block_hash","block_slot","processed","star"]};

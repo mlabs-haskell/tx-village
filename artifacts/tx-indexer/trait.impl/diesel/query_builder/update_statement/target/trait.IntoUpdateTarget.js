@@ -1,0 +1,3 @@
+(function() {var implementors = {
+"tx_indexer":[["impl IntoUpdateTarget for <a class=\"struct\" href=\"tx_indexer/schema/sync_progress/struct.table.html\" title=\"struct tx_indexer::schema::sync_progress::table\">table</a>"],["impl IntoUpdateTarget for <a class=\"struct\" href=\"tx_indexer/schema/testdb/struct.table.html\" title=\"struct tx_indexer::schema::testdb::table\">table</a>"],["impl IntoUpdateTarget for <a class=\"struct\" href=\"tx_indexer/schema/utxos/struct.table.html\" title=\"struct tx_indexer::schema::utxos::table\">table</a>"]]
+};if (window.register_implementors) {window.register_implementors(implementors);} else {window.pending_implementors = implementors;}})()

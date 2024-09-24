@@ -131,6 +131,12 @@
 <a href="#129" id="129">129</a>
 <a href="#130" id="130">130</a>
 <a href="#131" id="131">131</a>
+<a href="#132" id="132">132</a>
+<a href="#133" id="133">133</a>
+<a href="#134" id="134">134</a>
+<a href="#135" id="135">135</a>
+<a href="#136" id="136">136</a>
+<a href="#137" id="137">137</a>
 </pre></div><pre class="rust"><code><span class="kw">use </span>::oura::model::{MintRecord, OutputAssetRecord};
 <span class="kw">use </span>anyhow::Context;
 <span class="kw">use </span>data_encoding::HEXLOWER;
@@ -184,6 +190,12 @@
 <span class="kw">impl </span>FromOura&lt;String&gt; <span class="kw">for </span>DatumHash {
     <span class="kw">fn </span>from_oura(value: String) -&gt; <span class="prelude-ty">Result</span>&lt;<span class="self">Self</span>, OuraParseError&gt; {
         <span class="prelude-val">Ok</span>(DatumHash(LedgerBytes::from_oura(value)<span class="question-mark">?</span>))
+    }
+}
+
+<span class="kw">impl </span>FromOura&lt;String&gt; <span class="kw">for </span>ScriptHash {
+    <span class="kw">fn </span>from_oura(value: String) -&gt; <span class="prelude-ty">Result</span>&lt;<span class="self">Self</span>, OuraParseError&gt; {
+        <span class="prelude-val">Ok</span>(ScriptHash(LedgerBytes::from_oura(value)<span class="question-mark">?</span>))
     }
 }
 

@@ -1,1 +1,1 @@
-window.SIDEBAR_ITEMS = {"mod":["plutus","sync_progress"]};
+window.SIDEBAR_ITEMS = {"mod":["diesel","plutus"]};

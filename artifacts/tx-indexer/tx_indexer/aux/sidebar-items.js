@@ -1,1 +1,1 @@
-window.SIDEBAR_ITEMS = {"struct":["ParseCurrencySymbol"]};
+window.SIDEBAR_ITEMS = {"struct":["ParseAddress","ParseCurrencySymbol"]};
