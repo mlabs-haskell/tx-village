@@ -42,9 +42,9 @@
         # Libraries
         ./tx-bakery/build.nix
         ./tx-bakery-ogmios/build.nix
+        ./extras/diesel-derive-pg/build.nix
         ./extras/tx-bakery-testsuite/api/build.nix
         ./tx-indexer/build.nix
-        ./diesel-derive-pg/build.nix
         ./ledger-sim/build.nix
 
         # Extras
