@@ -43,7 +43,6 @@ struct FieldAttrs {
 ///     field_two: i64,
 /// }
 /// ```
-
 #[proc_macro_derive(PgCustomType, attributes(diesel_derive_pg))]
 pub fn derive_sql_fn(input: TokenStream) -> TokenStream {
     let mut ast = parse_macro_input!(input as DeriveInput);
