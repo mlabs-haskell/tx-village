@@ -18,7 +18,7 @@ data ScriptMode = ScriptMode'AsWitness | ScriptMode'AsReference
 data LedgerConfig ctx = LedgerConfig
   { lc'evaluationContext :: Plutus.EvaluationContext
   , lc'scriptStorage :: !(Map PlutusV2.ScriptHash (ScriptMode, PlutusV2.ScriptForEvaluation))
-  , lc'maxExBudget :: Maybe ExBudget
+  , lc'maxTxExBudget :: Maybe ExBudget
   , lc'appCtx :: !ctx
   }
 
