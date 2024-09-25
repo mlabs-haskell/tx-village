@@ -1,5 +1,6 @@
 module Ledger.Sim.Submission (submit) where
 
+import Control.Monad (when)
 import Control.Monad.Error.Class (MonadError (throwError))
 import Control.Monad.Reader (MonadTrans (lift), asks)
 import Control.Monad.State (MonadState (get), modify')
@@ -9,17 +10,18 @@ import Data.Map (Map)
 import Data.Map qualified as M
 import Data.Maybe (catMaybes)
 import Data.Set qualified as S
+import Data.Traversable (for)
 import Ledger.Sim.Types.EvaluationResult (
   EvaluationOutcome (EvaluationOutcome'Failure, EvaluationOutcome'Success),
-  EvaluationResult (EvaluationResult),
-  evaluationResult'isFailure,
+  EvaluationResult (EvaluationResult, evaluationResult'outcome),
  )
-import Ledger.Sim.Types.LedgerConfig (LedgerConfig (lc'evaluationContext, lc'maxExBudget, lc'scriptStorage))
+import Ledger.Sim.Types.LedgerConfig (LedgerConfig (lc'evaluationContext, lc'maxTxExBudget, lc'scriptStorage))
 import Ledger.Sim.Types.LedgerState (LedgerState (ls'currentTime, ls'utxos))
 import Ledger.Sim.Types.Submission (
   Submission,
   SubmissionEnv (submissionEnv'config, submissionEnv'txInfo),
-  SubmissionError (SubmissionError'Evaluation, SubmissionError'Validation),
+  SubmissionError (SubmissionError'Evaluation, SubmissionError'MaxTxExBudgetExceeded, SubmissionError'Validation),
+  SubmissionResult (SubmissionResult, submissionResult'EvaluationResults, submissionResult'TotalTxExBudget, submissionResult'TxId),
  )
 import Ledger.Sim.Utils.Hashing (hashScriptV2)
 import Ledger.Sim.Validation (runTxInfoValidation)
@@ -31,6 +33,7 @@ import PlutusLedgerApi.V2 (
   CurrencySymbol (unCurrencySymbol),
   Datum,
   DatumHash,
+  ExBudget (exBudgetCPU, exBudgetMemory),
   OutputDatum (NoOutputDatum, OutputDatum, OutputDatumHash),
   Redeemer,
   ScriptContext (ScriptContext),
@@ -43,7 +46,6 @@ import PlutusLedgerApi.V2 (
   TxOutRef (TxOutRef),
   VerboseMode (Verbose),
   evaluateScriptCounting,
-  evaluateScriptRestricting,
  )
 import PlutusTx qualified
 import PlutusTx.AssocMap qualified as AssocMap
@@ -54,12 +56,19 @@ asksTxInfo f = asks $ f . submissionEnv'txInfo
 asksConfig :: (Monad m) => (LedgerConfig ctx -> a) -> Submission ctx st e m a
 asksConfig f = asks $ f . submissionEnv'config
 
-submit :: (Monad m) => Submission ctx st e m [EvaluationResult]
+submit :: (Monad m) => Submission ctx st e m SubmissionResult
 submit = do
+  txId <- asksTxInfo txInfoId
   validate
-  r <- evaluate
+  evalResults <- evaluate
+  totalExBudget <- checkEvaluationResults evalResults
   updateLedgerState
-  pure r
+  pure $
+    SubmissionResult
+      { submissionResult'TxId = txId
+      , submissionResult'EvaluationResults = evalResults
+      , submissionResult'TotalTxExBudget = totalExBudget
+      }
 
 validate :: (Monad m) => Submission ctx st e m ()
 validate = do
@@ -76,11 +85,32 @@ validate = do
 evaluate :: (Monad m) => Submission ctx st e m [EvaluationResult]
 evaluate = do
   redeemers <- asksTxInfo $ AssocMap.toList . txInfoRedeemers
-  evaluationResults <- execWriterT $ traverse (uncurry evaluateRedeemer) redeemers
+  execWriterT $ traverse (uncurry evaluateRedeemer) redeemers
 
-  case filter evaluationResult'isFailure evaluationResults of
-    [] -> pure evaluationResults
-    failedResults -> throwError $ SubmissionError'Evaluation failedResults
+checkEvaluationResults :: (Monad m) => [EvaluationResult] -> Submission ctx st e m ExBudget
+checkEvaluationResults evalResults = do
+  maxTxExBudget <- asksConfig lc'maxTxExBudget
+
+  exBudgets <-
+    for evalResults $ \result -> case evaluationResult'outcome result of
+      EvaluationOutcome'Failure _ -> throwError $ SubmissionError'Evaluation evalResults
+      EvaluationOutcome'Success exBudget -> pure exBudget
+
+  let totalExBudget = mconcat exBudgets
+
+  case maxTxExBudget of
+    Just maxTxExBudget' ->
+      let maxCPU = exBudgetCPU maxTxExBudget'
+          maxMemory = exBudgetMemory maxTxExBudget'
+
+          cpu = exBudgetCPU totalExBudget
+          memory = exBudgetMemory totalExBudget
+       in when (cpu > maxCPU || memory > maxMemory) $
+            throwError $
+              SubmissionError'MaxTxExBudgetExceeded maxTxExBudget' totalExBudget evalResults
+    Nothing -> pure ()
+
+  pure totalExBudget
 
 evaluateRedeemer ::
   (Monad m) =>
@@ -160,7 +190,6 @@ evaluatePlutusScript ::
 evaluatePlutusScript datum purpose redeemer script = do
   txInfo <- asks submissionEnv'txInfo
   evalCtx <- asksConfig lc'evaluationContext
-  maxExBudget <- asksConfig lc'maxExBudget
 
   let args =
         catMaybes
@@ -171,9 +200,7 @@ evaluatePlutusScript datum purpose redeemer script = do
 
       scriptContext = ScriptContext txInfo purpose
 
-      (logOutput, evalResultRaw) = case maxExBudget of
-        Nothing -> evaluateScriptCounting vasilPV Verbose evalCtx script args
-        Just exBudget -> evaluateScriptRestricting vasilPV Verbose evalCtx exBudget script args
+      (logOutput, evalResultRaw) = evaluateScriptCounting vasilPV Verbose evalCtx script args
 
       outcome = case evalResultRaw of
         Left err -> EvaluationOutcome'Failure err

@@ -12,11 +12,15 @@ import Ledger.Sim.Types.EvaluationResult (EvaluationResult)
 import Ledger.Sim.Types.LedgerConfig (LedgerConfig)
 import Ledger.Sim.Types.LedgerState (LedgerState)
 import Ledger.Sim.Validation (InvalidTxInfoError)
-import PlutusLedgerApi.V2 (TxId, TxInfo)
+import PlutusLedgerApi.V2 (ExBudget, TxId, TxInfo)
 
 data SubmissionError
   = SubmissionError'Validation [InvalidTxInfoError]
   | SubmissionError'Evaluation [EvaluationResult]
+  | SubmissionError'MaxTxExBudgetExceeded
+      ExBudget -- Maximum Total ExBudget
+      ExBudget -- Actual Total ExBudget
+      [EvaluationResult]
   deriving stock (Show, Eq)
 
 data SubmissionEnv ctx = SubmissionEnv
@@ -30,4 +34,5 @@ type Submission ctx st e m =
 data SubmissionResult = SubmissionResult
   { submissionResult'TxId :: TxId
   , submissionResult'EvaluationResults :: [EvaluationResult]
+  , submissionResult'TotalTxExBudget :: ExBudget
   }

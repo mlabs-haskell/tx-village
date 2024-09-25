@@ -77,7 +77,7 @@ toAssertion cfg st (FailsBy predicate sim) =
      Copied from: https://github.com/IntersectMBO/cardano-node/blob/06943b66e634fc9eb83ddb376ed3508003dbb607/configuration/cardano/mainnet-alonzo-genesis.json#L15-L18
 -}
 testMaxExBudget :: ExBudget
-testMaxExBudget = ExBudget {exBudgetMemory = 10000000, exBudgetCPU = 10000000000}
+testMaxExBudget = ExBudget {exBudgetMemory = 14_000_000, exBudgetCPU = 10_000_000_000}
 
 calcExBudgetRatioToTestMax :: ExBudget -> ExBudgetRatio
 calcExBudgetRatioToTestMax = calcExBudgtRatio testMaxExBudget

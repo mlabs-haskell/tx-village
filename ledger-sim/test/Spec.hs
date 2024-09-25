@@ -125,7 +125,7 @@ tests dummyScriptHash ledgerCfg =
           let datum = Datum $ toBuiltinData ()
               datumHash = hashDatum . Datum $ toBuiltinData ()
           currentTime <- getCurrentSlot
-          SubmissionResult txId _ <-
+          SubmissionResult txId _ _ <-
             submitTx $
               TxInfo
                 [dummyInput]
@@ -285,7 +285,7 @@ tests dummyScriptHash ledgerCfg =
               Value.assetClassValue
                 (Value.AssetClass (cs, fromString "A"))
                 1
-          SubmissionResult txId _ <-
+          SubmissionResult txId _ _ <-
             submitTx $
               TxInfo
                 [dummyInput]
@@ -422,7 +422,7 @@ tests dummyScriptHash ledgerCfg =
                   _ -> False
               )
               $ do
-                SubmissionResult txId _ <-
+                SubmissionResult txId _ _ <-
                   submitTx $
                     TxInfo
                       [dummyInput]
@@ -529,7 +529,7 @@ tests dummyScriptHash ledgerCfg =
         $ do
           let datum = Datum $ toBuiltinData ()
               datumHash = hashDatum . Datum $ toBuiltinData ()
-          SubmissionResult txId _ <-
+          SubmissionResult txId _ _ <-
             submitTx $
               TxInfo
                 [dummyInput]
@@ -640,7 +640,7 @@ tests dummyScriptHash ledgerCfg =
               Value.assetClassValue
                 (Value.AssetClass (cs, fromString "A"))
                 1
-          SubmissionResult txId _ <-
+          SubmissionResult txId _ _ <-
             submitTx $
               TxInfo
                 [dummyInput]
@@ -980,7 +980,7 @@ tests dummyScriptHash ledgerCfg =
           let datum = Datum $ toBuiltinData ()
               datumHash = hashDatum . Datum $ toBuiltinData ()
           currentTime <- getCurrentSlot
-          SubmissionResult txId _ <-
+          SubmissionResult txId _ _ <-
             submitTx $
               TxInfo
                 [dummyInput]
