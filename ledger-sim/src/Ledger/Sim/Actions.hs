@@ -33,13 +33,13 @@ import Ledger.Sim.Submission qualified as Submission
 import Ledger.Sim.Types.LedgerConfig (LedgerConfig (lc'appCtx))
 import Ledger.Sim.Types.LedgerSim (LedgerSimError (LedgerSimError'Application, LedgerSimError'Submission, LedgerSimError'UtxoNotFound), LedgerSimT)
 import Ledger.Sim.Types.LedgerState (LedgerState (ls'currentTime, ls'userState, ls'utxos))
-import Ledger.Sim.Types.Submission (SubmissionEnv (SubmissionEnv), SubmissionResult (SubmissionResult, submissionResult'EvaluationResults, submissionResult'TxId))
+import Ledger.Sim.Types.Submission (SubmissionEnv (SubmissionEnv), SubmissionResult)
 import PlutusLedgerApi.V2 (
   Address,
   POSIXTime (getPOSIXTime),
   TxId (TxId),
   TxInInfo (TxInInfo),
-  TxInfo (txInfoId),
+  TxInfo,
   TxOut (txOutAddress),
   TxOutRef,
  )
@@ -81,18 +81,11 @@ utxosAtAddress addr =
 - See: 'checkTx'
 -}
 submitTx :: (Monad m) => TxInfo -> LedgerSimT ctx st e m SubmissionResult
-submitTx txInfo = do
-  evaluationResults <-
-    withReaderT (SubmissionEnv txInfo) $
-      mapReaderT
-        (mapStateT (withExceptT LedgerSimError'Submission))
-        Submission.submit
-
-  pure $
-    SubmissionResult
-      { submissionResult'TxId = txInfoId txInfo
-      , submissionResult'EvaluationResults = evaluationResults
-      }
+submitTx txInfo =
+  withReaderT (SubmissionEnv txInfo) $
+    mapReaderT
+      (mapStateT (withExceptT LedgerSimError'Submission))
+      Submission.submit
 
 getCurrentSlot :: (Monad m) => LedgerSimT ctx st e m POSIXTime
 getCurrentSlot = gets ls'currentTime
