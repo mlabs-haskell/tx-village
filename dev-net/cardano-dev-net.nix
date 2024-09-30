@@ -162,7 +162,7 @@ in
           ALONZO_GENESIS_FILE="${cfg.dynamicConfigDir}/genesis-alonzo.json"
           CONWAY_GENESIS_FILE="${cfg.dynamicConfigDir}/genesis-conway.json"
 
-          jq -r .startTime=`date +%s` "$BYRON_GENESIS_FILE_TEMPLATE" > "$BYRON_GENESIS_FILE"
+          jq -r ".startTime=`date +%s` | .protocolConsts.protocolMagic=${toString cfg.networkMagic}" "$BYRON_GENESIS_FILE_TEMPLATE" > "$BYRON_GENESIS_FILE"
           jq -r ".systemStart=\"`date -u +%FT%TZ`\" | .initialFunds=`cat ${initialFundsConfig}` | .networkMagic=${toString cfg.networkMagic}" "$SHELLY_GENESIS_FILE_TEMPLATE" > "$SHELLY_GENESIS_FILE"
           cp "$ALONZO_GENESIS_FILE_TEMPLATE" "$ALONZO_GENESIS_FILE"
           cp "$CONWAY_GENESIS_FILE_TEMPLATE" "$CONWAY_GENESIS_FILE"
