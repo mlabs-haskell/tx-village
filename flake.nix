@@ -30,7 +30,7 @@
       url = "github:szg251/oura?ref=szg251/add-ref-script";
     };
 
-    cardano-nix.url = "github:mlabs-haskell/cardano.nix";
+    cardano-nix.url = "github:mlabs-haskell/cardano.nix?ref=szg251/conway";
 
     "cardano-node-9.1.0" = {
       url = "github:intersectmbo/cardano-node?ref=9.1.0";
