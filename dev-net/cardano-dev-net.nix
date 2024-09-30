@@ -203,5 +203,10 @@ in
         chmod g+rw ${cfg.socketPath}
       '';
     };
+
+    environment.variables = {
+      CARDANO_NODE_SOCKET_PATH = cfg.socketPath;
+      CARDANO_NODE_NETWORK_MAGIC = cfg.networkMagic;
+    };
   };
 }
