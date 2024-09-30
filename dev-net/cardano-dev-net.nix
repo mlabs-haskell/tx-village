@@ -26,6 +26,8 @@ let
       };
     };
   };
+
+  initialFundsConfig = (pkgs.formats.json { }).generate "initial-funds-config" cfg.initialFunds;
 in
 {
   options.services.cardano-dev-net = {
@@ -98,6 +100,14 @@ in
         dynamicKeyPath = "${inSystemdStateDir defaultDynamicConfigDir}/byron-delegation.cert";
       };
     };
+
+    initialFunds = mkOption {
+      type = types.attrsOf types.ints.unsigned;
+      default = { };
+      example = {
+        "609783be7d3c54f11377966dfabc9284cd6c32fca1cd42ef0a4f1cc45b" = 900000000000;
+      };
+    };
   };
 
   config = mkIf cfg.enable {
@@ -150,7 +160,7 @@ in
           CONWAY_GENESIS_FILE="${cfg.dynamicConfigDir}/genesis-conway.json"
 
           jq -r .startTime=`date +%s` "$BYRON_GENESIS_FILE_TEMPLATE" > "$BYRON_GENESIS_FILE"
-          jq -r .systemStart="\"`date -u +%FT%TZ`\"" "$SHELLY_GENESIS_FILE_TEMPLATE" > "$SHELLY_GENESIS_FILE"
+          jq -r ".systemStart=\"`date -u +%FT%TZ`\" | .initialFunds=`cat ${initialFundsConfig}`" "$SHELLY_GENESIS_FILE_TEMPLATE" > "$SHELLY_GENESIS_FILE"
           cp "$ALONZO_GENESIS_FILE_TEMPLATE" "$ALONZO_GENESIS_FILE"
           cp "$CONWAY_GENESIS_FILE_TEMPLATE" "$CONWAY_GENESIS_FILE"
 
