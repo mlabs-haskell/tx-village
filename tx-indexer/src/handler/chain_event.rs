@@ -2,14 +2,16 @@ use crate::{
     from_oura::{FromOura, OuraParseError},
     progress_tracker::ProgressTracker,
 };
+use anyhow::anyhow;
 use num_bigint::BigInt;
 use oura::model as oura;
 use plutus_ledger_api::v2::{
     address::Address,
     datum::{Datum, DatumHash, OutputDatum},
+    redeemer::Redeemer,
     script::ScriptHash,
-    transaction::{TransactionHash, TransactionInput, TransactionOutput, TxInInfo},
-    value::Value,
+    transaction::{ScriptPurpose, TransactionHash, TransactionInput, TransactionOutput, TxInInfo},
+    value::{CurrencySymbol, Value},
 };
 use std::fmt::Debug;
 use std::{collections::HashMap, sync::atomic::Ordering};
@@ -53,6 +55,7 @@ pub struct TransactionEventRecord {
     pub inputs: Vec<TransactionInput>,
     pub outputs: Vec<TxInInfo>,
     pub mint: Value,
+    pub redeemers: HashMap<ScriptPurpose, Redeemer>,
 
     pub plutus_data: HashMap<DatumHash, Datum>,
     // TODO(chase): Which of these would be realistically be interested in?
@@ -144,6 +147,55 @@ impl FromOura<oura::TransactionRecord> for TransactionEventRecord {
         Ok(TransactionEventRecord {
             hash: TransactionHash::from_oura(tx.hash.clone())?,
             fee: tx.fee,
+            redeemers: tx
+                .plutus_redeemers
+                .unwrap()
+                .into_iter()
+                .map(|redeemer_record| {
+                    // TODO(szg251): parse other redeemer tags
+                    let script_purpose = match &redeemer_record.purpose[..] {
+                        "spend" => {
+                            let inputs = tx.inputs.as_ref().unwrap();
+                            let input = inputs
+                                .get(redeemer_record.input_idx as usize)
+                                .ok_or(OuraParseError::ParseError(anyhow!(
+                                    "No mint found at redeemer index {}",
+                                    redeemer_record.input_idx
+                                )))?
+                                .clone();
+
+                            let transaction_input = TransactionInput {
+                                transaction_id: TransactionHash::from_oura(input.tx_id)?,
+                                index: BigInt::from(input.index),
+                            };
+                            ScriptPurpose::Spending(transaction_input)
+                        }
+                        "mint" => {
+                            let mints = tx.mint.as_ref().unwrap();
+                            let mint = mints
+                                .get(redeemer_record.input_idx as usize)
+                                .ok_or(OuraParseError::ParseError(anyhow!(
+                                    "No mint found at redeemer index {}",
+                                    redeemer_record.input_idx
+                                )))?
+                                .clone();
+
+                            ScriptPurpose::Minting(CurrencySymbol::from_oura(mint.policy)?)
+                        }
+                        // "cert" => ScriptPurpose::Certifying (),
+                        // "reward" => ScriptPurpose::Rewarding(0)
+                        _ => Err(OuraParseError::ParseError(anyhow!(
+                            "Cannot parse redeemer tag variant: {}",
+                            redeemer_record.purpose
+                        )))?,
+                    };
+
+                    Ok((
+                        script_purpose,
+                        Redeemer::from_oura(redeemer_record.plutus_data)?,
+                    ))
+                })
+                .collect::<Result<_, OuraParseError>>()?,
             size: tx.size,
             // All these unwraps should succeed since we enable `include_transaction_details`
             // in the mapper config.

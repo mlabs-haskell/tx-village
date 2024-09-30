@@ -6,6 +6,7 @@ use plutus_ledger_api::v2::{
     address::Address,
     crypto::LedgerBytes,
     datum::{Datum, DatumHash},
+    redeemer::Redeemer,
     script::{MintingPolicyHash, ScriptHash},
     transaction::TransactionHash,
     value::{CurrencySymbol, TokenName, Value},
@@ -92,6 +93,20 @@ impl FromOura<serde_json::Value> for Datum {
             csl_plutus_data
                 .try_to_pla()
                 .with_context(|| "Parsing Datum from Oura")?,
+        ))
+    }
+}
+
+impl FromOura<serde_json::Value> for Redeemer {
+    fn from_oura(value: serde_json::Value) -> Result<Self, OuraParseError> {
+        let csl_plutus_data =
+            csl::encode_json_value_to_plutus_datum(value, csl::PlutusDatumSchema::DetailedSchema)
+                .with_context(|| "Parsing Redeemer from Oura")?;
+
+        Ok(Redeemer(
+            csl_plutus_data
+                .try_to_pla()
+                .with_context(|| "Parsing Redeemer from Oura")?,
         ))
     }
 }
