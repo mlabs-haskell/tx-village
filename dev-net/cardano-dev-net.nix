@@ -5,6 +5,8 @@
                      }:
 let
   inherit (lib) mkOption types mkEnableOption mkIf;
+  inherit (builtins) toString;
+
   cfg = config.services.cardano-dev-net;
 
   defaultDynamicConfigDir = "cardano-dev-net";
@@ -34,8 +36,13 @@ in
     enable = mkEnableOption "cardano dev net";
 
     socketPath = lib.mkOption {
-      type = lib.types.path;
+      type = types.path;
       default = "/run/cardano-node/node.socket";
+    };
+
+    networkMagic = lib.mkOption {
+      type = types.ints.unsigned;
+      default = 42;
     };
 
     templateConfigDir = mkOption {
@@ -160,7 +167,7 @@ in
           CONWAY_GENESIS_FILE="${cfg.dynamicConfigDir}/genesis-conway.json"
 
           jq -r .startTime=`date +%s` "$BYRON_GENESIS_FILE_TEMPLATE" > "$BYRON_GENESIS_FILE"
-          jq -r ".systemStart=\"`date -u +%FT%TZ`\" | .initialFunds=`cat ${initialFundsConfig}`" "$SHELLY_GENESIS_FILE_TEMPLATE" > "$SHELLY_GENESIS_FILE"
+          jq -r ".systemStart=\"`date -u +%FT%TZ`\" | .initialFunds=`cat ${initialFundsConfig}` | .networkMagic=${toString cfg.networkMagic}" "$SHELLY_GENESIS_FILE_TEMPLATE" > "$SHELLY_GENESIS_FILE"
           cp "$ALONZO_GENESIS_FILE_TEMPLATE" "$ALONZO_GENESIS_FILE"
           cp "$CONWAY_GENESIS_FILE_TEMPLATE" "$CONWAY_GENESIS_FILE"
 
