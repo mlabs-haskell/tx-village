@@ -1,10 +1,12 @@
-{ withSystem, ... }: { lib
-                     , config
-                     , pkgs
-                     , ...
-                     }:
+_: { lib
+   , config
+   , pkgs
+   , ...
+   }:
 let
   inherit (lib) mkOption types mkEnableOption mkIf;
+  inherit (builtins) toString;
+
   cfg = config.services.cardano-dev-net;
 
   defaultDynamicConfigDir = "cardano-dev-net";
@@ -34,8 +36,13 @@ in
     enable = mkEnableOption "cardano dev net";
 
     socketPath = lib.mkOption {
-      type = lib.types.path;
+      type = types.path;
       default = "/run/cardano-node/node.socket";
+    };
+
+    networkMagic = lib.mkOption {
+      type = types.ints.unsigned;
+      default = 42;
     };
 
     templateConfigDir = mkOption {
@@ -113,10 +120,6 @@ in
   config = mkIf cfg.enable {
     services.cardano-node = {
       enable = true;
-      package = withSystem pkgs.stdenv.system (
-        { inputs', ... }:
-        inputs'."cardano-node-9.1.0".packages.cardano-node
-      );
       inherit topology;
       nodeConfigFile = cfg.dynamicConfigFile;
       inherit (cfg) socketPath;
@@ -159,8 +162,8 @@ in
           ALONZO_GENESIS_FILE="${cfg.dynamicConfigDir}/genesis-alonzo.json"
           CONWAY_GENESIS_FILE="${cfg.dynamicConfigDir}/genesis-conway.json"
 
-          jq -r .startTime=`date +%s` "$BYRON_GENESIS_FILE_TEMPLATE" > "$BYRON_GENESIS_FILE"
-          jq -r ".systemStart=\"`date -u +%FT%TZ`\" | .initialFunds=`cat ${initialFundsConfig}`" "$SHELLY_GENESIS_FILE_TEMPLATE" > "$SHELLY_GENESIS_FILE"
+          jq -r ".startTime=`date +%s` | .protocolConsts.protocolMagic=${toString cfg.networkMagic}" "$BYRON_GENESIS_FILE_TEMPLATE" > "$BYRON_GENESIS_FILE"
+          jq -r ".systemStart=\"`date -u +%FT%TZ`\" | .initialFunds=`cat ${initialFundsConfig}` | .networkMagic=${toString cfg.networkMagic}" "$SHELLY_GENESIS_FILE_TEMPLATE" > "$SHELLY_GENESIS_FILE"
           cp "$ALONZO_GENESIS_FILE_TEMPLATE" "$ALONZO_GENESIS_FILE"
           cp "$CONWAY_GENESIS_FILE_TEMPLATE" "$CONWAY_GENESIS_FILE"
 
@@ -195,6 +198,11 @@ in
         echo 'Changing permissions for ${cfg.socketPath}.'
         chmod g+rw ${cfg.socketPath}
       '';
+    };
+
+    environment.variables = {
+      CARDANO_NODE_SOCKET_PATH = cfg.socketPath;
+      CARDANO_NODE_NETWORK_MAGIC = cfg.networkMagic;
     };
   };
 }
