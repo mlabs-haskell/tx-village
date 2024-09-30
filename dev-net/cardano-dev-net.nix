@@ -1,8 +1,8 @@
-{ withSystem, ... }: { lib
-                     , config
-                     , pkgs
-                     , ...
-                     }:
+_: { lib
+   , config
+   , pkgs
+   , ...
+   }:
 let
   inherit (lib) mkOption types mkEnableOption mkIf;
   inherit (builtins) toString;
@@ -120,10 +120,6 @@ in
   config = mkIf cfg.enable {
     services.cardano-node = {
       enable = true;
-      package = withSystem pkgs.stdenv.system (
-        { inputs', ... }:
-        inputs'."cardano-node-9.1.0".packages.cardano-node
-      );
       inherit topology;
       nodeConfigFile = cfg.dynamicConfigFile;
       inherit (cfg) socketPath;
