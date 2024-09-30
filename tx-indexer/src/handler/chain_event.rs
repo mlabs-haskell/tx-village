@@ -159,7 +159,7 @@ impl FromOura<oura::TransactionRecord> for TransactionEventRecord {
                             let input = inputs
                                 .get(redeemer_record.input_idx as usize)
                                 .ok_or(OuraParseError::ParseError(anyhow!(
-                                    "No mint found at redeemer index {}",
+                                    "No input found at redeemer index {}",
                                     redeemer_record.input_idx
                                 )))?
                                 .clone();
