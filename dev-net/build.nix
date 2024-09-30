@@ -10,7 +10,7 @@
   };
 
   flake = {
-    nixosModules.dev-net = import ./dev-net.nix {
+    nixosModules.dev-net = import ./cardano-dev-net.nix {
       inherit flake-parts-lib self withSystem;
     };
   };
