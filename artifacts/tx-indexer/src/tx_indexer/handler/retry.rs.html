@@ -135,7 +135,7 @@
 <span class="kw">use </span>oura::model <span class="kw">as </span>oura;
 <span class="kw">use </span>std::{fmt::Debug, ops::Mul, time::Duration};
 <span class="kw">use </span>strum_macros::Display;
-<span class="kw">use </span>tracing::{event, span, Instrument, Level};
+<span class="kw">use </span>tracing::{debug, debug_span, error, warn, warn_span, Instrument};
 
 <span class="doccomment">/// Influence retrying behavior.
 /// i.e How many times and how often a failed operation should be retried.
@@ -184,7 +184,7 @@
     policy: <span class="kw-2">&amp;</span>RetryPolicy,
     progress_tracker: <span class="kw-2">&amp;mut </span><span class="prelude-ty">Option</span>&lt;ProgressTracker&gt;,
 ) -&gt; <span class="prelude-ty">Result</span>&lt;(), H::Error&gt; {
-    <span class="kw">let </span>span = <span class="macro">span!</span>(Level::DEBUG, <span class="string">"perform_with_retry"</span>);
+    <span class="kw">let </span>span = <span class="macro">debug_span!</span>(<span class="string">"perform_with_retry"</span>);
     <span class="kw">let </span>_enter = span.enter();
 
     <span class="kw">match </span>parse_oura_event(oura_event, progress_tracker) {
@@ -195,44 +195,44 @@
 
             <span class="kw">loop </span>{
                 <span class="comment">// TODO(szg251): Handle errors properly
-                </span><span class="kw">let </span>span = <span class="macro">span!</span>(Level::DEBUG, <span class="string">"TryingOperation"</span>, retry_count = retry);
+                </span><span class="kw">let </span>span = <span class="macro">debug_span!</span>(<span class="string">"TryingOperation"</span>, retry_count = retry);
                 <span class="kw">let </span>res = <span class="kw">async </span>{
                     <span class="kw">let </span>result = handler.handle(event.clone())
-                        .instrument(<span class="macro">span!</span>(Level::DEBUG, <span class="string">"UserDefinedHandler"</span>)).<span class="kw">await</span>;
+                        .instrument(<span class="macro">debug_span!</span>(<span class="string">"UserDefinedHandler"</span>)).<span class="kw">await</span>;
 
                     <span class="kw">match </span>result {
                         <span class="prelude-val">Ok</span>(<span class="kw">_</span>) =&gt; {
-                            <span class="macro">event!</span>(Level::DEBUG, label=%EventOutcome::Success);
+                            <span class="macro">debug!</span>(label=%EventOutcome::Success);
                             <span class="prelude-val">Some</span>(<span class="prelude-val">Ok</span>(()))
                         }
                         <span class="prelude-val">Err</span>(err) =&gt; <span class="kw">match </span>err.get_error_policy() {
                             ErrorPolicy::Exit =&gt; {
-                                <span class="macro">event!</span>(Level::ERROR, label=%EventOutcome::FailureExit);
+                                <span class="macro">error!</span>(label=%EventOutcome::FailureExit);
                                 <span class="prelude-val">Some</span>(<span class="prelude-val">Err</span>(err))
                             }
                             ErrorPolicy::Skip =&gt; {
-                                <span class="macro">event!</span>(Level::WARN, label=%EventOutcome::FailureSkip, err=<span class="question-mark">?</span>err);
+                                <span class="macro">warn!</span>(label=%EventOutcome::FailureSkip, err=<span class="question-mark">?</span>err);
                                 <span class="prelude-val">Some</span>(<span class="prelude-val">Ok</span>(()))
                             }
-                            ErrorPolicy::Call(err_f) =&gt; <span class="macro">span!</span>(Level::WARN, <span class="string">"OperationFailureCall"</span>).in_scope(|| {
+                            ErrorPolicy::Call(err_f) =&gt; <span class="macro">warn_span!</span>(<span class="string">"OperationFailureCall"</span>).in_scope(|| {
                                 err_f(err);
                                 <span class="prelude-val">Some</span>(<span class="prelude-val">Ok</span>(()))
                             }),
                             ErrorPolicy::Retry <span class="kw">if </span>retry &lt; policy.max_retries =&gt; {
-                                <span class="macro">event!</span>(Level::WARN, label=%EventOutcome::FailureRetry, err=<span class="question-mark">?</span>err);
+                                <span class="macro">warn!</span>(label=%EventOutcome::FailureRetry, err=<span class="question-mark">?</span>err);
 
                                 retry += <span class="number">1</span>;
 
                                 <span class="kw">let </span>backoff = compute_backoff_delay(policy, retry);
 
-                                <span class="macro">event!</span>(Level::DEBUG, label=%EventOutcome::RetryBackoff, backoff_secs=backoff.as_secs());
+                                <span class="macro">debug!</span>(label=%EventOutcome::RetryBackoff, backoff_secs=backoff.as_secs());
 
                                 std::thread::sleep(backoff);
 
                                 <span class="prelude-val">None
                             </span>}
                             <span class="kw">_ </span>=&gt; {
-                                <span class="macro">event!</span>(Level::DEBUG, label=%EventOutcome::RetriesExhausted);
+                                <span class="macro">debug!</span>(label=%EventOutcome::RetriesExhausted);
                                 <span class="prelude-val">Some</span>(<span class="prelude-val">Err</span>(err))
                             }
                         },
@@ -248,7 +248,7 @@
         }
         <span class="prelude-val">Ok</span>(<span class="prelude-val">None</span>) =&gt; <span class="prelude-val">Ok</span>(()),
         <span class="prelude-val">Err</span>(err) =&gt; {
-            <span class="macro">event!</span>(Level::ERROR, err = <span class="question-mark">?</span>err);
+            <span class="macro">error!</span>(err = <span class="question-mark">?</span>err);
 
             <span class="prelude-val">Ok</span>(())
         }
