@@ -53,6 +53,7 @@ diesel = { version = "2.2.4", features = [
   "serde_json",
   "r2d2",
 ], optional = true }
+itertools = "0.13.0"
 
 [dev-dependencies]
 serial_test = "3.1.1"
