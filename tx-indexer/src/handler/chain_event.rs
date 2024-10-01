@@ -3,6 +3,7 @@ use crate::{
     progress_tracker::ProgressTracker,
 };
 use anyhow::anyhow;
+use itertools::Itertools;
 use num_bigint::BigInt;
 use oura::model as oura;
 use plutus_ledger_api::v2::{
@@ -171,8 +172,16 @@ impl FromOura<oura::TransactionRecord> for TransactionEventRecord {
                             ScriptPurpose::Spending(transaction_input)
                         }
                         "mint" => {
-                            let mints = tx.mint.as_ref().unwrap();
-                            let mint = mints
+                            let policies = tx
+                                .mint
+                                .as_ref()
+                                .unwrap()
+                                .iter()
+                                .map(|mint| mint.policy.clone())
+                                .sorted()
+                                .dedup()
+                                .collect::<Vec<_>>();
+                            let policy = policies
                                 .get(redeemer_record.input_idx as usize)
                                 .ok_or(OuraParseError::ParseError(anyhow!(
                                     "No mint found at redeemer index {}",
@@ -180,7 +189,7 @@ impl FromOura<oura::TransactionRecord> for TransactionEventRecord {
                                 )))?
                                 .clone();
 
-                            ScriptPurpose::Minting(CurrencySymbol::from_oura(mint.policy)?)
+                            ScriptPurpose::Minting(CurrencySymbol::from_oura(policy)?)
                         }
                         // "cert" => ScriptPurpose::Certifying (),
                         // "reward" => ScriptPurpose::Rewarding(0)

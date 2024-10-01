@@ -4655,6 +4655,7 @@ dependencies = [
  "diesel-derive-pg",
  "frunk",
  "futures",
+ "itertools 0.13.0",
  "log",
  "num-bigint",
  "num-derive 0.3.3",

@@ -6,7 +6,7 @@ use crate::{
 use oura::model as oura;
 use std::{fmt::Debug, ops::Mul, time::Duration};
 use strum_macros::Display;
-use tracing::{event, span, Instrument, Level};
+use tracing::{debug, debug_span, error, warn, warn_span, Instrument};
 
 /// Influence retrying behavior.
 /// i.e How many times and how often a failed operation should be retried.
@@ -55,7 +55,7 @@ pub(crate) async fn perform_with_retry<H: EventHandler>(
     policy: &RetryPolicy,
     progress_tracker: &mut Option<ProgressTracker>,
 ) -> Result<(), H::Error> {
-    let span = span!(Level::DEBUG, "perform_with_retry");
+    let span = debug_span!("perform_with_retry");
     let _enter = span.enter();
 
     match parse_oura_event(oura_event, progress_tracker) {
@@ -66,44 +66,44 @@ pub(crate) async fn perform_with_retry<H: EventHandler>(
 
             loop {
                 // TODO(szg251): Handle errors properly
-                let span = span!(Level::DEBUG, "TryingOperation", retry_count = retry);
+                let span = debug_span!("TryingOperation", retry_count = retry);
                 let res = async {
                     let result = handler.handle(event.clone())
-                        .instrument(span!(Level::DEBUG, "UserDefinedHandler")).await;
+                        .instrument(debug_span!("UserDefinedHandler")).await;
 
                     match result {
                         Ok(_) => {
-                            event!(Level::DEBUG, label=%EventOutcome::Success);
+                            debug!(label=%EventOutcome::Success);
                             Some(Ok(()))
                         }
                         Err(err) => match err.get_error_policy() {
                             ErrorPolicy::Exit => {
-                                event!(Level::ERROR, label=%EventOutcome::FailureExit);
+                                error!(label=%EventOutcome::FailureExit);
                                 Some(Err(err))
                             }
                             ErrorPolicy::Skip => {
-                                event!(Level::WARN, label=%EventOutcome::FailureSkip, err=?err);
+                                warn!(label=%EventOutcome::FailureSkip, err=?err);
                                 Some(Ok(()))
                             }
-                            ErrorPolicy::Call(err_f) => span!(Level::WARN, "OperationFailureCall").in_scope(|| {
+                            ErrorPolicy::Call(err_f) => warn_span!("OperationFailureCall").in_scope(|| {
                                 err_f(err);
                                 Some(Ok(()))
                             }),
                             ErrorPolicy::Retry if retry < policy.max_retries => {
-                                event!(Level::WARN, label=%EventOutcome::FailureRetry, err=?err);
+                                warn!(label=%EventOutcome::FailureRetry, err=?err);
 
                                 retry += 1;
 
                                 let backoff = compute_backoff_delay(policy, retry);
 
-                                event!(Level::DEBUG, label=%EventOutcome::RetryBackoff, backoff_secs=backoff.as_secs());
+                                debug!(label=%EventOutcome::RetryBackoff, backoff_secs=backoff.as_secs());
 
                                 std::thread::sleep(backoff);
 
                                 None
                             }
                             _ => {
-                                event!(Level::DEBUG, label=%EventOutcome::RetriesExhausted);
+                                debug!(label=%EventOutcome::RetriesExhausted);
                                 Some(Err(err))
                             }
                         },
@@ -119,7 +119,7 @@ pub(crate) async fn perform_with_retry<H: EventHandler>(
         }
         Ok(None) => Ok(()),
         Err(err) => {
-            event!(Level::ERROR, err = ?err);
+            error!(err = ?err);
 
             Ok(())
         }
