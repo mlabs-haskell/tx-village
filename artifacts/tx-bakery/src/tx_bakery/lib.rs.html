@@ -1337,7 +1337,7 @@
                  }| {
                     <span class="kw">if let </span>Credential::PubKey(<span class="kw">_</span>) = output.address.credential {
                         <span class="kw">let </span>ada_amount = output.value.get_ada_amount();
-                        ada_amount &gt; BigInt::from(collateral_amount)
+                        ada_amount &gt;= BigInt::from(collateral_amount)
                     } <span class="kw">else </span>{
                         <span class="bool-val">false
                     </span>}
