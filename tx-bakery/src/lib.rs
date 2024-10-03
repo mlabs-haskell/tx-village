@@ -436,7 +436,7 @@ impl TxBakery {
                  }| {
                     if let Credential::PubKey(_) = output.address.credential {
                         let ada_amount = output.value.get_ada_amount();
-                        ada_amount > BigInt::from(collateral_amount)
+                        ada_amount >= BigInt::from(collateral_amount)
                     } else {
                         false
                     }
