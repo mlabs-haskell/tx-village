@@ -1,5 +1,10 @@
 use cardano_serialization_lib as csl;
-use plutus_ledger_api::v2::{datum::DatumHash, script::ScriptHash, transaction::TransactionInput};
+use num_bigint::BigInt;
+use plutus_ledger_api::v2::{
+    datum::DatumHash,
+    script::ScriptHash,
+    transaction::{TransactionInput, TxInInfo},
+};
 use thiserror::Error;
 
 use crate::{
@@ -25,8 +30,15 @@ pub enum Error {
     #[error("Reference input containing script {0:?} is missing from the TransactionInfo reference input list.")]
     MissingReferenceScript(TransactionInput, ScriptHash),
 
-    #[error("Couldn't find suitable collateral.")]
-    MissingCollateral,
+    #[error(
+        "Couldn't find enough collaterals.
+         The total amount is {amount} while {required} was expected. Utxos: {utxos:?}"
+    )]
+    NotEnoughCollaterals {
+        amount: BigInt,
+        required: BigInt,
+        utxos: Vec<TxInInfo>,
+    },
 
     #[error("Change strategy is set to LastOutput, but it is missing from the TransactionInfo.")]
     MissingChangeOutput,

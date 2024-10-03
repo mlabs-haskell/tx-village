@@ -4602,6 +4602,7 @@ dependencies = [
  "data-encoding",
  "derive_builder",
  "futures",
+ "itertools 0.13.0",
  "jsonrpsee",
  "num-bigint",
  "num-traits",

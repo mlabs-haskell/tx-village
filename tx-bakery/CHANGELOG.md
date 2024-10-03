@@ -16,6 +16,11 @@ to be rolled out in a later minor version bump.
 - Updated cardano-serialization-lib to Conway compatible 12.0.0
 - Added reference script fee calculation
 - Updated plutus-ledger-api to 1.0.0
+- Breaking change: allowing multiple collaterals
+  - allowing multiple UTxO in `CollateralStrategy::Explicit`
+  - `CollateralStrategy::Automatic` will pick multiple UTxOs if necessary, `max_utxo_count`
+    parameter added
+  - `amount` renamed to `min_amount`
 
 ### Removed
 
