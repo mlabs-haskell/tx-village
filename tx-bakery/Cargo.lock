@@ -116,7 +116,7 @@ checksum = "a27b8a3a6e1a44fa4c8baf1f653e4172e81486d4941f2237e20dc2d0cf4ddff1"
 dependencies = [
  "proc-macro2",
  "quote",
- "syn 2.0.77",
+ "syn 2.0.87",
 ]
 
 [[package]]
@@ -223,9 +223,9 @@ checksum = "428d9aa8fbc0670b7b8d6030a7fadd0f86151cae55e4dbbece15f3780a3dfaf3"
 
 [[package]]
 name = "cardano-serialization-lib"
-version = "12.1.0"
+version = "13.1.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "abfd14f5a2250d86a3c673a70c49851c21207ee8537f9f11b3dba9cc67095ef7"
+checksum = "a060cf6912878c0132ce9ac8577eb62f151ba8f00fe2e75a57f85260c696e421"
 dependencies = [
  "bech32",
  "cbor_event",
@@ -321,7 +321,7 @@ dependencies = [
  "heck 0.5.0",
  "proc-macro2",
  "quote",
- "syn 2.0.77",
+ "syn 2.0.87",
 ]
 
 [[package]]
@@ -592,7 +592,7 @@ checksum = "87750cf4b7a4c0625b1529e4c543c2182106e4dedc60a2a6455e00d212c489ac"
 dependencies = [
  "proc-macro2",
  "quote",
- "syn 2.0.77",
+ "syn 2.0.87",
 ]
 
 [[package]]
@@ -781,6 +781,18 @@ dependencies = [
 ]
 
 [[package]]
+name = "is-plutus-data-derive"
+version = "1.0.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "b8833aaa98fd02a031afb0640e7d6259ac29fd22c646299114793ddea5795639"
+dependencies = [
+ "proc-macro2",
+ "quote",
+ "syn 2.0.87",
+ "thiserror",
+]
+
+[[package]]
 name = "is_terminal_polyfill"
 version = "1.70.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -876,7 +888,7 @@ dependencies = [
  "proc-macro-crate",
  "proc-macro2",
  "quote",
- "syn 2.0.77",
+ "syn 2.0.87",
 ]
 
 [[package]]
@@ -916,7 +928,7 @@ name = "lbf-plutus"
 version = "0.1.0"
 dependencies = [
  "lbf-prelude",
- "plutus-ledger-api",
+ "plutus-ledger-api 1.0.0",
 ]
 
 [[package]]
@@ -944,7 +956,7 @@ dependencies = [
  "lbf-prelude",
  "lbr-prelude",
  "num-bigint",
- "plutus-ledger-api",
+ "plutus-ledger-api 1.0.0",
  "serde_json",
 ]
 
@@ -971,7 +983,7 @@ checksum = "370d0aa0809ee84ccf7c6d84ae2d6ac97b84cb1337b3d145101bcf6a7319deac"
 dependencies = [
  "proc-macro2",
  "quote",
- "syn 2.0.77",
+ "syn 2.0.87",
  "trybuild",
 ]
 
@@ -1012,6 +1024,12 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "78ca9ab1a0babb1e7d5695e3530886289c18cf2f87ec19a575a0abdce112e3a3"
 
 [[package]]
+name = "minimal-lexical"
+version = "0.2.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "68354c5c6bd36d73ff3feceb05efa59b6acb7626617f4962be322a825e61f79a"
+
+[[package]]
 name = "miniz_oxide"
 version = "0.8.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -1030,6 +1048,16 @@ dependencies = [
  "libc",
  "wasi",
  "windows-sys 0.52.0",
+]
+
+[[package]]
+name = "nom"
+version = "7.1.3"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "d273983c5a657a70a3e8f2a01329822f3b8c8172b73826411a55751e404a0a4a"
+dependencies = [
+ "memchr",
+ "minimal-lexical",
 ]
 
 [[package]]
@@ -1080,7 +1108,7 @@ checksum = "ed3955f1a9c7c0c15e092f9c887db08b1fc683305fdf6eb6684f22555355e202"
 dependencies = [
  "proc-macro2",
  "quote",
- "syn 2.0.77",
+ "syn 2.0.87",
 ]
 
 [[package]]
@@ -1174,7 +1202,7 @@ checksum = "2f38a4412a78282e09a2cf38d195ea5420d15ba0602cb375210efbc877243965"
 dependencies = [
  "proc-macro2",
  "quote",
- "syn 2.0.77",
+ "syn 2.0.87",
 ]
 
 [[package]]
@@ -1195,11 +1223,32 @@ version = "1.0.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "4225e8c82a1cf6f7f4cec08669f7cfb2712f724de097471ad20152fc483e4a8b"
 dependencies = [
- "chrono",
  "data-encoding",
  "impl_ops",
  "lbr-prelude",
  "linked-hash-map",
+ "num-bigint",
+ "num-traits",
+ "proptest",
+ "serde_json",
+ "thiserror",
+]
+
+[[package]]
+name = "plutus-ledger-api"
+version = "2.1.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "d5e3e0f6c482f4e352805ccf1a0a0cec15336e42251cc27b9b328acee5a41313"
+dependencies = [
+ "anyhow",
+ "cardano-serialization-lib",
+ "chrono",
+ "data-encoding",
+ "impl_ops",
+ "is-plutus-data-derive",
+ "lbr-prelude",
+ "linked-hash-map",
+ "nom",
  "num-bigint",
  "num-traits",
  "proptest",
@@ -1495,7 +1544,7 @@ dependencies = [
  "proc-macro2",
  "quote",
  "serde_derive_internals",
- "syn 2.0.77",
+ "syn 2.0.87",
 ]
 
 [[package]]
@@ -1549,7 +1598,7 @@ checksum = "243902eda00fad750862fc144cea25caca5e20d615af0a81bee94ca738f1df1f"
 dependencies = [
  "proc-macro2",
  "quote",
- "syn 2.0.77",
+ "syn 2.0.87",
 ]
 
 [[package]]
@@ -1560,7 +1609,7 @@ checksum = "18d26a20a969b9e3fdf2fc2d9f21eda6c40e2de84c9408bb5d3b05d499aae711"
 dependencies = [
  "proc-macro2",
  "quote",
- "syn 2.0.77",
+ "syn 2.0.87",
 ]
 
 [[package]]
@@ -1696,9 +1745,9 @@ dependencies = [
 
 [[package]]
 name = "syn"
-version = "2.0.77"
+version = "2.0.87"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "9f35bcdf61fd8e7be6caf75f429fdca8beb3ed76584befb503b1569faee373ed"
+checksum = "25aa4ce346d03a6dcd68dd8b4010bcb74e54e62c90c573f394c46eae99aba32d"
 dependencies = [
  "proc-macro2",
  "quote",
@@ -1744,7 +1793,7 @@ checksum = "08904e7672f5eb876eaaf87e0ce17857500934f4981c4a0ab2b4aa98baac7fc3"
 dependencies = [
  "proc-macro2",
  "quote",
- "syn 2.0.77",
+ "syn 2.0.87",
 ]
 
 [[package]]
@@ -1787,7 +1836,7 @@ checksum = "693d596312e88961bc67d7f1f97af8a70227d9f90c31bba5806eec004978d752"
 dependencies = [
  "proc-macro2",
  "quote",
- "syn 2.0.77",
+ "syn 2.0.87",
 ]
 
 [[package]]
@@ -1879,7 +1928,7 @@ checksum = "34704c8d6ebcbc939824180af020566b01a7c01f80641264eba0999f6c2b6be7"
 dependencies = [
  "proc-macro2",
  "quote",
- "syn 2.0.77",
+ "syn 2.0.87",
 ]
 
 [[package]]
@@ -1912,7 +1961,6 @@ version = "2.0.0-beta.2"
 dependencies = [
  "anyhow",
  "assertables",
- "cardano-serialization-lib",
  "cbor_event",
  "chrono",
  "clap",
@@ -1926,7 +1974,7 @@ dependencies = [
  "lbr-prelude",
  "num-bigint",
  "num-traits",
- "plutus-ledger-api",
+ "plutus-ledger-api 2.1.0",
  "proptest",
  "serde",
  "serde_json",
@@ -2035,7 +2083,7 @@ dependencies = [
  "once_cell",
  "proc-macro2",
  "quote",
- "syn 2.0.77",
+ "syn 2.0.87",
  "wasm-bindgen-shared",
 ]
 
@@ -2057,7 +2105,7 @@ checksum = "e94f17b526d0a461a191c78ea52bbce64071ed5c04c9ffe424dcb38f74171bb7"
 dependencies = [
  "proc-macro2",
  "quote",
- "syn 2.0.77",
+ "syn 2.0.87",
  "wasm-bindgen-backend",
  "wasm-bindgen-shared",
 ]
@@ -2217,7 +2265,7 @@ checksum = "fa4f8080344d4671fb4e831a13ad1e68092748387dfc4f55e356242fae12ce3e"
 dependencies = [
  "proc-macro2",
  "quote",
- "syn 2.0.77",
+ "syn 2.0.87",
 ]
 
 [[package]]

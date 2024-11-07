@@ -45,6 +45,7 @@
         ./tx-bakery-ogmios/build.nix
         ./extras/diesel-derive-pg/build.nix
         ./extras/tx-bakery-testsuite/api/build.nix
+        ./extras/tx-indexer-testsuite/build.nix
         ./tx-indexer/build.nix
         ./ledger-sim/build.nix
         ./dev-net/build.nix

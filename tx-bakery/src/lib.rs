@@ -5,24 +5,24 @@ use crate::metadata::TransactionMetadata;
 use crate::time::time_range_into_slots;
 use crate::wallet::Wallet;
 use anyhow::anyhow;
-pub use cardano_serialization_lib as csl;
 use chain_query::{ChainQuery, EraSummary, Network, ProtocolParameters};
 use chrono::{DateTime, Utc};
 use num_bigint::BigInt;
+use plutus_ledger_api::csl::{lib as csl, pla_to_csl::TryToCSL};
 use plutus_ledger_api::plutus_data::IsPlutusData;
-use plutus_ledger_api::v2::address::{Address, Credential};
+use plutus_ledger_api::v2::address::{Address, AddressWithExtraInfo, Credential};
 use plutus_ledger_api::v2::crypto::PaymentPubKeyHash;
 use plutus_ledger_api::v2::datum::{Datum, DatumHash, OutputDatum};
-use plutus_ledger_api::v2::redeemer::Redeemer;
+use plutus_ledger_api::v2::redeemer::{Redeemer, RedeemerWithExtraInfo};
 use plutus_ledger_api::v2::script::{MintingPolicyHash, ScriptHash, ValidatorHash};
 use plutus_ledger_api::v2::transaction::{
-    ScriptPurpose, TransactionHash, TransactionInfo, TransactionInput, TransactionOutput, TxInInfo,
+    ScriptPurpose, TransactionHash, TransactionInfo, TransactionInput, TransactionOutput,
+    TransactionOutputWithExtraInfo, TxInInfo,
 };
 use plutus_ledger_api::v2::value::{CurrencySymbol, Value};
 use std::collections::BTreeMap;
 use submitter::Submitter;
 use tracing::{debug, info};
-use utils::pla_to_csl::{TransactionOutputExtraInfo, TryToCSL, TryToCSLWithDef};
 use utils::script::ScriptOrRef;
 
 pub mod chain_query;
@@ -207,7 +207,11 @@ impl TxBakery {
                     None => {
                         tx_inputs_builder
                             .add_regular_input(
-                                &output.address.try_to_csl_with(self.network_id)?,
+                                &AddressWithExtraInfo {
+                                    address: &output.address,
+                                    network_tag: self.network_id,
+                                }
+                                .try_to_csl()?,
                                 &reference.try_to_csl()?,
                                 &output.value.try_to_csl()?,
                             )
@@ -231,8 +235,12 @@ impl TxBakery {
                             .get(script_hash)
                             .ok_or_else(|| Error::MissingScript(script_hash.clone()))?;
 
-                        let csl_redeemer = redeemer
-                            .try_to_csl_with((&csl::RedeemerTag::new_spend(), idx as u64))?;
+                        let csl_redeemer = RedeemerWithExtraInfo {
+                            redeemer,
+                            tag: &csl::RedeemerTag::new_spend(),
+                            index: idx as u64,
+                        }
+                        .try_to_csl()?;
 
                         let csl_redeemer = match ex_units_map {
                             Some(ex_units_map) => {
@@ -328,14 +336,20 @@ impl TxBakery {
             ChangeStrategy::Address(_) => outputs.as_slice(),
             ChangeStrategy::LastOutput => &outputs[..(outputs.len() - 1)],
         };
+        let scripts = &scripts
+            .iter()
+            .map(|(hash, script)| (hash.clone(), script.clone().get_script()))
+            .collect();
         Ok(normal_outputs
             .iter()
-            .map(|output| {
-                output.try_to_csl_with(TransactionOutputExtraInfo {
+            .map(|transaction_output| {
+                TransactionOutputWithExtraInfo {
                     scripts,
                     network_id: self.network_id,
                     data_cost: &self.data_cost,
-                })
+                    transaction_output,
+                }
+                .try_to_csl()
             })
             .collect::<std::result::Result<_, _>>()?)
     }
@@ -368,8 +382,12 @@ impl TxBakery {
                         .get(script_hash)
                         .ok_or(Error::MissingMintRedeemer(script_hash.clone()))?;
 
-                    let csl_redeemer =
-                        redeemer.try_to_csl_with((&csl::RedeemerTag::new_mint(), idx as u64))?;
+                    let csl_redeemer = RedeemerWithExtraInfo {
+                        redeemer,
+                        tag: &csl::RedeemerTag::new_mint(),
+                        index: idx as u64,
+                    }
+                    .try_to_csl()?;
 
                     let csl_redeemer = match ex_units_map {
                         Some(ex_units_map) => Self::apply_ex_units(&csl_redeemer, ex_units_map)?,
@@ -450,7 +468,11 @@ impl TxBakery {
         let TxInInfo { reference, output } = tx_input;
         tx_inputs_builder
             .add_regular_input(
-                &output.address.try_to_csl_with(self.network_id)?,
+                &AddressWithExtraInfo {
+                    address: &output.address,
+                    network_tag: self.network_id,
+                }
+                .try_to_csl()?,
                 &reference.try_to_csl()?,
                 &output.value.try_to_csl()?,
             )
@@ -556,7 +578,11 @@ impl TxBakery {
                 tx_builder
                     .set_total_collateral_and_return(
                         &csl::BigNum::from(*amount),
-                        &collateral_return_address.try_to_csl_with(self.network_id)?,
+                        &AddressWithExtraInfo {
+                            address: collateral_return_address,
+                            network_tag: self.network_id,
+                        }
+                        .try_to_csl()?,
                     )
                     .map_err(|source| Error::TransactionBuildError(anyhow!(source)))?;
             }
@@ -566,7 +592,11 @@ impl TxBakery {
                 tx_builder
                     .set_total_collateral_and_return(
                         &csl::BigNum::from(*amount),
-                        &collateral_return_address.try_to_csl_with(self.network_id)?,
+                        &AddressWithExtraInfo {
+                            address: collateral_return_address,
+                            network_tag: self.network_id,
+                        }
+                        .try_to_csl()?,
                     )
                     .map_err(|source| Error::TransactionBuildError(anyhow!(source)))?;
             }
@@ -634,14 +664,19 @@ impl TxBakery {
             .redeemers
             .0
             .iter()
-            .filter_map(|(script_purpose, red)| match script_purpose {
+            .filter_map(|(script_purpose, redeemer)| match script_purpose {
                 ScriptPurpose::Spending(reference) => tx_info
                     .inputs
                     .iter()
                     .enumerate()
                     .find(|(_idx, tx_input)| &tx_input.reference == reference)
                     .map(|(idx, _)| {
-                        Ok(red.try_to_csl_with((&csl::RedeemerTag::new_spend(), idx as u64))?)
+                        Ok(RedeemerWithExtraInfo {
+                            redeemer,
+                            tag: &csl::RedeemerTag::new_spend(),
+                            index: idx as u64,
+                        }
+                        .try_to_csl()?)
                     }),
                 ScriptPurpose::Minting(reference) => tx_info
                     .mint
@@ -654,7 +689,12 @@ impl TxBakery {
                     .enumerate()
                     .find(|(_idx, (currency_symbol, _assets))| currency_symbol == &reference)
                     .map(|(idx, _)| {
-                        Ok(red.try_to_csl_with((&csl::RedeemerTag::new_mint(), idx as u64))?)
+                        Ok(RedeemerWithExtraInfo {
+                            redeemer,
+                            tag: &csl::RedeemerTag::new_mint(),
+                            index: idx as u64,
+                        }
+                        .try_to_csl()?)
                     }),
                 _ => Some(Err(Error::Unsupported(
                     "Only spending and minting redeemers are supported".to_string(),
@@ -771,7 +811,14 @@ impl TxBakery {
         tx_builder = self.calc_script_data_hash(tx_builder, wit_datums, wit_redeemers);
 
         let (change_addr, change_datum) = match tx.change_strategy {
-            ChangeStrategy::Address(addr) => (addr.try_to_csl_with(self.network_id)?, None),
+            ChangeStrategy::Address(address) => (
+                AddressWithExtraInfo {
+                    address,
+                    network_tag: self.network_id,
+                }
+                .try_to_csl()?,
+                None,
+            ),
             ChangeStrategy::LastOutput => {
                 let last_output = tx
                     .tx_info
@@ -780,7 +827,11 @@ impl TxBakery {
                     .ok_or(Error::MissingChangeOutput)?;
 
                 (
-                    last_output.address.try_to_csl_with(self.network_id)?,
+                    AddressWithExtraInfo {
+                        address: &last_output.address,
+                        network_tag: self.network_id,
+                    }
+                    .try_to_csl()?,
                     last_output.datum.try_to_csl()?,
                 )
             }
@@ -808,7 +859,7 @@ impl TxBakery {
         &self,
         submitter: &impl Submitter,
         tx: TxWithCtx<'_>,
-    ) -> Result<csl::Transaction> {
+    ) -> Result<csl::FixedTransaction> {
         info!("Bake balanced transaction.");
         let (datums, redeemers) = TxBakery::extract_witnesses(tx.tx_info)?;
         let plutus_scripts = TxBakery::witness_scripts(tx.tx_info, tx.scripts)?;
@@ -868,7 +919,12 @@ impl TxBakery {
         witness_set.set_plutus_scripts(&script_witnesses);
         witness_set.set_redeemers(&redeemer_witnesses);
 
-        Ok(csl::Transaction::new(&tx_body, &witness_set, aux_data))
+        let tx = csl::Transaction::new(&tx_body, &witness_set, aux_data);
+
+        let fixed_tx = csl::FixedTransaction::from_bytes(tx.to_bytes())
+            .map_err(|source| Error::TransactionBuildError(anyhow!(source)))?;
+
+        Ok(fixed_tx)
     }
 
     /// Convert a TransactionInfo into a valid signed Transaction
@@ -877,7 +933,7 @@ impl TxBakery {
         submitter: &impl Submitter,
         wallet: &impl Wallet,
         tx: TxWithCtx<'_>,
-    ) -> Result<csl::Transaction> {
+    ) -> Result<csl::FixedTransaction> {
         let tx = self.bake_balanced_tx(submitter, tx).await?;
         debug!("Signing transaction.");
         Ok(wallet.sign_transaction(&tx))

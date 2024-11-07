@@ -1,9 +1,11 @@
 //! Transaction Metadata
 
-use crate::{error::Error, utils::pla_to_csl::TryToCSLWithDef};
-use anyhow::anyhow;
-use cardano_serialization_lib as csl;
 use std::collections::BTreeMap;
+
+use anyhow::anyhow;
+use plutus_ledger_api::csl::{lib as csl, pla_to_csl::TryToCSL};
+
+use crate::error::Error;
 
 /// Top level transaction metadata (can only be a Map)
 #[derive(Debug, Clone)]

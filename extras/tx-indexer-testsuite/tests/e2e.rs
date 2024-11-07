@@ -57,7 +57,7 @@ mod e2e_tests {
         let ogmios = OgmiosClient::connect(ogmios_client_config).await.unwrap();
 
         let (observer_sender, observer_receiver) = mpsc::channel();
-        TxIndexer::run(TxIndexerConfig::new(
+        TxIndexer::run(TxIndexerConfig::cardano_node(
             ObserveHandler { observer_sender },
             NodeAddress::UnixSocket("/socket/path".to_string()),
             NetworkConfig::WellKnown(NetworkName::MAINNET),

@@ -1,13 +1,10 @@
-use cardano_serialization_lib as csl;
-use plutus_ledger_api::v2::{datum::DatumHash, script::ScriptHash, transaction::TransactionInput};
+use plutus_ledger_api::{
+    csl::{csl_to_pla::TryFromCSLError, lib as csl, pla_to_csl::TryFromPLAError},
+    v2::{datum::DatumHash, script::ScriptHash, transaction::TransactionInput},
+};
 use thiserror::Error;
 
-use crate::{
-    chain_query::ChainQueryError,
-    submitter::SubmitterError,
-    utils::{csl_to_pla::TryFromCSLError, pla_to_csl::TryFromPLAError},
-    wallet::WalletError,
-};
+use crate::{chain_query::ChainQueryError, submitter::SubmitterError, wallet::WalletError};
 
 pub type Result<T> = std::result::Result<T, Error>;
 

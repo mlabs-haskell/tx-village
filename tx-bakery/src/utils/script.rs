@@ -1,13 +1,15 @@
 //! Plutus Script management
 
-use super::csl_to_pla::ToPLA;
-use crate::error::{Error, Result};
 use anyhow::anyhow;
-use cardano_serialization_lib as csl;
-use plutus_ledger_api::v2::{
-    script::{MintingPolicyHash, ScriptHash, ValidatorHash},
-    transaction::TransactionInput,
+use plutus_ledger_api::{
+    csl::{csl_to_pla::ToPLA, lib as csl},
+    v2::{
+        script::{MintingPolicyHash, ScriptHash, ValidatorHash},
+        transaction::TransactionInput,
+    },
 };
+
+use crate::error::{Error, Result};
 
 #[derive(Clone, Debug)]
 pub enum Script {

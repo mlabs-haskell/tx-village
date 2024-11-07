@@ -5,33 +5,43 @@ use crate::{
 use anyhow::anyhow;
 use core::str::FromStr;
 use oura::{sources::MagicArg, utils::ChainWellKnownInfo};
-use std::error::Error;
 use std::fmt;
 use std::fs::File;
 use std::io::BufReader;
+use std::{error::Error, path::PathBuf};
 use strum_macros::Display;
 
 pub struct TxIndexerConfig<H: EventHandler> {
     pub handler: H,
-    pub node_address: NodeAddress,
-    pub network: NetworkConfig,
-    /// Slot number and hash as hex string (optional).
-    /// If not provided, sync will begin from the tip of the chain.
-    pub since_slot: Option<(u64, String)>,
-    /// Minimum depth a block has to be from the tip for it to be considered "confirmed"
-    /// See: https://oura.txpipe.io/v1/advanced/rollback_buffer
-    pub safe_block_depth: usize,
-    // Filter transaction events by specific component(s).
-    pub event_filter: Filter,
+    /// Event source
+    pub source: TxIndexerSource,
     /// Retry policy - how much to retry for each event callback failure
     /// This only takes effect on ErrorPolicy for a particular error is `Retry`.
     /// Once retries are exhausted, the handler will error (same treatment as ErrorPolicy::Exit)
     pub retry_policy: RetryPolicy,
 }
 
+pub enum TxIndexerSource {
+    CardanoNode {
+        node_address: NodeAddress,
+        network: NetworkConfig,
+        /// Slot number and hash as hex string (optional).
+        /// If not provided, sync will begin from the tip of the chain.
+        since_slot: Option<(u64, String)>,
+        /// Minimum depth a block has to be from the tip for it to be considered "confirmed"
+        /// See: https://oura.txpipe.io/v1/advanced/rollback_buffer
+        safe_block_depth: usize,
+        /// Filter transaction events by specific component(s).
+        event_filter: Filter,
+    },
+    FixtureFiles {
+        dir_path: PathBuf,
+    },
+}
+
 impl<H: EventHandler> TxIndexerConfig<H> {
     #[allow(clippy::too_many_arguments)]
-    pub fn new(
+    pub fn cardano_node(
         handler: H,
         node_address: NodeAddress,
         network: NetworkConfig,
@@ -42,11 +52,21 @@ impl<H: EventHandler> TxIndexerConfig<H> {
     ) -> Self {
         Self {
             handler,
-            node_address,
-            network,
-            since_slot,
-            safe_block_depth,
-            event_filter,
+            source: TxIndexerSource::CardanoNode {
+                node_address,
+                network,
+                since_slot,
+                safe_block_depth,
+                event_filter,
+            },
+            retry_policy,
+        }
+    }
+
+    pub fn source_from_fixtures(handler: H, dir_path: PathBuf, retry_policy: RetryPolicy) -> Self {
+        Self {
+            handler,
+            source: TxIndexerSource::FixtureFiles { dir_path },
             retry_policy,
         }
     }

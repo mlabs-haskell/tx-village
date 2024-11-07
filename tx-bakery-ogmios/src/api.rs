@@ -1,20 +1,16 @@
+use super::error::OgmiosError;
 use anyhow::anyhow;
 use chrono::Duration;
 use data_encoding::HEXLOWER;
 use jsonrpsee::core::traits::ToRpcParams;
 use num_bigint::BigInt;
 use plutus_ledger_api as pla;
+use plutus_ledger_api::csl::{csl_to_pla::TryToPLA, lib as csl, pla_to_csl::TryToCSL};
 use serde::{Deserialize, Serialize};
 use serde_json::value::{RawValue, Value as JsonValue};
 use std::collections::BTreeMap;
 use std::str::FromStr;
-use tx_bakery::csl;
-use tx_bakery::{
-    chain_query::{self, FullTransactionOutput},
-    utils::{csl_to_pla::TryToPLA, pla_to_csl::TryToCSLWithDef},
-};
-
-use super::error::OgmiosError;
+use tx_bakery::chain_query::{self, FullTransactionOutput};
 
 pub type Result<T> = std::result::Result<T, OgmiosError>;
 

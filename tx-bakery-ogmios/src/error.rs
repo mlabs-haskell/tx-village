@@ -1,12 +1,9 @@
 use anyhow::anyhow;
+use plutus_ledger_api::csl::{csl_to_pla::TryFromCSLError, pla_to_csl::TryFromPLAError};
 use serde::{Deserialize, Serialize};
 use serde_json::Value;
 use thiserror::Error;
-use tx_bakery::{
-    chain_query::ChainQueryError,
-    submitter::SubmitterError,
-    utils::{csl_to_pla::TryFromCSLError, pla_to_csl::TryFromPLAError},
-};
+use tx_bakery::{chain_query::ChainQueryError, submitter::SubmitterError};
 
 pub type Result<T> = std::result::Result<T, OgmiosError>;
 

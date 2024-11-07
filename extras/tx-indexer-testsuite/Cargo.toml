@@ -1,0 +1,40 @@
+[package]
+name = "tx-indexer-testsuite"
+version = "0.1.0"
+edition = "2021"
+license = "Apache-2.0"
+description = "Testsuite for tx-indexer"
+repository = "https://github.com/mlabs-haskell/tx-village"
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+[dependencies]
+tx-indexer = { path = ".extras/tx-indexer-v0", features = ["diesel", "sqlx"] }
+serde_json = { version = "1.0.107", features = ["arbitrary_precision"] }
+thiserror = "1.0.49"
+anyhow = "1.0.68"
+clap = { version = "4.3.10", features = ["derive"] }
+tokio = { version = "1.24.2", features = ["io-util"] }
+tracing = "0.1"
+tracing-subscriber = "0.3"
+strum = "0.24"
+strum_macros = "0.24"
+plutus-ledger-api = { version = "2.1.0", features = ["chrono", "serde"] }
+chrono = "0.4.38"
+prettytable-rs = "0.10.0"
+diesel = { version = "2.2.4", features = ["postgres", "serde_json", "r2d2"] }
+serial_test = "3.1.1"
+tx-bakery-ogmios = { path = ".extras/tx-bakery-ogmios-v2" }
+tx-bakery = { path = ".extras/tx-bakery-v2" }
+oura = { path = ".extras/oura-v1" }
+num-bigint = "0.4.4"
+sqlx = { version = "0.8.2", features = [
+  "postgres",
+  "chrono",
+  "macros",
+  "uuid",
+  "json",
+  "runtime-tokio",
+  "tls-rustls",
+] }
+url = "2.5.2"

@@ -1,18 +1,19 @@
 //! Simple wallet reading the signing key(s) from disk
 
-use super::csl_to_pla::ToPLA;
-use crate::wallet::{Wallet, WalletError};
-use anyhow::anyhow;
-use cardano_serialization_lib as csl;
-use data_encoding::HEXLOWER;
-use futures::future::OptionFuture;
-use plutus_ledger_api::v2::address::{Address, Credential, StakingCredential};
-use plutus_ledger_api::v2::crypto::Ed25519PubKeyHash;
 use std::io::Cursor;
 use std::path::Path;
+
+use anyhow::anyhow;
+use data_encoding::HEXLOWER;
+use futures::future::OptionFuture;
+use plutus_ledger_api::csl::{csl_to_pla::ToPLA, lib as csl};
+use plutus_ledger_api::v2::address::{Address, Credential, StakingCredential};
+use plutus_ledger_api::v2::crypto::Ed25519PubKeyHash;
 use thiserror::Error;
 use tokio;
 use tokio::fs;
+
+use crate::wallet::{Wallet, WalletError};
 
 #[derive(Error, Debug)]
 pub enum KeyWalletError {
@@ -110,20 +111,15 @@ impl KeyWallet {
 }
 
 impl Wallet for KeyWallet {
-    fn sign_transaction(&self, tx: &csl::Transaction) -> csl::Transaction {
-        let tx_body = tx.body();
-        let mut witness_set = tx.witness_set();
-        let aux_data = tx.auxiliary_data();
+    fn sign_transaction(&self, tx: &csl::FixedTransaction) -> csl::FixedTransaction {
+        let tx_hash = tx.transaction_hash();
 
-        let mut vkey_witnesses = witness_set.vkeys().unwrap_or(csl::Vkeywitnesses::new());
-        vkey_witnesses.add(&csl::make_vkey_witness(
-            &csl::hash_transaction(&tx_body),
-            &self.pay_priv_key,
-        ));
+        let witness = &csl::make_vkey_witness(&tx_hash, &self.pay_priv_key);
 
-        witness_set.set_vkeys(&vkey_witnesses);
+        let mut tx = tx.clone();
+        tx.add_vkey_witness(&witness);
 
-        csl::Transaction::new(&tx_body, &witness_set, aux_data)
+        tx
     }
 
     fn get_change_pkh(&self) -> Ed25519PubKeyHash {
