@@ -35,6 +35,8 @@
     cardano-devnet-flake.url = "github:szg251/cardano-devnet-flake";
 
     cardano-node.url = "github:IntersectMBO/cardano-node?ref=9.1.0";
+
+    process-compose-flake.url = "github:Platonic-Systems/process-compose-flake";
   };
   outputs = inputs@{ flake-parts, ... }:
     flake-parts.lib.mkFlake { inherit inputs; } {
@@ -43,6 +45,8 @@
         ./settings.nix
         ./pre-commit.nix
         ./hercules-ci.nix
+        inputs.process-compose-flake.flakeModule
+        inputs.cardano-devnet-flake.flakeModule
 
         # Libraries
         ./tx-bakery/build.nix

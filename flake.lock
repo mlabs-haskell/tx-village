@@ -24502,6 +24502,21 @@
         "type": "github"
       }
     },
+    "process-compose-flake": {
+      "locked": {
+        "lastModified": 1731079499,
+        "narHash": "sha256-ir7WTVpG999N07wkOCs1kwZsQKitOv3CNDqNalCMK3c=",
+        "owner": "Platonic-Systems",
+        "repo": "process-compose-flake",
+        "rev": "018783e68c89f94dbe11ce918d6206e9e4138787",
+        "type": "github"
+      },
+      "original": {
+        "owner": "Platonic-Systems",
+        "repo": "process-compose-flake",
+        "type": "github"
+      }
+    },
     "proto-nix": {
       "inputs": {
         "flake-parts": "flake-parts_19",
@@ -24574,7 +24589,8 @@
         "pre-commit-hooks": [
           "lbf",
           "pre-commit-hooks"
-        ]
+        ],
+        "process-compose-flake": "process-compose-flake"
       }
     },
     "rust-overlay": {
