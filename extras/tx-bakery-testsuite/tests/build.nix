@@ -1,5 +1,5 @@
 { inputs, ... }: {
-  perSystem = { config, system, inputs', ... }:
+  perSystem = { pkgs, config, system, inputs', ... }:
 
     let
       rustFlake = inputs.flake-lang.lib."${system}".rustFlake
@@ -9,7 +9,10 @@
           cargoNextestExtraArgs = "--no-capture";
 
           testTools = [
+            config.packages.cardano-devnet
             inputs'.ogmios.packages."ogmios:exe:ogmios"
+            inputs'.cardano-node.packages.cardano-cli
+            pkgs.process-compose
           ];
 
           extraSources = [
@@ -37,5 +40,9 @@
     in
     {
       inherit (rustFlake) packages checks devShells;
+
+      cardano-devnet.initialFunds = {
+        "60a5587dc01541d4ad17d7a4416efee274d833f2fc894eef79976a3d06" = 9000000000;
+      };
     };
 }

@@ -4,33 +4,9 @@ processes:
   tests:
     command: cargo test
     depends_on:
-      db:
-        condition: process_healthy
-      db_migration:
-        condition: process_completed_successfully
       cardano_devnet:
         condition: process_healthy
       ogmios:
-        condition: process_healthy
-
-  db:
-    command: init-empty-db \
-    is_daemon: true
-    shutdown:
-      command: stop-db
-    readiness_probe:
-      exec:
-        command: "pg_isready -p 5555 -h localhost"
-      initial_delay_seconds: 2
-      period_seconds: 2
-
-  db_migration:
-    command: |
-      echo $PWD
-      diesel migration run --database-url postgres://tx_indexer@127.0.0.1:5555 --migration-dir ./lib-migrations
-      diesel migration run --database-url postgres://tx_indexer@127.0.0.1:5555 --migration-dir ./app-migrations
-    depends_on:
-      db:
         condition: process_healthy
 
   cardano_devnet:

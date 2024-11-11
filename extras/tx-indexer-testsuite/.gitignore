@@ -1,3 +1,4 @@
 /.pg
 /lib-migrations
 /.extras
+/.devnet

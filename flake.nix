@@ -3,7 +3,7 @@
 
   inputs = {
     # LambdaBuffers as source of truth for many inputs
-    lbf.url = "github:mlabs-haskell/lambda-buffers?ref=bladyjoker/class-performance";
+    lbf.url = "github:mlabs-haskell/lambda-buffers?ref=szg251/bump-pla-rust";
 
     # Flake monorepo toolkit
     flake-lang.url = "github:mlabs-haskell/flake-lang.nix";
@@ -31,6 +31,10 @@
     };
 
     cardano-nix.url = "github:mlabs-haskell/cardano.nix?ref=szg251/conway";
+
+    cardano-devnet-flake.url = "github:szg251/cardano-devnet-flake";
+
+    cardano-node.url = "github:IntersectMBO/cardano-node?ref=9.1.0";
   };
   outputs = inputs@{ flake-parts, ... }:
     flake-parts.lib.mkFlake { inherit inputs; } {

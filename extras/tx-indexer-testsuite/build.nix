@@ -1,5 +1,6 @@
 { inputs, ... }: {
-  perSystem = { system, pkgs, config, ... }:
+  imports = [ inputs.cardano-devnet-flake.flakeModule ];
+  perSystem = { system, pkgs, config, inputs', ... }:
     let
       getDdls = path:
         builtins.filter builtins.pathExists
@@ -37,15 +38,25 @@
 
           buildInputs = [ pkgs.postgresql_16.lib ];
 
-          devShellTools = commands.devShellTools ++ [
-            pkgs.diesel-cli
+          inherit (commands) devShellTools;
+
+          testTools = [
             pkgs.postgresql_16
+            pkgs.diesel-cli
             pkgs.process-compose
+            config.packages.cardano-devnet
+            inputs'.ogmios.packages."ogmios:exe:ogmios"
+            inputs'.cardano-node.packages.cardano-cli
           ];
+
         };
     in
     {
       inherit (rustFlake) checks devShells packages;
+
+      cardano-devnet.initialFunds = {
+        "60a5587dc01541d4ad17d7a4416efee274d833f2fc894eef79976a3d06" = 9000000000;
+      };
 
     };
 

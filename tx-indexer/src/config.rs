@@ -96,6 +96,10 @@ pub enum NetworkConfig {
         magic: u64,
     },
     WellKnown(NetworkName),
+    Config {
+        chain_info: ChainWellKnownInfo,
+        magic: u64,
+    },
 }
 
 #[derive(Clone, Debug, PartialEq, Eq)]
@@ -129,6 +133,7 @@ impl NetworkConfig {
                 NetworkName::MAINNET => pallas::network::miniprotocols::MAINNET_MAGIC,
             },
             NetworkConfig::ConfigPath { magic, .. } => *magic,
+            NetworkConfig::Config { magic, .. } => *magic,
         })
     }
 
@@ -139,6 +144,7 @@ impl NetworkConfig {
                 NetworkName::PREVIEW => ChainWellKnownInfo::preview(),
                 NetworkName::MAINNET => ChainWellKnownInfo::mainnet(),
             },
+            NetworkConfig::Config { chain_info, .. } => chain_info.clone(),
             NetworkConfig::ConfigPath {
                 node_config_path, ..
             } => {

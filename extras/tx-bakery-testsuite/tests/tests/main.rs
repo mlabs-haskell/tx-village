@@ -779,9 +779,9 @@ mod tests {
 
         async fn get_own_wallet(&self) -> KeyWallet {
             match self {
-                TestRuntime::Testnet { .. } => {
-                    KeyWallet::new_enterprise("./test.skey").await.unwrap()
-                }
+                TestRuntime::Testnet { .. } => KeyWallet::new_enterprise("./wallets/test.skey")
+                    .await
+                    .unwrap(),
             }
         }
 
@@ -820,10 +820,7 @@ mod tests {
     use tx_bakery_ogmios::client::{OgmiosClient, OgmiosClientConfigBuilder};
     use url::Url;
 
-    // TODO(szg251): Un-ignore all tests once we have a replacement for Plutip
-
     #[tokio::test]
-    #[ignore]
     #[serial]
     async fn init_tx_bakery() -> Result<()> {
         let test_runtime = TestRuntime::setup_testnet().await;
@@ -832,7 +829,6 @@ mod tests {
     }
 
     #[tokio::test]
-    #[ignore]
     #[serial]
     async fn time_test() -> Result<()> {
         let test_runtime = TestRuntime::setup_testnet().await;
@@ -863,7 +859,6 @@ mod tests {
     }
 
     #[tokio::test]
-    #[ignore]
     #[serial]
     async fn test_is_eq_validator() -> Result<()> {
         let config = read_config("data/tx-bakery-test-scripts-config.json");
@@ -927,7 +922,6 @@ mod tests {
     }
 
     #[tokio::test]
-    #[ignore]
     #[serial]
     async fn test_mint() -> Result<()> {
         let config = read_config("data/tx-bakery-test-scripts-config.json");
@@ -955,7 +949,6 @@ mod tests {
     }
 
     #[tokio::test]
-    #[ignore]
     #[serial]
     async fn test_ref_input() -> Result<()> {
         let config = read_config("data/tx-bakery-test-scripts-config.json");
@@ -998,7 +991,6 @@ mod tests {
     }
 
     #[tokio::test]
-    #[ignore]
     #[serial]
     async fn test_zero_ada_mint() -> Result<()> {
         let config = read_config("data/tx-bakery-test-scripts-config.json");
@@ -1019,7 +1011,6 @@ mod tests {
     }
 
     #[tokio::test]
-    #[ignore]
     #[serial]
     async fn test_ref_script() -> Result<()> {
         let config = read_config("data/tx-bakery-test-scripts-config.json");
@@ -1046,7 +1037,6 @@ mod tests {
     }
 
     #[tokio::test]
-    #[ignore]
     #[serial]
     async fn test_with_metadata() -> Result<()> {
         let test_runtime = TestRuntime::setup_testnet().await;
@@ -1062,7 +1052,6 @@ mod tests {
     }
 
     #[tokio::test]
-    #[ignore]
     #[serial]
     async fn test_with_last_output_change() -> Result<()> {
         let (example_eq_datum_a, _) = setup_test_data();
@@ -1072,19 +1061,32 @@ mod tests {
         let wallet = test_runtime.get_own_wallet().await;
         let ogmios = test_runtime.ogmios_client();
 
+        let utxos_before = ogmios
+            .query_utxos_by_addr(&wallet.get_change_addr())
+            .await?;
+
         let tx_hash =
             with_last_output_change::build_and_submit(&wallet, ogmios, ogmios, &example_eq_datum_a)
                 .await?;
 
         ogmios.await_tx_confirm(&tx_hash).await?;
 
-        let utxos = ogmios
+        let utxos_after = ogmios
             .query_utxos_by_addr(&wallet.get_change_addr())
             .await?;
 
-        assert_eq!(utxos.len(), 1);
+        // Exactly one input and one output should exists, which means the sum of utxos don't
+        // change
+        assert_eq!(utxos_before.len(), utxos_after.len());
 
-        let change_has_datum = !matches!(utxos.values().next().unwrap().datum, OutputDatum::None);
+        let mut diff = utxos_after.clone();
+        utxos_before.iter().for_each(|(tx_in, _)| {
+            diff.remove(tx_in);
+        });
+
+        assert_eq!(diff.len(), 1);
+
+        let change_has_datum = !matches!(diff.values().next().unwrap().datum, OutputDatum::None);
 
         assert!(change_has_datum);
 
