@@ -2,6 +2,7 @@ use std::thread::JoinHandle;
 use std::{path::PathBuf, sync::Arc};
 
 use anyhow::{anyhow, Result};
+use futures::stream;
 use oura::{
     pipelining::{FilterProvider, SinkProvider, SourceProvider},
     sources::{AddressArg, BearerKind},
@@ -170,27 +171,31 @@ async fn source_from_files(
     use futures::stream::{StreamExt, TryStreamExt};
     use tokio::fs;
     use tokio::runtime::Runtime;
-    use tokio_stream::wrappers::ReadDirStream;
 
-    let file_stream = ReadDirStream::new(fs::read_dir(dir_path).await.map_err(|err| anyhow!(err))?);
+    let mut files = std::fs::read_dir(dir_path)
+        .map_err(|err| anyhow!(err))?
+        .collect::<Result<Vec<_>, _>>()?;
+
+    files.sort_by_key(|entry| entry.file_name());
+
+    let file_stream = stream::iter(files);
 
     let handle = std::thread::spawn(|| {
         let rt = Runtime::new().unwrap();
         rt.block_on(async move {
             let handler = &handler;
             let _: Vec<()> = file_stream
-                .try_filter_map(|dir_entry| async move {
+                .filter_map(|dir_entry| async move {
                     let path = dir_entry.path();
 
                     if let Some(ext) = path.extension() {
                         if ext == "json" {
-                            return Ok(Some(path));
+                            return Some(path);
                         }
                     };
-                    Ok(None)
+                    None
                 })
                 .then(|path| async move {
-                    let path = path.map_err(|err| anyhow!(err))?;
                     let bytes = fs::read(path).await.map_err(|err| anyhow!(err))?;
 
                     let chain_event = serde_json::from_slice(&bytes).map_err(|err| anyhow!(err))?;
