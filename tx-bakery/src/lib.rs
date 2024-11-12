@@ -7,6 +7,7 @@ use crate::wallet::Wallet;
 use anyhow::anyhow;
 use chain_query::{ChainQuery, EraSummary, Network, ProtocolParameters};
 use chrono::{DateTime, Utc};
+use itertools::Itertools;
 use num_bigint::BigInt;
 use plutus_ledger_api::csl::{lib as csl, pla_to_csl::TryToCSL};
 use plutus_ledger_api::plutus_data::IsPlutusData;
@@ -108,9 +109,15 @@ impl<'a> TxWithCtx<'a> {
 #[derive(Clone, Debug)]
 pub enum CollateralStrategy {
     /// Automatically pick a suitable UTxO from the transaction inputs
-    Automatic { amount: u64 },
+    Automatic {
+        min_amount: u64,
+        max_utxo_count: usize,
+    },
     /// Explicitly set a UTxO (doesn't have to be an input UTxO)
-    Explicit { utxo: TxInInfo, amount: u64 },
+    Explicit {
+        utxos: Vec<TxInInfo>,
+        min_amount: u64,
+    },
     /// No collateral (for transaction without scripts)
     None,
 }
@@ -438,51 +445,69 @@ impl TxBakery {
         Ok(mint_builder)
     }
 
-    /// Find a suitable UTxO to be used as a collateral. The UTxO has to meet the following
-    /// criteria:
-    /// - must be at a pub key address with
-    /// - must have at least the configured amount of Ada
-    ///         (TODO: we could calculate the exact minimum collateral amount using protocol params)
-    ///
-    fn find_collateral(&self, collateral_amount: u64, tx_inputs: &[TxInInfo]) -> Option<TxInInfo> {
-        tx_inputs
+    /// Find suitable UTxOs to be used as a collateral. Each UTxO has to be at a pub key address,
+    /// and the total Ada amount of must be at least the configured collateral amount
+    // TODO(szg251): we could calculate the exact minimum collateral amount using protocol params
+    fn find_collaterals(
+        &self,
+        min_collateral_amount: u64,
+        max_utxo_count: usize,
+
+        tx_inputs: &[TxInInfo],
+    ) -> Result<Vec<TxInInfo>> {
+        let min_collateral_amount = BigInt::from(min_collateral_amount);
+        let (amount, collaterals) = tx_inputs
             .iter()
-            .find(
-                |TxInInfo {
-                     reference: _,
-                     output,
-                 }| {
-                    if let Credential::PubKey(_) = output.address.credential {
-                        let ada_amount = output.value.get_ada_amount();
-                        ada_amount >= BigInt::from(collateral_amount)
-                    } else {
-                        false
-                    }
+            .sorted_by_key(|input| -input.output.value.get_ada_amount())
+            .take(max_utxo_count)
+            .fold(
+                (BigInt::ZERO, Vec::new()),
+                |(mut acc_amount, mut collaterals), tx_in_info| {
+                    if acc_amount < min_collateral_amount {
+                        if let Credential::PubKey(_) = tx_in_info.output.address.credential {
+                            let ada_amount = tx_in_info.output.value.get_ada_amount();
+                            acc_amount += ada_amount;
+                            collaterals.push(tx_in_info.clone());
+                        }
+                    };
+
+                    (acc_amount, collaterals)
                 },
-            )
-            .cloned()
+            );
+
+        if amount >= min_collateral_amount {
+            Ok(collaterals)
+        } else {
+            Err(Error::NotEnoughCollaterals {
+                amount,
+                required: min_collateral_amount,
+                utxos: collaterals,
+            })
+        }
     }
 
-    fn mk_collateral(&self, tx_input: &TxInInfo) -> Result<csl::TxInputsBuilder> {
+    fn mk_collaterals(&self, tx_inputs: &[TxInInfo]) -> Result<csl::TxInputsBuilder> {
         let mut tx_inputs_builder = csl::TxInputsBuilder::new();
-        let TxInInfo { reference, output } = tx_input;
-        tx_inputs_builder
-            .add_regular_input(
-                &AddressWithExtraInfo {
-                    address: &output.address,
-                    network_tag: self.network_id,
-                }
-                .try_to_csl()?,
-                &reference.try_to_csl()?,
-                &output.value.try_to_csl()?,
-            )
-            .map_err(|err| {
-                Error::TransactionBuildError(anyhow!(
-                    "Failed to add regular input {:?}: {}",
-                    reference,
-                    err
-                ))
-            })?;
+        for tx_input in tx_inputs {
+            let TxInInfo { reference, output } = tx_input;
+
+            tx_inputs_builder
+                .add_regular_input(
+                    &output
+                        .address
+                        .with_extra_info(self.network_id)
+                        .try_to_csl()?,
+                    &reference.try_to_csl()?,
+                    &output.value.try_to_csl()?,
+                )
+                .map_err(|err| {
+                    Error::TransactionBuildError(anyhow!(
+                        "Failed to add regular input {:?}: {}",
+                        reference,
+                        err
+                    ))
+                })?;
+        }
 
         Ok(tx_inputs_builder)
     }
@@ -569,34 +594,32 @@ impl TxBakery {
         };
 
         match &tx.collateral_strategy {
-            CollateralStrategy::Automatic { amount } => {
-                let tx_input = self
-                    .find_collateral(*amount, &tx.tx_info.inputs)
-                    .ok_or(Error::MissingCollateral)?;
-                let collateral = self.mk_collateral(&tx_input)?;
+            CollateralStrategy::Automatic {
+                min_amount,
+                max_utxo_count,
+            } => {
+                let tx_input =
+                    self.find_collaterals(*min_amount, *max_utxo_count, &tx.tx_info.inputs)?;
+                let collateral = self.mk_collaterals(&tx_input)?;
                 tx_builder.set_collateral(&collateral);
                 tx_builder
                     .set_total_collateral_and_return(
-                        &csl::BigNum::from(*amount),
-                        &AddressWithExtraInfo {
-                            address: collateral_return_address,
-                            network_tag: self.network_id,
-                        }
-                        .try_to_csl()?,
+                        &csl::BigNum::from(*min_amount),
+                        &collateral_return_address
+                            .with_extra_info(self.network_id)
+                            .try_to_csl()?,
                     )
                     .map_err(|source| Error::TransactionBuildError(anyhow!(source)))?;
             }
-            CollateralStrategy::Explicit { utxo, amount } => {
-                let collateral = self.mk_collateral(utxo)?;
+            CollateralStrategy::Explicit { utxos, min_amount } => {
+                let collateral = self.mk_collaterals(utxos)?;
                 tx_builder.set_collateral(&collateral);
                 tx_builder
                     .set_total_collateral_and_return(
-                        &csl::BigNum::from(*amount),
-                        &AddressWithExtraInfo {
-                            address: collateral_return_address,
-                            network_tag: self.network_id,
-                        }
-                        .try_to_csl()?,
+                        &csl::BigNum::from(*min_amount),
+                        &collateral_return_address
+                            .with_extra_info(self.network_id)
+                            .try_to_csl()?,
                     )
                     .map_err(|source| Error::TransactionBuildError(anyhow!(source)))?;
             }

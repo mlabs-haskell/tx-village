@@ -207,11 +207,11 @@ mod e2e_tests {
             .expect("Cannot find spendable input UTxO.");
 
         let collateral = CollateralStrategy::Explicit {
-            amount: 5_000_000,
-            utxo: TxInInfo {
+            min_amount: 5_000_000,
+            utxos: vec![TxInInfo {
                 reference: collateral_utxo.0.clone(),
                 output: collateral_utxo.1.into(),
-            },
+            }],
         };
 
         let tx_bakery = TxBakery::init(ogmios).await.unwrap();

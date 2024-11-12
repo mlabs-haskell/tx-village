@@ -1,6 +1,11 @@
+use num_bigint::BigInt;
 use plutus_ledger_api::{
     csl::{csl_to_pla::TryFromCSLError, lib as csl, pla_to_csl::TryFromPLAError},
-    v2::{datum::DatumHash, script::ScriptHash, transaction::TransactionInput},
+    v2::{
+        datum::DatumHash,
+        script::ScriptHash,
+        transaction::{TransactionInput, TxInInfo},
+    },
 };
 use thiserror::Error;
 
@@ -22,8 +27,15 @@ pub enum Error {
     #[error("Reference input containing script {0:?} is missing from the TransactionInfo reference input list.")]
     MissingReferenceScript(TransactionInput, ScriptHash),
 
-    #[error("Couldn't find suitable collateral.")]
-    MissingCollateral,
+    #[error(
+        "Couldn't find enough collaterals.
+         The total amount is {amount} while {required} was expected. Utxos: {utxos:?}"
+    )]
+    NotEnoughCollaterals {
+        amount: BigInt,
+        required: BigInt,
+        utxos: Vec<TxInInfo>,
+    },
 
     #[error("Change strategy is set to LastOutput, but it is missing from the TransactionInfo.")]
     MissingChangeOutput,

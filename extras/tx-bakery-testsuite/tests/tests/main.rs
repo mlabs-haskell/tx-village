@@ -155,11 +155,11 @@ mod claim_eq_datum {
             .expect("Cannot find spendable input UTxO.");
 
         let collateral = CollateralStrategy::Explicit {
-            amount: 5_000_000,
-            utxo: TxInInfo {
+            min_amount: 5_000_000,
+            utxos: vec![TxInInfo {
                 reference: collateral_utxo.0.clone(),
                 output: collateral_utxo.1.into(),
-            },
+            }],
         };
 
         let tx_bakery = TxBakery::init(chain_query).await?;
@@ -237,11 +237,11 @@ mod mint_with_secret {
             .expect("Cannot find spendable input UTxO.");
 
         let collateral = CollateralStrategy::Explicit {
-            amount: 5_000_000,
-            utxo: TxInInfo {
+            min_amount: 5_000_000,
+            utxos: vec![TxInInfo {
                 reference: collateral_utxo.0.clone(),
                 output: collateral_utxo.1.into(),
-            },
+            }],
         };
 
         let tx_bakery = TxBakery::init(chain_query).await?;
@@ -308,11 +308,11 @@ mod burn_with_secret {
             .expect("Cannot find spendable input UTxO.");
 
         let collateral = CollateralStrategy::Explicit {
-            amount: 5_000_000,
-            utxo: TxInInfo {
+            min_amount: 5_000_000,
+            utxos: vec![TxInInfo {
                 reference: collateral_utxo.0.clone(),
                 output: collateral_utxo.1.into(),
-            },
+            }],
         };
 
         let tx_bakery = TxBakery::init(chain_query).await?;
@@ -413,11 +413,11 @@ mod mint_with_ref_input {
             .expect("Cannot find spendable input UTxO.");
 
         let collateral = CollateralStrategy::Explicit {
-            amount: 5_000_000,
-            utxo: TxInInfo {
+            min_amount: 5_000_000,
+            utxos: vec![TxInInfo {
                 reference: collateral_utxo.0.clone(),
                 output: collateral_utxo.1.into(),
-            },
+            }],
         };
 
         let tx_bakery = TxBakery::init(chain_query).await?;
@@ -481,11 +481,11 @@ mod zero_ada_mint {
             .expect("Cannot find spendable input UTxO.");
 
         let collateral = CollateralStrategy::Explicit {
-            amount: 5_000_000,
-            utxo: TxInInfo {
+            min_amount: 5_000_000,
+            utxos: vec![TxInInfo {
                 reference: collateral_utxo.0.clone(),
                 output: collateral_utxo.1.into(),
-            },
+            }],
         };
 
         let tx_bakery = TxBakery::init(chain_query).await?;
@@ -634,11 +634,11 @@ mod use_ref_script {
             .expect("Cannot find spendable input UTxO.");
 
         let collateral = CollateralStrategy::Explicit {
-            amount: 5_000_000,
-            utxo: TxInInfo {
+            min_amount: 5_000_000,
+            utxos: vec![TxInInfo {
                 reference: collateral_utxo.0.clone(),
                 output: collateral_utxo.1.into(),
-            },
+            }],
         };
 
         let tx_bakery = TxBakery::init(chain_query).await?;

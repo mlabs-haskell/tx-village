@@ -52,7 +52,7 @@
         ];
         settings.processes = {
           tests = {
-            command = "${pkgs.cargo} test";
+            command = "${pkgs.cargo}/bin/cargo test";
             depends_on = {
               cardano_devnet.condition = "process_healthy";
               ogmios.condition = "process_healthy";
