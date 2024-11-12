@@ -14,12 +14,13 @@ use plutus_ledger_api::v2::{
     transaction::{ScriptPurpose, TransactionHash, TransactionInput, TransactionOutput, TxInInfo},
     value::{CurrencySymbol, Value},
 };
+use serde_with::serde_as;
 use std::fmt::Debug;
 use std::{collections::HashMap, sync::atomic::Ordering};
 use tracing::{event, Level};
 
 /// Indication of when an event happened in the context of the chain.
-#[derive(Clone, Debug, PartialEq, Eq)]
+#[derive(Clone, Debug, PartialEq, Eq, serde::Serialize, serde::Deserialize)]
 pub struct ChainEventTime {
     pub block_number: u64,
     pub block_hash: String,
@@ -27,7 +28,7 @@ pub struct ChainEventTime {
 }
 
 /// Chain events that the indexer is configured to produce.
-#[derive(Clone, Debug, PartialEq)]
+#[derive(Clone, Debug, PartialEq, serde::Serialize, serde::Deserialize)]
 pub enum ChainEvent {
     /// A filtered transaction was confirmed
     TransactionEvent {
@@ -47,7 +48,8 @@ pub enum ChainEvent {
 }
 
 /// Details on an transaction event (excluding unnecessary information).
-#[derive(Clone, Debug, PartialEq, Eq)]
+#[serde_as]
+#[derive(Clone, Debug, PartialEq, Eq, serde::Serialize, serde::Deserialize)]
 pub struct TransactionEventRecord {
     pub hash: TransactionHash,
     pub fee: u64,
@@ -56,8 +58,10 @@ pub struct TransactionEventRecord {
     pub inputs: Vec<TransactionInput>,
     pub outputs: Vec<TxInInfo>,
     pub mint: Value,
+    #[serde_as(as = "Vec<(_, _)>")]
     pub redeemers: HashMap<ScriptPurpose, Redeemer>,
 
+    #[serde_as(as = "Vec<(_, _)>")]
     pub plutus_data: HashMap<DatumHash, Datum>,
     // TODO(chase): Which of these would be realistically be interested in?
     // pub vkey_witnesses: Option<Vec<VKeyWitnessRecord>>,

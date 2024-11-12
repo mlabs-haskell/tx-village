@@ -1,12 +1,13 @@
 #[cfg(feature = "diesel")]
 use diesel::sql_types::{Array, Bytea, Nullable};
 use num_bigint::BigInt;
+use pla::csl::pla_to_csl::TryToCSL;
 use plutus_ledger_api as pla;
 use thiserror::Error;
-use tx_bakery::csl;
-use tx_bakery::utils::{
+use plutus_ledger_api::csl::{
+    lib as csl,
     csl_to_pla::{TryFromCSLError, TryToPLA},
-    pla_to_csl::{TryFromPLAError, TryToCSLWithDef},
+    pla_to_csl::TryFromPLAError,
 };
 
 #[derive(Error, Debug)]

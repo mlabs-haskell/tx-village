@@ -1,14 +1,15 @@
 use anyhow::anyhow;
 use data_encoding::HEXLOWER;
-use plutus_ledger_api::v2::{
-    address::Address,
-    crypto::LedgerBytes,
-    script::{MintingPolicyHash, ScriptHash},
-    value::CurrencySymbol,
+use plutus_ledger_api::{
+    csl::{csl_to_pla::TryToPLA, lib as csl},
+    v2::{
+        address::Address,
+        crypto::LedgerBytes,
+        script::{MintingPolicyHash, ScriptHash},
+        value::CurrencySymbol,
+    },
 };
 use std::str::FromStr;
-use tx_bakery::csl;
-use tx_bakery::utils::csl_to_pla::TryToPLA;
 
 #[derive(Debug, Clone)]
 pub struct ParseCurrencySymbol(pub CurrencySymbol);

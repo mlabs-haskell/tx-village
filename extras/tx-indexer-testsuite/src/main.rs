@@ -10,7 +10,7 @@ use plutus_ledger_api::v2::{
     value::{CurrencySymbol, Value},
 };
 use prettytable::{format, row, Table};
-use std::{default::Default, fmt::Debug};
+use std::{default::Default, fmt::Debug, path::PathBuf};
 use tracing::Level;
 use tx_indexer::{
     aux::{ParseAddress, ParseCurrencySymbol},
@@ -19,9 +19,7 @@ use tx_indexer::{
     filter::Filter,
     TxIndexer,
 };
-use utxo_db::{handler::UtxoIndexerHandler, table::utxos::UtxosTable};
-
-mod utxo_db;
+use tx_indexer_testsuite::utxo_db::{handler::UtxoIndexerHandler, table::utxos::UtxosTable};
 
 #[derive(Debug, Parser)]
 struct IndexStartArgs {
@@ -67,8 +65,20 @@ struct IndexStartArgs {
     curr_symbols: Vec<ParseCurrencySymbol>,
 
     /// PostgreSQL database URL
-    #[arg(long)]
-    postgres_url: String,
+    #[arg(
+        long,
+        required_unless_present = "fixture_dump_path",
+        conflicts_with = "fixture_dump_path"
+    )]
+    postgres_url: Option<String>,
+
+    /// Filepath of the fixture files
+    #[arg(
+        long,
+        required_unless_present = "postgres_url",
+        conflicts_with = "postgres_url"
+    )]
+    fixture_dump_path: Option<PathBuf>,
 }
 
 #[derive(Debug, Parser)]
@@ -135,6 +145,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
                 since_block_hash,
                 curr_symbols,
                 postgres_url,
+                fixture_dump_path,
             }) => {
                 let network_config = network_magic
                     .map(|magic| NetworkConfig::ConfigPath {
@@ -144,21 +155,28 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
                     .or(network.map(NetworkConfig::WellKnown))
                     .unwrap();
 
-                let manager = ConnectionManager::<PgConnection>::new(&postgres_url);
+                let (handler, sync_progress) = if let Some(postgres_url) = postgres_url {
+                    let manager = ConnectionManager::<PgConnection>::new(postgres_url);
 
-                let pg_pool = Pool::builder()
-                    .test_on_check_out(true)
-                    .build(manager)
-                    .expect("Could not build connection pool");
+                    let pg_pool = Pool::builder()
+                        .test_on_check_out(true)
+                        .build(manager)
+                        .expect("Could not build connection pool");
 
-                let mut conn = pg_pool.get().unwrap();
+                    let mut conn = pg_pool.get().unwrap();
 
-                let sync_progress =
-                    SyncProgressTable::get_or(&mut conn, since_slot, since_block_hash)?;
+                    let sync_progress =
+                        SyncProgressTable::get_or(&mut conn, since_slot, since_block_hash)?;
 
-                let handler = UtxoIndexerHandler::new(pg_pool);
+                    (UtxoIndexerHandler::postgres(pg_pool), sync_progress)
+                } else {
+                    (
+                        UtxoIndexerHandler::fixture(fixture_dump_path.unwrap()),
+                        since_slot.zip(since_block_hash),
+                    )
+                };
 
-                let indexer = TxIndexer::run(TxIndexerConfig::new(
+                TxIndexer::run(TxIndexerConfig::cardano_node(
                     handler,
                     NodeAddress::UnixSocket(socket_path),
                     network_config,
@@ -172,19 +190,8 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
                     },
                     Default::default(),
                 ))
-                .await?;
-                indexer
-                    .sink_handle
-                    .join()
-                    .map_err(|_| "error in sink thread")?;
-                indexer
-                    .filter_handle
-                    .join()
-                    .map_err(|_| "error in sink thread")?;
-                indexer
-                    .source_handle
-                    .join()
-                    .map_err(|_| "error in source thread")?;
+                .await?
+                .join()?;
 
                 Ok(())
             }

@@ -1,17 +1,19 @@
 //! Transaction Info builder
 
 use num_bigint::BigInt;
-use plutus_ledger_api::v2::address::StakingCredential;
-use plutus_ledger_api::v2::assoc_map::AssocMap;
-use plutus_ledger_api::v2::crypto::{LedgerBytes, PaymentPubKeyHash};
-use plutus_ledger_api::v2::datum::{Datum, DatumHash};
-use plutus_ledger_api::v2::interval::Interval;
-use plutus_ledger_api::v2::redeemer::Redeemer;
-use plutus_ledger_api::v2::transaction::{
-    DCert, POSIXTimeRange, ScriptPurpose, TransactionHash, TransactionInfo, TransactionInput,
-    TransactionOutput, TxInInfo,
+use plutus_ledger_api::v2::{
+    address::StakingCredential,
+    assoc_map::AssocMap,
+    crypto::{LedgerBytes, PaymentPubKeyHash},
+    datum::{Datum, DatumHash},
+    interval::Interval,
+    redeemer::Redeemer,
+    transaction::{
+        DCert, POSIXTimeRange, ScriptPurpose, TransactionHash, TransactionInfo, TransactionInput,
+        TransactionOutput, TxInInfo,
+    },
+    value::{AssetClass, Value},
 };
-use plutus_ledger_api::v2::value::{AssetClass, Value};
 use std::collections::{BTreeMap, BTreeSet};
 
 /// Simple TransactionInfo builder

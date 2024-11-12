@@ -59,7 +59,8 @@ let
       [ ! -d "$PGDATA" ] && pg_ctl initdb -o "-U ${pgUser}" && cat "${postgresConf}" >> "$PGDATA/postgresql.conf"
 
       start-db
-      echo "CREATE DATABASE ${pgUser}" | psql -p "${pgPort}" -U "${pgUser}" postgres
+      echo "SELECT 'CREATE DATABASE ${pgUser}' WHERE NOT EXISTS (SELECT FROM pg_database WHERE datname = '${pgUser}')\gexec" \
+        | psql -p "${pgPort}" -U "${pgUser}" postgres
 
     '';
   };
@@ -108,4 +109,3 @@ in
   inherit postgresConf;
   devShellTools = [ init-db start-db stop-db pg init-empty-db dump-schema ];
 }
-

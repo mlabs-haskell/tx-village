@@ -1,7 +1,8 @@
 use oura::filters::selection::{Config, Predicate};
-use plutus_ledger_api::v2::{script::MintingPolicyHash, value::CurrencySymbol};
-use tx_bakery::csl;
-use tx_bakery::utils::pla_to_csl::TryFromPLAWithDef;
+use plutus_ledger_api::{
+    csl::{lib as csl, pla_to_csl::TryFromPLA},
+    v2::{script::MintingPolicyHash, value::CurrencySymbol},
+};
 
 /// Interesting transaction components to look for when filtering transactions
 /// relevant to the protocol.
