@@ -2237,7 +2237,7 @@ dependencies = [
 
 [[package]]
 name = "tx-bakery"
-version = "2.0.0-beta.2"
+version = "2.0.0-beta.3"
 dependencies = [
  "anyhow",
  "assertables",
@@ -2262,7 +2262,7 @@ dependencies = [
 
 [[package]]
 name = "tx-bakery-ogmios"
-version = "2.0.0-beta.2"
+version = "2.0.0-beta.3"
 dependencies = [
  "anyhow",
  "cbor_event",

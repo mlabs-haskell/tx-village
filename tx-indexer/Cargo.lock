@@ -4417,7 +4417,7 @@ dependencies = [
 
 [[package]]
 name = "tx-bakery"
-version = "2.0.0-beta.2"
+version = "2.0.0-beta.3"
 dependencies = [
  "anyhow",
  "assertables",
@@ -4426,6 +4426,7 @@ dependencies = [
  "data-encoding",
  "derive_builder",
  "futures",
+ "itertools 0.13.0",
  "jsonrpsee",
  "num-bigint",
  "num-traits",
