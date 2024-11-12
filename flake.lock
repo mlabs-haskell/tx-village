@@ -24590,7 +24590,8 @@
           "lbf",
           "pre-commit-hooks"
         ],
-        "process-compose-flake": "process-compose-flake"
+        "process-compose-flake": "process-compose-flake",
+        "services-flake": "services-flake"
       }
     },
     "rust-overlay": {
@@ -24968,6 +24969,21 @@
         "owner": "bitcoin-core",
         "ref": "v0.3.2",
         "repo": "secp256k1",
+        "type": "github"
+      }
+    },
+    "services-flake": {
+      "locked": {
+        "lastModified": 1731198492,
+        "narHash": "sha256-Ghh8mAy+v0h3b+Z8yTz7Y0uRZ3y6CRkomDfZcFMx4ZY=",
+        "owner": "juspay",
+        "repo": "services-flake",
+        "rev": "731ce6bad6352e6ad2cf7dea8f86fcdb7a113f87",
+        "type": "github"
+      },
+      "original": {
+        "owner": "juspay",
+        "repo": "services-flake",
         "type": "github"
       }
     },

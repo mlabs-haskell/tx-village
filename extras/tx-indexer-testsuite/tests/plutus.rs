@@ -24,7 +24,7 @@ mod plutus_database_roundtrips {
         fn db_tests() {
             use super::*;
 
-            let mut conn = PgConnection::establish("postgres://tx_indexer@127.0.0.1:5555").unwrap();
+            let mut conn = PgConnection::establish("postgres://127.0.0.1:5555/tx_indexer").unwrap();
 
             clean(&mut conn).unwrap();
 
@@ -109,7 +109,7 @@ mod plutus_database_roundtrips {
         #[tokio::test]
         #[serial]
         async fn db_tests() {
-            let pg_pool = PgPool::connect("postgres://tx_indexer@127.0.0.1:5555")
+            let pg_pool = PgPool::connect("postgres://127.0.0.1:5555/tx_indexer")
                 .await
                 .unwrap();
             let mut conn = pg_pool.acquire().await.unwrap();

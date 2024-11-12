@@ -26,7 +26,7 @@ mod fixture_tests {
         tracing::subscriber::set_global_default(collector)?;
 
         let manager =
-            ConnectionManager::<PgConnection>::new("postgres://tx_indexer@127.0.0.1:5555");
+            ConnectionManager::<PgConnection>::new("postgres://127.0.0.1:5555/tx_indexer");
 
         let pg_pool = Pool::builder()
             .test_on_check_out(true)

@@ -37,6 +37,7 @@
     cardano-node.url = "github:IntersectMBO/cardano-node?ref=9.1.0";
 
     process-compose-flake.url = "github:Platonic-Systems/process-compose-flake";
+    services-flake.url = "github:juspay/services-flake";
   };
   outputs = inputs@{ flake-parts, ... }:
     flake-parts.lib.mkFlake { inherit inputs; } {

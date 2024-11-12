@@ -8,14 +8,6 @@
           crateName = "tx-bakery-tests";
           cargoNextestExtraArgs = "--no-capture";
 
-          testTools = [
-            config.packages.cardano-devnet
-            inputs'.ogmios.packages."ogmios:exe:ogmios"
-            inputs'.cardano-node.packages.cardano-cli
-            pkgs.process-compose
-            self'.packages.tx-bakery-tests
-          ];
-
           extraSources = [
             config.packages.tx-bakery-rust-src
             config.packages.tx-bakery-ogmios-rust-src
@@ -36,6 +28,10 @@
             }
           ];
 
+          devShellTools = [
+            self'.packages.tx-bakery-tests
+          ];
+
           devShellHook = config.settings.shell.hook;
         };
     in
@@ -51,10 +47,12 @@
       };
 
       process-compose.tx-bakery-tests = {
+        imports = [
+          inputs.services-flake.processComposeModules.default
+        ];
         settings.processes = {
           tests = {
-            command = "cargo test";
-            availability.exit_on_end = true;
+            command = "${pkgs.cargo} test";
             depends_on = {
               cardano_devnet.condition = "process_healthy";
               ogmios.condition = "process_healthy";
@@ -62,16 +60,21 @@
           };
 
           cardano_devnet = {
-            command = "cardano-devnet";
+            command = config.packages.cardano-devnet;
             readiness_probe = {
-              exec.command = "cardano-cli query tip --socket-path .devnet/node.socket --testnet-magic 42";
+              exec.command = ''${inputs'.cardano-node.packages.cardano-cli}/bin/cardano-cli query tip \
+              --socket-path .devnet/node.socket \
+              --testnet-magic 42'';
               initial_delay_seconds = 1;
               period_seconds = 1;
             };
           };
 
           ogmios = {
-            command = "ogmios --node-socket .devnet/node.socket --node-config .devnet/config.json";
+            command = ''${inputs'.ogmios.packages."ogmios:exe:ogmios"}/bin/ogmios \
+            --node-socket .devnet/node.socket \
+            --node-config .devnet/config.json
+            '';
             readiness_probe = {
               http_get = {
                 host = "127.0.0.1";
@@ -88,3 +91,4 @@
       };
     };
 }
+

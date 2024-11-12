@@ -1,15 +1,6 @@
 { inputs, ... }: {
   perSystem = { system, pkgs, config, inputs', self', ... }:
     let
-      getDdls = path:
-        builtins.filter builtins.pathExists
-          (pkgs.lib.mapAttrsToList (name: _: ./${name}/up.sql) (builtins.readDir path));
-      commands = import "${../..}/tx-indexer/commands.nix" {
-        inherit pkgs;
-
-        extraDDLs = getDdls "${./app-migrations}";
-      };
-
       oura = pkgs.stdenv.mkDerivation {
         src = "${inputs.oura.outPath}";
         name = "oura-v1";
@@ -31,24 +22,15 @@
             config.packages.diesel-derive-pg-rust-src
             oura
           ];
-          devShellHook = config.settings.shell.hook + ''
-            ln -sf ${../../tx-indexer}/lib-migrations
-          '';
-
           buildInputs = [ pkgs.postgresql_16.lib ];
 
-          inherit (commands) devShellTools;
-
-          testTools = [
-            pkgs.postgresql_16
-            pkgs.diesel-cli
-            pkgs.process-compose
-            config.packages.cardano-devnet
-            inputs'.ogmios.packages."ogmios:exe:ogmios"
-            inputs'.cardano-node.packages.cardano-cli
+          devShellTools = [
             self'.packages.tx-indexer-tests
           ];
 
+          devShellHook = config.settings.shell.hook + ''
+            ln -sf ${../../tx-indexer}/lib-migrations
+          '';
         };
     in
     {
@@ -62,10 +44,22 @@
       };
 
       process-compose.tx-indexer-tests = {
+        imports = [
+          inputs.services-flake.processComposeModules.default
+        ];
+        services.postgres."db" = {
+          enable = true;
+          port = 5555;
+          initialDatabases = [
+            {
+              name = "tx_indexer";
+              schemas = [ ];
+            }
+          ];
+        };
         settings.processes = {
           tests = {
             command = "cargo test";
-            availability.exit_on_end = true;
             depends_on = {
               cardano_devnet.condition = "process_healthy";
               ogmios.condition = "process_healthy";
@@ -75,16 +69,21 @@
           };
 
           cardano_devnet = {
-            command = "cardano-devnet";
+            command = config.packages.cardano-devnet;
             readiness_probe = {
-              exec.command = "cardano-cli query tip --socket-path .devnet/node.socket --testnet-magic 42";
+              exec.command = ''${inputs'.cardano-node.packages.cardano-cli}/bin/cardano-cli query tip \
+              --socket-path .devnet/node.socket \
+              --testnet-magic 42'';
               initial_delay_seconds = 1;
               period_seconds = 1;
             };
           };
 
           ogmios = {
-            command = "ogmios --node-socket .devnet/node.socket --node-config .devnet/config.json";
+            command = ''${inputs'.ogmios.packages."ogmios:exe:ogmios"}/bin/ogmios \
+            --node-socket .devnet/node.socket \
+            --node-config .devnet/config.json
+            '';
             readiness_probe = {
               http_get = {
                 host = "127.0.0.1";
@@ -97,22 +96,15 @@
             depends_on.cardano_devnet.condition = "process_healthy";
           };
 
-          db = {
-            command = "init-empty-db";
-            is_daemon = true;
-            shutdown.command = "stop-db";
-            readiness_probe = {
-              exec.command = "pg_isready -p 5555 -h localhost";
-              initial_delay_seconds = 2;
-              period_seconds = 2;
-            };
-          };
-
           db_migration = {
             command = ''
-              echo $PWD
-              diesel migration run --database-url postgres://tx_indexer@127.0.0.1:5555 --migration-dir ./lib-migrations
-              diesel migration run --database-url postgres://tx_indexer@127.0.0.1:5555 --migration-dir ./app-migrations
+              ${pkgs.diesel-cli}/bin/diesel migration run \
+                --database-url postgres://127.0.0.1:5555/tx_indexer \
+                --migration-dir ./lib-migrations
+
+              ${pkgs.diesel-cli}/bin/diesel migration run \
+                --database-url postgres://127.0.0.1:5555/tx_indexer \
+                --migration-dir ./app-migrations
             '';
             depends_on.db.condition = "process_healthy";
           };
