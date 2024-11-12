@@ -117,7 +117,7 @@ impl Wallet for KeyWallet {
         let witness = &csl::make_vkey_witness(&tx_hash, &self.pay_priv_key);
 
         let mut tx = tx.clone();
-        tx.add_vkey_witness(&witness);
+        tx.add_vkey_witness(witness);
 
         tx
     }
