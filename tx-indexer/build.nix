@@ -3,10 +3,6 @@
     let
       commands = import ./commands.nix {
         inherit pkgs;
-        extraDDLs =
-          builtins.filter builtins.pathExists
-            (map ({ name, ... }: ./${name}/up.sql)
-              (pkgs.lib.attrsToList (builtins.readDir ./app-migrations)));
 
         schemaDumpIncludePlutus = true;
       };
@@ -36,9 +32,9 @@
             config.packages.diesel-derive-pg-rust-src
           ];
 
-          inherit (commands) devShellTools;
-
           devShellHook = config.settings.shell.hook;
+
+          inherit (commands) devShellTools;
 
           buildInputs = [ pkgs.postgresql_16 ];
 

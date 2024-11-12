@@ -3,10 +3,14 @@
 use crate::chain_query::EraSummary;
 use crate::error::{Error, Result};
 use anyhow::anyhow;
-use cardano_serialization_lib as csl;
 use chrono::{DateTime, Duration, Utc};
-use plutus_ledger_api::v2::interval::{Extended, LowerBound, PlutusInterval, UpperBound};
-use plutus_ledger_api::v2::transaction::{POSIXTime, POSIXTimeConversionError, POSIXTimeRange};
+use plutus_ledger_api::{
+    csl::lib as csl,
+    v2::{
+        interval::{Extended, LowerBound, PlutusInterval, UpperBound},
+        transaction::{POSIXTime, POSIXTimeConversionError, POSIXTimeRange},
+    },
+};
 
 /// Convert a POSIX time into number of slots in the current system
 pub fn posix_time_into_slot(

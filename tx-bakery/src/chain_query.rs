@@ -1,18 +1,19 @@
 //! Trait for a Cardano chain query client
 
-use crate::utils::csl_to_pla::ToPLA;
-use crate::utils::script::Script;
-use cardano_serialization_lib as csl;
+use std::collections::BTreeMap;
+use std::future::Future;
+use std::str::FromStr;
+
 use chrono::{DateTime, Duration, Utc};
+use plutus_ledger_api::csl::{csl_to_pla::ToPLA, lib as csl};
 use plutus_ledger_api::v2::address::Address;
 use plutus_ledger_api::v2::datum::OutputDatum;
 use plutus_ledger_api::v2::transaction::{TransactionInput, TransactionOutput};
 use plutus_ledger_api::v2::value::Value;
 use serde::Deserialize;
-use std::collections::BTreeMap;
-use std::future::Future;
-use std::str::FromStr;
 use thiserror::Error;
+
+use crate::utils::script::Script;
 
 /// A chain query client responsible for all read actions from the blockchain (no write)
 pub trait ChainQuery {

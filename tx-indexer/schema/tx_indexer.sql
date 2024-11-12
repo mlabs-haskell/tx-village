@@ -306,50 +306,6 @@ CREATE TABLE public.sync_progress (
 
 ALTER TABLE public.sync_progress OWNER TO tx_indexer;
 
---
--- Name: testdb; Type: TABLE; Schema: public; Owner: tx_indexer
---
-
-CREATE TABLE public.testdb (
-    id bigint NOT NULL,
-    cur_sym plutus.currency_symbol,
-    token_name plutus.token_name,
-    tx_hash plutus.transaction_hash,
-    pub_key_hash plutus.ed25519_pub_key_hash,
-    script_hash plutus.script_hash,
-    datum_hash plutus.datum_hash,
-    slot plutus.slot,
-    plutus_data plutus.plutus_data,
-    cred plutus.credential,
-    chain_pointer plutus.chain_pointer,
-    staking_cred plutus.staking_credential,
-    address plutus.address,
-    asset_quantity plutus.asset_quantity,
-    value plutus.value,
-    tx_in plutus.transaction_input,
-    datum plutus.output_datum,
-    tx_out plutus.transaction_output,
-    tx_in_info plutus.tx_in_info
-);
-
-
-ALTER TABLE public.testdb OWNER TO tx_indexer;
-
---
--- Name: utxos; Type: TABLE; Schema: public; Owner: tx_indexer
---
-
-CREATE TABLE public.utxos (
-    utxo_ref plutus.transaction_input NOT NULL,
-    value plutus.value NOT NULL,
-    address plutus.address NOT NULL,
-    datum plutus.output_datum NOT NULL,
-    created_at plutus.slot NOT NULL,
-    deleted_at plutus.slot
-);
-
-
-ALTER TABLE public.utxos OWNER TO tx_indexer;
 
 --
 -- Name: __diesel_schema_migrations __diesel_schema_migrations_pkey; Type: CONSTRAINT; Schema: public; Owner: tx_indexer
@@ -365,22 +321,6 @@ ALTER TABLE ONLY public.__diesel_schema_migrations
 
 ALTER TABLE ONLY public.sync_progress
     ADD CONSTRAINT sync_progress_pkey PRIMARY KEY (processed);
-
-
---
--- Name: testdb testdb_pkey; Type: CONSTRAINT; Schema: public; Owner: tx_indexer
---
-
-ALTER TABLE ONLY public.testdb
-    ADD CONSTRAINT testdb_pkey PRIMARY KEY (id);
-
-
---
--- Name: utxos utxos_pkey; Type: CONSTRAINT; Schema: public; Owner: tx_indexer
---
-
-ALTER TABLE ONLY public.utxos
-    ADD CONSTRAINT utxos_pkey PRIMARY KEY (utxo_ref);
 
 
 --

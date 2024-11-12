@@ -11,23 +11,24 @@ use jsonrpsee::{
     rpc_params,
     ws_client::{WsClient, WsClientBuilder},
 };
-use plutus_ledger_api::v2::{
-    address::Address,
-    transaction::{TransactionHash, TransactionInput},
+use plutus_ledger_api::csl::pla_to_csl::TryToCSL;
+use plutus_ledger_api::{
+    csl::lib as csl,
+    v2::{
+        address::Address,
+        transaction::{TransactionHash, TransactionInput},
+    },
 };
 use serde::Serialize;
 use tracing::{debug, error, info, warn};
-use tx_bakery::csl;
-use url::Url;
-
 use tx_bakery::{
     chain_query::{
         ChainQuery, ChainQueryError, ChainTip, EraSummary, FullTransactionOutput, Network,
         ProtocolParameters,
     },
     submitter::{Submitter, SubmitterError},
-    utils::pla_to_csl::TryToCSL,
 };
+use url::Url;
 
 use super::{
     api::{
@@ -236,7 +237,8 @@ impl ChainQuery for OgmiosClient {
     {
         debug!(?address, "Query UTxOs by address");
         let addr: csl::Address = address
-            .try_to_csl_with(self.config.network.to_network_id())
+            .with_extra_info(self.config.network.to_network_id())
+            .try_to_csl()
             .map_err(OgmiosError::TryFromPLAError)?;
 
         let addr = addr.to_bech32(Some("addr".to_owned())).map_err(|source| {
@@ -337,7 +339,7 @@ impl Submitter for OgmiosClient {
 
     async fn submit_transaction(
         &self,
-        tx: &csl::Transaction,
+        tx: &csl::FixedTransaction,
     ) -> std::result::Result<TransactionHash, SubmitterError> {
         debug!("Submitting transaction");
         let params = SubmitTransactionParams {

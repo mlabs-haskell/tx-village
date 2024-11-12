@@ -11,7 +11,7 @@ use tx_indexer::database::plutus as db;
 #[derive(
     Clone, Debug, Eq, PartialEq, diesel::Queryable, diesel::Selectable, diesel::Insertable,
 )]
-#[diesel(table_name = tx_indexer::schema::utxos)]
+#[diesel(table_name = crate::schema::utxos)]
 pub struct UtxosTable {
     pub utxo_ref: db::TransactionInput,
     pub value: db::Value,
@@ -46,7 +46,7 @@ impl UtxosTable {
         addr: Address,
         conn: &mut diesel::PgConnection,
     ) -> Result<Vec<Self>, UtxoIndexerError> {
-        use tx_indexer::schema::utxos::dsl::*;
+        use crate::schema::utxos::dsl::*;
 
         utxos
             .filter(address.eq(db::Address::try_from(addr)?))
@@ -63,7 +63,7 @@ impl UtxosTable {
         slot: u64,
         conn: &mut diesel::PgConnection,
     ) -> Result<usize, UtxoIndexerError> {
-        use tx_indexer::schema::utxos::dsl::{deleted_at, utxos};
+        use crate::schema::utxos::dsl::{deleted_at, utxos};
 
         let utxo_ref: db::TransactionInput = utxo_ref.try_into()?;
         let slot: db::Slot = slot.into();
@@ -80,7 +80,7 @@ impl UtxosTable {
     }
 
     pub fn store(self, conn: &mut diesel::PgConnection) -> Result<(), UtxoIndexerError> {
-        use tx_indexer::schema::utxos;
+        use crate::schema::utxos;
 
         diesel::insert_into(utxos::table)
             .values(self)
@@ -97,7 +97,7 @@ impl UtxosTable {
         conn: &mut diesel::PgConnection,
         transaction_block: u64,
     ) -> Result<RollbackResult<UtxosTable>, UtxoIndexerError> {
-        use tx_indexer::schema::utxos::dsl::*;
+        use crate::schema::utxos::dsl::*;
 
         let span = info_span!("Rollback", %transaction_block);
         let _entered = span.enter();

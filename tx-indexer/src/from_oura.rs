@@ -2,6 +2,7 @@ use ::oura::model::{MintRecord, OutputAssetRecord};
 use anyhow::Context;
 use data_encoding::HEXLOWER;
 use num_bigint::BigInt;
+use plutus_ledger_api::csl::{csl_to_pla::TryToPLA, lib as csl};
 use plutus_ledger_api::v2::{
     address::Address,
     crypto::LedgerBytes,
@@ -12,8 +13,6 @@ use plutus_ledger_api::v2::{
     value::{CurrencySymbol, TokenName, Value},
 };
 use std::fmt::Debug;
-use tx_bakery::csl;
-use tx_bakery::utils::csl_to_pla::TryToPLA;
 
 #[derive(thiserror::Error, Debug)]
 pub enum OuraParseError {

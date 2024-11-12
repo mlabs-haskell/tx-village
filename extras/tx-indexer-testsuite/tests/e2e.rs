@@ -1,6 +1,7 @@
 #[cfg(test)]
 mod e2e_tests {
     use num_bigint::BigInt;
+    use oura::utils::ChainWellKnownInfo;
     use plutus_ledger_api::{
         json::Json,
         plutus_data::IsPlutusData,
@@ -25,7 +26,7 @@ mod e2e_tests {
     };
     use tx_bakery_ogmios::client::{OgmiosClient, OgmiosClientConfigBuilder};
     use tx_indexer::{
-        config::{NetworkConfig, NetworkName, NodeAddress, TxIndexerConfig},
+        config::{NetworkConfig, NodeAddress, TxIndexerConfig},
         error::{ErrorPolicy, ErrorPolicyProvider},
         filter::Filter,
         handler::{
@@ -36,10 +37,7 @@ mod e2e_tests {
     };
     use url::Url;
 
-    // TODO(szg251): Un-ignore all tests once we have a replacement for Plutip
-
     #[tokio::test]
-    #[ignore]
     #[serial]
     async fn e2e_mint() -> std::result::Result<(), oura::Error> {
         // Set up tracing logger (logs to stdout).
@@ -56,13 +54,33 @@ mod e2e_tests {
             .unwrap();
         let ogmios = OgmiosClient::connect(ogmios_client_config).await.unwrap();
 
+        let era_summaries = ogmios.query_era_summaries().await.unwrap();
+        let byron_era_summary = &era_summaries[0];
+        let shelley_era_summary = &era_summaries[1];
+
         let (observer_sender, observer_receiver) = mpsc::channel();
-        TxIndexer::run(TxIndexerConfig::new(
+        TxIndexer::run(TxIndexerConfig::cardano_node(
             ObserveHandler { observer_sender },
-            NodeAddress::UnixSocket("/socket/path".to_string()),
-            NetworkConfig::WellKnown(NetworkName::MAINNET),
+            NodeAddress::UnixSocket(".devnet/node.socket".to_string()),
+            NetworkConfig::Config {
+                magic: 42,
+                chain_info: ChainWellKnownInfo {
+                    byron_epoch_length: byron_era_summary.parameters.epoch_length as u32,
+                    byron_slot_length: (byron_era_summary.parameters.slot_length / 1000) as u32,
+                    byron_known_slot: byron_era_summary.start.slot,
+                    byron_known_hash: "".to_string(),
+                    byron_known_time: byron_era_summary.start.time.num_milliseconds() as u64,
+                    shelley_epoch_length: shelley_era_summary.parameters.epoch_length as u32,
+                    shelley_slot_length: (shelley_era_summary.parameters.slot_length / 1000) as u32,
+                    shelley_known_slot: shelley_era_summary.start.slot,
+                    shelley_known_hash: "".to_string(),
+                    shelley_known_time: shelley_era_summary.start.time.num_milliseconds() as u64,
+                    address_hrp: "addr_test".to_string(),
+                    adahandle_policy: "".to_string(),
+                },
+            },
             None,
-            4,
+            0,
             Filter {
                 curr_symbols: vec![Json::from_json_string(
                     "\"ec56549aaed71fba1ba7174672831cc20aac44c4a3b4607c38bed7f3\"",
@@ -74,7 +92,9 @@ mod e2e_tests {
         .await
         .expect("Failed to spawn indexer");
 
-        let wallet = KeyWallet::new_enterprise("./test.skey").await.unwrap();
+        let wallet = KeyWallet::new_enterprise("./wallets/test.skey")
+            .await
+            .unwrap();
 
         let (tx_hash, tx_info) = test_mint(&wallet, &ogmios).await;
 

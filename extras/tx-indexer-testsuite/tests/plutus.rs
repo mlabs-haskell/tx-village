@@ -12,7 +12,6 @@ mod plutus_database_roundtrips {
     use plutus_ledger_api as pla;
     use tx_indexer::database::plutus::*;
 
-    #[cfg(feature = "diesel")]
     mod diesel_decoding {
         use anyhow::{Context, Result};
         use diesel::{Connection, PgConnection};
@@ -25,7 +24,7 @@ mod plutus_database_roundtrips {
         fn db_tests() {
             use super::*;
 
-            let mut conn = PgConnection::establish("postgres://tx_indexer@127.0.0.1:5555").unwrap();
+            let mut conn = PgConnection::establish("postgres://127.0.0.1:5555/tx_indexer").unwrap();
 
             clean(&mut conn).unwrap();
 
@@ -65,7 +64,7 @@ mod plutus_database_roundtrips {
 
         fn write(test: TestDB, conn: &mut PgConnection) -> Result<()> {
             use diesel::prelude::*;
-            use tx_indexer::schema::testdb;
+            use tx_indexer_testsuite::schema::testdb;
 
             diesel::insert_into(testdb::table)
                 .values(test)
@@ -77,7 +76,7 @@ mod plutus_database_roundtrips {
         fn read(conn: &mut PgConnection) -> Result<TestDB> {
             use diesel::prelude::*;
 
-            use tx_indexer::schema::testdb::dsl::*;
+            use tx_indexer_testsuite::schema::testdb::dsl::*;
 
             Ok(testdb.select(TestDB::as_select()).first(conn)?)
         }
@@ -85,7 +84,7 @@ mod plutus_database_roundtrips {
         fn clean(conn: &mut PgConnection) -> Result<()> {
             use diesel::prelude::*;
 
-            use tx_indexer::schema::testdb::dsl::*;
+            use tx_indexer_testsuite::schema::testdb::dsl::*;
 
             diesel::delete(testdb).execute(conn)?;
 
@@ -100,7 +99,6 @@ mod plutus_database_roundtrips {
         }
     }
 
-    #[cfg(feature = "sqlx")]
     mod sqlx_decoding {
         use anyhow::{anyhow, Context, Result};
         use serial_test::serial;
@@ -111,7 +109,7 @@ mod plutus_database_roundtrips {
         #[tokio::test]
         #[serial]
         async fn db_tests() {
-            let pg_pool = PgPool::connect("postgres://tx_indexer@127.0.0.1:5555")
+            let pg_pool = PgPool::connect("postgres://127.0.0.1:5555/tx_indexer")
                 .await
                 .unwrap();
             let mut conn = pg_pool.acquire().await.unwrap();
@@ -216,13 +214,18 @@ mod plutus_database_roundtrips {
         }
     }
 
-    #[derive(Debug, Clone, PartialEq, Eq, Default)]
-    #[cfg_attr(feature = "sqlx", derive(sqlx::FromRow))]
-    #[cfg_attr(
-        feature = "diesel",
-        derive(diesel::Queryable, diesel::Selectable, diesel::Insertable,)
+    #[derive(
+        Debug,
+        Clone,
+        PartialEq,
+        Eq,
+        Default,
+        sqlx::FromRow,
+        diesel::Queryable,
+        diesel::Selectable,
+        diesel::Insertable,
     )]
-    #[cfg_attr(feature = "diesel", diesel(table_name = tx_indexer::schema::testdb))]
+    #[diesel(table_name = tx_indexer_testsuite::schema::testdb)]
     pub struct TestDB {
         id: i64,
         cur_sym: Option<CurrencySymbol>,
