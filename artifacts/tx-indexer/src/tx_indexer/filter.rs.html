@@ -51,10 +51,12 @@
 <a href="#49" id="49">49</a>
 <a href="#50" id="50">50</a>
 <a href="#51" id="51">51</a>
+<a href="#52" id="52">52</a>
 </pre></div><pre class="rust"><code><span class="kw">use </span>oura::filters::selection::{Config, Predicate};
-<span class="kw">use </span>plutus_ledger_api::v2::{script::MintingPolicyHash, value::CurrencySymbol};
-<span class="kw">use </span>tx_bakery::csl;
-<span class="kw">use </span>tx_bakery::utils::pla_to_csl::TryFromPLAWithDef;
+<span class="kw">use </span>plutus_ledger_api::{
+    csl::{lib <span class="kw">as </span>csl, pla_to_csl::TryFromPLA},
+    v2::{script::MintingPolicyHash, value::CurrencySymbol},
+};
 
 <span class="doccomment">/// Interesting transaction components to look for when filtering transactions
 /// relevant to the protocol.

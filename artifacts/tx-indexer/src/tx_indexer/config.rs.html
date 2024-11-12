@@ -193,6 +193,32 @@
 <a href="#191" id="191">191</a>
 <a href="#192" id="192">192</a>
 <a href="#193" id="193">193</a>
+<a href="#194" id="194">194</a>
+<a href="#195" id="195">195</a>
+<a href="#196" id="196">196</a>
+<a href="#197" id="197">197</a>
+<a href="#198" id="198">198</a>
+<a href="#199" id="199">199</a>
+<a href="#200" id="200">200</a>
+<a href="#201" id="201">201</a>
+<a href="#202" id="202">202</a>
+<a href="#203" id="203">203</a>
+<a href="#204" id="204">204</a>
+<a href="#205" id="205">205</a>
+<a href="#206" id="206">206</a>
+<a href="#207" id="207">207</a>
+<a href="#208" id="208">208</a>
+<a href="#209" id="209">209</a>
+<a href="#210" id="210">210</a>
+<a href="#211" id="211">211</a>
+<a href="#212" id="212">212</a>
+<a href="#213" id="213">213</a>
+<a href="#214" id="214">214</a>
+<a href="#215" id="215">215</a>
+<a href="#216" id="216">216</a>
+<a href="#217" id="217">217</a>
+<a href="#218" id="218">218</a>
+<a href="#219" id="219">219</a>
 </pre></div><pre class="rust"><code><span class="kw">use crate</span>::{
     filter::Filter,
     handler::{callback::EventHandler, retry::RetryPolicy},
@@ -200,33 +226,43 @@
 <span class="kw">use </span>anyhow::anyhow;
 <span class="kw">use </span>core::str::FromStr;
 <span class="kw">use </span>oura::{sources::MagicArg, utils::ChainWellKnownInfo};
-<span class="kw">use </span>std::error::Error;
 <span class="kw">use </span>std::fmt;
 <span class="kw">use </span>std::fs::File;
 <span class="kw">use </span>std::io::BufReader;
+<span class="kw">use </span>std::{error::Error, path::PathBuf};
 <span class="kw">use </span>strum_macros::Display;
 
 <span class="kw">pub struct </span>TxIndexerConfig&lt;H: EventHandler&gt; {
     <span class="kw">pub </span>handler: H,
-    <span class="kw">pub </span>node_address: NodeAddress,
-    <span class="kw">pub </span>network: NetworkConfig,
-    <span class="doccomment">/// Slot number and hash as hex string (optional).
-    /// If not provided, sync will begin from the tip of the chain.
-    </span><span class="kw">pub </span>since_slot: <span class="prelude-ty">Option</span>&lt;(u64, String)&gt;,
-    <span class="doccomment">/// Minimum depth a block has to be from the tip for it to be considered "confirmed"
-    /// See: https://oura.txpipe.io/v1/advanced/rollback_buffer
-    </span><span class="kw">pub </span>safe_block_depth: usize,
-    <span class="comment">// Filter transaction events by specific component(s).
-    </span><span class="kw">pub </span>event_filter: Filter,
+    <span class="doccomment">/// Event source
+    </span><span class="kw">pub </span>source: TxIndexerSource,
     <span class="doccomment">/// Retry policy - how much to retry for each event callback failure
     /// This only takes effect on ErrorPolicy for a particular error is `Retry`.
     /// Once retries are exhausted, the handler will error (same treatment as ErrorPolicy::Exit)
     </span><span class="kw">pub </span>retry_policy: RetryPolicy,
 }
 
+<span class="kw">pub enum </span>TxIndexerSource {
+    CardanoNode {
+        node_address: NodeAddress,
+        network: NetworkConfig,
+        <span class="doccomment">/// Slot number and hash as hex string (optional).
+        /// If not provided, sync will begin from the tip of the chain.
+        </span>since_slot: <span class="prelude-ty">Option</span>&lt;(u64, String)&gt;,
+        <span class="doccomment">/// Minimum depth a block has to be from the tip for it to be considered "confirmed"
+        /// See: https://oura.txpipe.io/v1/advanced/rollback_buffer
+        </span>safe_block_depth: usize,
+        <span class="doccomment">/// Filter transaction events by specific component(s).
+        </span>event_filter: Filter,
+    },
+    FixtureFiles {
+        dir_path: PathBuf,
+    },
+}
+
 <span class="kw">impl</span>&lt;H: EventHandler&gt; TxIndexerConfig&lt;H&gt; {
     <span class="attr">#[allow(clippy::too_many_arguments)]
-    </span><span class="kw">pub fn </span>new(
+    </span><span class="kw">pub fn </span>cardano_node(
         handler: H,
         node_address: NodeAddress,
         network: NetworkConfig,
@@ -237,11 +273,21 @@
     ) -&gt; <span class="self">Self </span>{
         <span class="self">Self </span>{
             handler,
-            node_address,
-            network,
-            since_slot,
-            safe_block_depth,
-            event_filter,
+            source: TxIndexerSource::CardanoNode {
+                node_address,
+                network,
+                since_slot,
+                safe_block_depth,
+                event_filter,
+            },
+            retry_policy,
+        }
+    }
+
+    <span class="kw">pub fn </span>source_from_fixtures(handler: H, dir_path: PathBuf, retry_policy: RetryPolicy) -&gt; <span class="self">Self </span>{
+        <span class="self">Self </span>{
+            handler,
+            source: TxIndexerSource::FixtureFiles { dir_path },
             retry_policy,
         }
     }
@@ -271,6 +317,10 @@
         magic: u64,
     },
     WellKnown(NetworkName),
+    Config {
+        chain_info: ChainWellKnownInfo,
+        magic: u64,
+    },
 }
 
 <span class="attr">#[derive(Clone, Debug, PartialEq, Eq)]
@@ -304,6 +354,7 @@
                 NetworkName::MAINNET =&gt; pallas::network::miniprotocols::MAINNET_MAGIC,
             },
             NetworkConfig::ConfigPath { magic, .. } =&gt; <span class="kw-2">*</span>magic,
+            NetworkConfig::Config { magic, .. } =&gt; <span class="kw-2">*</span>magic,
         })
     }
 
@@ -314,6 +365,7 @@
                 NetworkName::PREVIEW =&gt; ChainWellKnownInfo::preview(),
                 NetworkName::MAINNET =&gt; ChainWellKnownInfo::mainnet(),
             },
+            NetworkConfig::Config { chain_info, .. } =&gt; chain_info.clone(),
             NetworkConfig::ConfigPath {
                 node_config_path, ..
             } =&gt; {

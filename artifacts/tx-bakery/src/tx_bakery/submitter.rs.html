@@ -34,11 +34,9 @@
 <a href="#32" id="32">32</a>
 <a href="#33" id="33">33</a>
 <a href="#34" id="34">34</a>
-<a href="#35" id="35">35</a>
 </pre></div><pre class="rust"><code><span class="doccomment">//! Trait for a component capable of submitting transactions
 
-</span><span class="kw">use </span>cardano_serialization_lib <span class="kw">as </span>csl;
-<span class="kw">use </span>plutus_ledger_api::v2::transaction::TransactionHash;
+</span><span class="kw">use </span>plutus_ledger_api::{csl::lib <span class="kw">as </span>csl, v2::transaction::TransactionHash};
 <span class="kw">use </span>std::collections::BTreeMap;
 <span class="kw">use </span>std::future::Future;
 <span class="kw">use </span>thiserror::Error;
@@ -57,7 +55,7 @@
     <span class="doccomment">/// Submit a fully build and balanced tranasaction
     </span><span class="kw">fn </span>submit_transaction(
         <span class="kw-2">&amp;</span><span class="self">self</span>,
-        tx: <span class="kw-2">&amp;</span>csl::Transaction,
+        tx: <span class="kw-2">&amp;</span>csl::FixedTransaction,
     ) -&gt; <span class="kw">impl </span>Future&lt;Output = <span class="prelude-ty">Result</span>&lt;TransactionHash, SubmitterError&gt;&gt;;
 
     <span class="doccomment">/// Wait for transaction confirmation on the chain

@@ -269,20 +269,24 @@
 <a href="#267" id="267">267</a>
 <a href="#268" id="268">268</a>
 <a href="#269" id="269">269</a>
+<a href="#270" id="270">270</a>
+<a href="#271" id="271">271</a>
 </pre></div><pre class="rust"><code><span class="doccomment">//! Transaction Info builder
 
 </span><span class="kw">use </span>num_bigint::BigInt;
-<span class="kw">use </span>plutus_ledger_api::v2::address::StakingCredential;
-<span class="kw">use </span>plutus_ledger_api::v2::assoc_map::AssocMap;
-<span class="kw">use </span>plutus_ledger_api::v2::crypto::{LedgerBytes, PaymentPubKeyHash};
-<span class="kw">use </span>plutus_ledger_api::v2::datum::{Datum, DatumHash};
-<span class="kw">use </span>plutus_ledger_api::v2::interval::Interval;
-<span class="kw">use </span>plutus_ledger_api::v2::redeemer::Redeemer;
-<span class="kw">use </span>plutus_ledger_api::v2::transaction::{
-    DCert, POSIXTimeRange, ScriptPurpose, TransactionHash, TransactionInfo, TransactionInput,
-    TransactionOutput, TxInInfo,
+<span class="kw">use </span>plutus_ledger_api::v2::{
+    address::StakingCredential,
+    assoc_map::AssocMap,
+    crypto::{LedgerBytes, PaymentPubKeyHash},
+    datum::{Datum, DatumHash},
+    interval::Interval,
+    redeemer::Redeemer,
+    transaction::{
+        DCert, POSIXTimeRange, ScriptPurpose, TransactionHash, TransactionInfo, TransactionInput,
+        TransactionOutput, TxInInfo,
+    },
+    value::{AssetClass, Value},
 };
-<span class="kw">use </span>plutus_ledger_api::v2::value::{AssetClass, Value};
 <span class="kw">use </span>std::collections::{BTreeMap, BTreeSet};
 
 <span class="doccomment">/// Simple TransactionInfo builder

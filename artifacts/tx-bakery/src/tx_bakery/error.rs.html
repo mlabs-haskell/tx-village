@@ -69,19 +69,13 @@
 <a href="#67" id="67">67</a>
 <a href="#68" id="68">68</a>
 <a href="#69" id="69">69</a>
-<a href="#70" id="70">70</a>
-<a href="#71" id="71">71</a>
-<a href="#72" id="72">72</a>
-</pre></div><pre class="rust"><code><span class="kw">use </span>cardano_serialization_lib <span class="kw">as </span>csl;
-<span class="kw">use </span>plutus_ledger_api::v2::{datum::DatumHash, script::ScriptHash, transaction::TransactionInput};
+</pre></div><pre class="rust"><code><span class="kw">use </span>plutus_ledger_api::{
+    csl::{csl_to_pla::TryFromCSLError, lib <span class="kw">as </span>csl, pla_to_csl::TryFromPLAError},
+    v2::{datum::DatumHash, script::ScriptHash, transaction::TransactionInput},
+};
 <span class="kw">use </span>thiserror::Error;
 
-<span class="kw">use crate</span>::{
-    chain_query::ChainQueryError,
-    submitter::SubmitterError,
-    utils::{csl_to_pla::TryFromCSLError, pla_to_csl::TryFromPLAError},
-    wallet::WalletError,
-};
+<span class="kw">use crate</span>::{chain_query::ChainQueryError, submitter::SubmitterError, wallet::WalletError};
 
 <span class="kw">pub type </span><span class="prelude-ty">Result</span>&lt;T&gt; = std::result::Result&lt;T, Error&gt;;
 

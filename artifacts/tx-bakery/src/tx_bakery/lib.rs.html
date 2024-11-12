@@ -899,6 +899,62 @@
 <a href="#897" id="897">897</a>
 <a href="#898" id="898">898</a>
 <a href="#899" id="899">899</a>
+<a href="#900" id="900">900</a>
+<a href="#901" id="901">901</a>
+<a href="#902" id="902">902</a>
+<a href="#903" id="903">903</a>
+<a href="#904" id="904">904</a>
+<a href="#905" id="905">905</a>
+<a href="#906" id="906">906</a>
+<a href="#907" id="907">907</a>
+<a href="#908" id="908">908</a>
+<a href="#909" id="909">909</a>
+<a href="#910" id="910">910</a>
+<a href="#911" id="911">911</a>
+<a href="#912" id="912">912</a>
+<a href="#913" id="913">913</a>
+<a href="#914" id="914">914</a>
+<a href="#915" id="915">915</a>
+<a href="#916" id="916">916</a>
+<a href="#917" id="917">917</a>
+<a href="#918" id="918">918</a>
+<a href="#919" id="919">919</a>
+<a href="#920" id="920">920</a>
+<a href="#921" id="921">921</a>
+<a href="#922" id="922">922</a>
+<a href="#923" id="923">923</a>
+<a href="#924" id="924">924</a>
+<a href="#925" id="925">925</a>
+<a href="#926" id="926">926</a>
+<a href="#927" id="927">927</a>
+<a href="#928" id="928">928</a>
+<a href="#929" id="929">929</a>
+<a href="#930" id="930">930</a>
+<a href="#931" id="931">931</a>
+<a href="#932" id="932">932</a>
+<a href="#933" id="933">933</a>
+<a href="#934" id="934">934</a>
+<a href="#935" id="935">935</a>
+<a href="#936" id="936">936</a>
+<a href="#937" id="937">937</a>
+<a href="#938" id="938">938</a>
+<a href="#939" id="939">939</a>
+<a href="#940" id="940">940</a>
+<a href="#941" id="941">941</a>
+<a href="#942" id="942">942</a>
+<a href="#943" id="943">943</a>
+<a href="#944" id="944">944</a>
+<a href="#945" id="945">945</a>
+<a href="#946" id="946">946</a>
+<a href="#947" id="947">947</a>
+<a href="#948" id="948">948</a>
+<a href="#949" id="949">949</a>
+<a href="#950" id="950">950</a>
+<a href="#951" id="951">951</a>
+<a href="#952" id="952">952</a>
+<a href="#953" id="953">953</a>
+<a href="#954" id="954">954</a>
+<a href="#955" id="955">955</a>
 </pre></div><pre class="rust"><code><span class="doccomment">//! Transaction Bakery
 
 </span><span class="kw">use </span><span class="kw">crate</span>::error::{Error, <span class="prelude-ty">Result</span>};
@@ -906,24 +962,24 @@
 <span class="kw">use </span><span class="kw">crate</span>::time::time_range_into_slots;
 <span class="kw">use </span><span class="kw">crate</span>::wallet::Wallet;
 <span class="kw">use </span>anyhow::anyhow;
-<span class="kw">pub use </span>cardano_serialization_lib <span class="kw">as </span>csl;
 <span class="kw">use </span>chain_query::{ChainQuery, EraSummary, Network, ProtocolParameters};
 <span class="kw">use </span>chrono::{DateTime, Utc};
 <span class="kw">use </span>num_bigint::BigInt;
+<span class="kw">use </span>plutus_ledger_api::csl::{lib <span class="kw">as </span>csl, pla_to_csl::TryToCSL};
 <span class="kw">use </span>plutus_ledger_api::plutus_data::IsPlutusData;
-<span class="kw">use </span>plutus_ledger_api::v2::address::{Address, Credential};
+<span class="kw">use </span>plutus_ledger_api::v2::address::{Address, AddressWithExtraInfo, Credential};
 <span class="kw">use </span>plutus_ledger_api::v2::crypto::PaymentPubKeyHash;
 <span class="kw">use </span>plutus_ledger_api::v2::datum::{Datum, DatumHash, OutputDatum};
-<span class="kw">use </span>plutus_ledger_api::v2::redeemer::Redeemer;
+<span class="kw">use </span>plutus_ledger_api::v2::redeemer::{Redeemer, RedeemerWithExtraInfo};
 <span class="kw">use </span>plutus_ledger_api::v2::script::{MintingPolicyHash, ScriptHash, ValidatorHash};
 <span class="kw">use </span>plutus_ledger_api::v2::transaction::{
-    ScriptPurpose, TransactionHash, TransactionInfo, TransactionInput, TransactionOutput, TxInInfo,
+    ScriptPurpose, TransactionHash, TransactionInfo, TransactionInput, TransactionOutput,
+    TransactionOutputWithExtraInfo, TxInInfo,
 };
 <span class="kw">use </span>plutus_ledger_api::v2::value::{CurrencySymbol, Value};
 <span class="kw">use </span>std::collections::BTreeMap;
 <span class="kw">use </span>submitter::Submitter;
 <span class="kw">use </span>tracing::{debug, info};
-<span class="kw">use </span>utils::pla_to_csl::{TransactionOutputExtraInfo, TryToCSL, TryToCSLWithDef};
 <span class="kw">use </span>utils::script::ScriptOrRef;
 
 <span class="kw">pub mod </span>chain_query;
@@ -1108,7 +1164,11 @@
                     <span class="prelude-val">None </span>=&gt; {
                         tx_inputs_builder
                             .add_regular_input(
-                                <span class="kw-2">&amp;</span>output.address.try_to_csl_with(<span class="self">self</span>.network_id)<span class="question-mark">?</span>,
+                                <span class="kw-2">&amp;</span>AddressWithExtraInfo {
+                                    address: <span class="kw-2">&amp;</span>output.address,
+                                    network_tag: <span class="self">self</span>.network_id,
+                                }
+                                .try_to_csl()<span class="question-mark">?</span>,
                                 <span class="kw-2">&amp;</span>reference.try_to_csl()<span class="question-mark">?</span>,
                                 <span class="kw-2">&amp;</span>output.value.try_to_csl()<span class="question-mark">?</span>,
                             )
@@ -1132,8 +1192,12 @@
                             .get(script_hash)
                             .ok_or_else(|| Error::MissingScript(script_hash.clone()))<span class="question-mark">?</span>;
 
-                        <span class="kw">let </span>csl_redeemer = redeemer
-                            .try_to_csl_with((<span class="kw-2">&amp;</span>csl::RedeemerTag::new_spend(), idx <span class="kw">as </span>u64))<span class="question-mark">?</span>;
+                        <span class="kw">let </span>csl_redeemer = RedeemerWithExtraInfo {
+                            redeemer,
+                            tag: <span class="kw-2">&amp;</span>csl::RedeemerTag::new_spend(),
+                            index: idx <span class="kw">as </span>u64,
+                        }
+                        .try_to_csl()<span class="question-mark">?</span>;
 
                         <span class="kw">let </span>csl_redeemer = <span class="kw">match </span>ex_units_map {
                             <span class="prelude-val">Some</span>(ex_units_map) =&gt; {
@@ -1229,14 +1293,20 @@
             ChangeStrategy::Address(<span class="kw">_</span>) =&gt; outputs.as_slice(),
             ChangeStrategy::LastOutput =&gt; <span class="kw-2">&amp;</span>outputs[..(outputs.len() - <span class="number">1</span>)],
         };
+        <span class="kw">let </span>scripts = <span class="kw-2">&amp;</span>scripts
+            .iter()
+            .map(|(hash, script)| (hash.clone(), script.clone().get_script()))
+            .collect();
         <span class="prelude-val">Ok</span>(normal_outputs
             .iter()
-            .map(|output| {
-                output.try_to_csl_with(TransactionOutputExtraInfo {
+            .map(|transaction_output| {
+                TransactionOutputWithExtraInfo {
                     scripts,
                     network_id: <span class="self">self</span>.network_id,
                     data_cost: <span class="kw-2">&amp;</span><span class="self">self</span>.data_cost,
-                })
+                    transaction_output,
+                }
+                .try_to_csl()
             })
             .collect::&lt;std::result::Result&lt;<span class="kw">_</span>, <span class="kw">_</span>&gt;&gt;()<span class="question-mark">?</span>)
     }
@@ -1269,8 +1339,12 @@
                         .get(script_hash)
                         .ok_or(Error::MissingMintRedeemer(script_hash.clone()))<span class="question-mark">?</span>;
 
-                    <span class="kw">let </span>csl_redeemer =
-                        redeemer.try_to_csl_with((<span class="kw-2">&amp;</span>csl::RedeemerTag::new_mint(), idx <span class="kw">as </span>u64))<span class="question-mark">?</span>;
+                    <span class="kw">let </span>csl_redeemer = RedeemerWithExtraInfo {
+                        redeemer,
+                        tag: <span class="kw-2">&amp;</span>csl::RedeemerTag::new_mint(),
+                        index: idx <span class="kw">as </span>u64,
+                    }
+                    .try_to_csl()<span class="question-mark">?</span>;
 
                     <span class="kw">let </span>csl_redeemer = <span class="kw">match </span>ex_units_map {
                         <span class="prelude-val">Some</span>(ex_units_map) =&gt; <span class="self">Self</span>::apply_ex_units(<span class="kw-2">&amp;</span>csl_redeemer, ex_units_map)<span class="question-mark">?</span>,
@@ -1351,7 +1425,11 @@
         <span class="kw">let </span>TxInInfo { reference, output } = tx_input;
         tx_inputs_builder
             .add_regular_input(
-                <span class="kw-2">&amp;</span>output.address.try_to_csl_with(<span class="self">self</span>.network_id)<span class="question-mark">?</span>,
+                <span class="kw-2">&amp;</span>AddressWithExtraInfo {
+                    address: <span class="kw-2">&amp;</span>output.address,
+                    network_tag: <span class="self">self</span>.network_id,
+                }
+                .try_to_csl()<span class="question-mark">?</span>,
                 <span class="kw-2">&amp;</span>reference.try_to_csl()<span class="question-mark">?</span>,
                 <span class="kw-2">&amp;</span>output.value.try_to_csl()<span class="question-mark">?</span>,
             )
@@ -1457,7 +1535,11 @@
                 tx_builder
                     .set_total_collateral_and_return(
                         <span class="kw-2">&amp;</span>csl::BigNum::from(<span class="kw-2">*</span>amount),
-                        <span class="kw-2">&amp;</span>collateral_return_address.try_to_csl_with(<span class="self">self</span>.network_id)<span class="question-mark">?</span>,
+                        <span class="kw-2">&amp;</span>AddressWithExtraInfo {
+                            address: collateral_return_address,
+                            network_tag: <span class="self">self</span>.network_id,
+                        }
+                        .try_to_csl()<span class="question-mark">?</span>,
                     )
                     .map_err(|source| Error::TransactionBuildError(<span class="macro">anyhow!</span>(source)))<span class="question-mark">?</span>;
             }
@@ -1467,7 +1549,11 @@
                 tx_builder
                     .set_total_collateral_and_return(
                         <span class="kw-2">&amp;</span>csl::BigNum::from(<span class="kw-2">*</span>amount),
-                        <span class="kw-2">&amp;</span>collateral_return_address.try_to_csl_with(<span class="self">self</span>.network_id)<span class="question-mark">?</span>,
+                        <span class="kw-2">&amp;</span>AddressWithExtraInfo {
+                            address: collateral_return_address,
+                            network_tag: <span class="self">self</span>.network_id,
+                        }
+                        .try_to_csl()<span class="question-mark">?</span>,
                     )
                     .map_err(|source| Error::TransactionBuildError(<span class="macro">anyhow!</span>(source)))<span class="question-mark">?</span>;
             }
@@ -1535,14 +1621,19 @@
             .redeemers
             .<span class="number">0
             </span>.iter()
-            .filter_map(|(script_purpose, red)| <span class="kw">match </span>script_purpose {
+            .filter_map(|(script_purpose, redeemer)| <span class="kw">match </span>script_purpose {
                 ScriptPurpose::Spending(reference) =&gt; tx_info
                     .inputs
                     .iter()
                     .enumerate()
                     .find(|(_idx, tx_input)| <span class="kw-2">&amp;</span>tx_input.reference == reference)
                     .map(|(idx, <span class="kw">_</span>)| {
-                        <span class="prelude-val">Ok</span>(red.try_to_csl_with((<span class="kw-2">&amp;</span>csl::RedeemerTag::new_spend(), idx <span class="kw">as </span>u64))<span class="question-mark">?</span>)
+                        <span class="prelude-val">Ok</span>(RedeemerWithExtraInfo {
+                            redeemer,
+                            tag: <span class="kw-2">&amp;</span>csl::RedeemerTag::new_spend(),
+                            index: idx <span class="kw">as </span>u64,
+                        }
+                        .try_to_csl()<span class="question-mark">?</span>)
                     }),
                 ScriptPurpose::Minting(reference) =&gt; tx_info
                     .mint
@@ -1555,7 +1646,12 @@
                     .enumerate()
                     .find(|(_idx, (currency_symbol, _assets))| currency_symbol == <span class="kw-2">&amp;</span>reference)
                     .map(|(idx, <span class="kw">_</span>)| {
-                        <span class="prelude-val">Ok</span>(red.try_to_csl_with((<span class="kw-2">&amp;</span>csl::RedeemerTag::new_mint(), idx <span class="kw">as </span>u64))<span class="question-mark">?</span>)
+                        <span class="prelude-val">Ok</span>(RedeemerWithExtraInfo {
+                            redeemer,
+                            tag: <span class="kw-2">&amp;</span>csl::RedeemerTag::new_mint(),
+                            index: idx <span class="kw">as </span>u64,
+                        }
+                        .try_to_csl()<span class="question-mark">?</span>)
                     }),
                 <span class="kw">_ </span>=&gt; <span class="prelude-val">Some</span>(<span class="prelude-val">Err</span>(Error::Unsupported(
                     <span class="string">"Only spending and minting redeemers are supported"</span>.to_string(),
@@ -1672,7 +1768,14 @@
         tx_builder = <span class="self">self</span>.calc_script_data_hash(tx_builder, wit_datums, wit_redeemers);
 
         <span class="kw">let </span>(change_addr, change_datum) = <span class="kw">match </span>tx.change_strategy {
-            ChangeStrategy::Address(addr) =&gt; (addr.try_to_csl_with(<span class="self">self</span>.network_id)<span class="question-mark">?</span>, <span class="prelude-val">None</span>),
+            ChangeStrategy::Address(address) =&gt; (
+                AddressWithExtraInfo {
+                    address,
+                    network_tag: <span class="self">self</span>.network_id,
+                }
+                .try_to_csl()<span class="question-mark">?</span>,
+                <span class="prelude-val">None</span>,
+            ),
             ChangeStrategy::LastOutput =&gt; {
                 <span class="kw">let </span>last_output = tx
                     .tx_info
@@ -1681,7 +1784,11 @@
                     .ok_or(Error::MissingChangeOutput)<span class="question-mark">?</span>;
 
                 (
-                    last_output.address.try_to_csl_with(<span class="self">self</span>.network_id)<span class="question-mark">?</span>,
+                    AddressWithExtraInfo {
+                        address: <span class="kw-2">&amp;</span>last_output.address,
+                        network_tag: <span class="self">self</span>.network_id,
+                    }
+                    .try_to_csl()<span class="question-mark">?</span>,
                     last_output.datum.try_to_csl()<span class="question-mark">?</span>,
                 )
             }
@@ -1709,7 +1816,7 @@
         <span class="kw-2">&amp;</span><span class="self">self</span>,
         submitter: <span class="kw-2">&amp;</span><span class="kw">impl </span>Submitter,
         tx: TxWithCtx&lt;<span class="lifetime">'_</span>&gt;,
-    ) -&gt; <span class="prelude-ty">Result</span>&lt;csl::Transaction&gt; {
+    ) -&gt; <span class="prelude-ty">Result</span>&lt;csl::FixedTransaction&gt; {
         <span class="macro">info!</span>(<span class="string">"Bake balanced transaction."</span>);
         <span class="kw">let </span>(datums, redeemers) = TxBakery::extract_witnesses(tx.tx_info)<span class="question-mark">?</span>;
         <span class="kw">let </span>plutus_scripts = TxBakery::witness_scripts(tx.tx_info, tx.scripts)<span class="question-mark">?</span>;
@@ -1769,7 +1876,12 @@
         witness_set.set_plutus_scripts(<span class="kw-2">&amp;</span>script_witnesses);
         witness_set.set_redeemers(<span class="kw-2">&amp;</span>redeemer_witnesses);
 
-        <span class="prelude-val">Ok</span>(csl::Transaction::new(<span class="kw-2">&amp;</span>tx_body, <span class="kw-2">&amp;</span>witness_set, aux_data))
+        <span class="kw">let </span>tx = csl::Transaction::new(<span class="kw-2">&amp;</span>tx_body, <span class="kw-2">&amp;</span>witness_set, aux_data);
+
+        <span class="kw">let </span>fixed_tx = csl::FixedTransaction::from_bytes(tx.to_bytes())
+            .map_err(|source| Error::TransactionBuildError(<span class="macro">anyhow!</span>(source)))<span class="question-mark">?</span>;
+
+        <span class="prelude-val">Ok</span>(fixed_tx)
     }
 
     <span class="doccomment">/// Convert a TransactionInfo into a valid signed Transaction
@@ -1778,7 +1890,7 @@
         submitter: <span class="kw-2">&amp;</span><span class="kw">impl </span>Submitter,
         wallet: <span class="kw-2">&amp;</span><span class="kw">impl </span>Wallet,
         tx: TxWithCtx&lt;<span class="lifetime">'_</span>&gt;,
-    ) -&gt; <span class="prelude-ty">Result</span>&lt;csl::Transaction&gt; {
+    ) -&gt; <span class="prelude-ty">Result</span>&lt;csl::FixedTransaction&gt; {
         <span class="kw">let </span>tx = <span class="self">self</span>.bake_balanced_tx(submitter, tx).<span class="kw">await</span><span class="question-mark">?</span>;
         <span class="macro">debug!</span>(<span class="string">"Signing transaction."</span>);
         <span class="prelude-val">Ok</span>(wallet.sign_transaction(<span class="kw-2">&amp;</span>tx))

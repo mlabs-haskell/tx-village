@@ -23,18 +23,20 @@
 <a href="#21" id="21">21</a>
 <a href="#22" id="22">22</a>
 <a href="#23" id="23">23</a>
+<a href="#24" id="24">24</a>
 </pre></div><pre class="rust"><code><span class="doccomment">//! Wallet trait
 
-</span><span class="kw">use </span>cardano_serialization_lib <span class="kw">as </span>csl;
-<span class="kw">use </span>plutus_ledger_api::v2::address::Address;
-<span class="kw">use </span>plutus_ledger_api::v2::crypto::Ed25519PubKeyHash;
+</span><span class="kw">use </span>plutus_ledger_api::{
+    csl::lib <span class="kw">as </span>csl,
+    v2::{address::Address, crypto::Ed25519PubKeyHash},
+};
 <span class="kw">use </span>thiserror::Error;
 
 <span class="doccomment">/// Cardano wallet that has access to a private key (directly or indirectly)
 /// and able to sign a transaction
 </span><span class="kw">pub trait </span>Wallet {
     <span class="doccomment">/// Signs a fully built transaction
-    </span><span class="kw">fn </span>sign_transaction(<span class="kw-2">&amp;</span><span class="self">self</span>, tx: <span class="kw-2">&amp;</span>csl::Transaction) -&gt; csl::Transaction;
+    </span><span class="kw">fn </span>sign_transaction(<span class="kw-2">&amp;</span><span class="self">self</span>, tx: <span class="kw-2">&amp;</span>csl::FixedTransaction) -&gt; csl::FixedTransaction;
 
     <span class="doccomment">/// Query the public key hash used by this wallet
     </span><span class="kw">fn </span>get_change_pkh(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; Ed25519PubKeyHash;

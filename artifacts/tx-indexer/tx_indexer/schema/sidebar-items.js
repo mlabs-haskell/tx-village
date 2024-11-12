@@ -1,1 +1,1 @@
-window.SIDEBAR_ITEMS = {"mod":["sync_progress","testdb","utxos"]};
+window.SIDEBAR_ITEMS = {"mod":["sync_progress"]};

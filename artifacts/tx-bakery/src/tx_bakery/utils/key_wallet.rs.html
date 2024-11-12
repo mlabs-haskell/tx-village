@@ -132,25 +132,22 @@
 <a href="#130" id="130">130</a>
 <a href="#131" id="131">131</a>
 <a href="#132" id="132">132</a>
-<a href="#133" id="133">133</a>
-<a href="#134" id="134">134</a>
-<a href="#135" id="135">135</a>
-<a href="#136" id="136">136</a>
 </pre></div><pre class="rust"><code><span class="doccomment">//! Simple wallet reading the signing key(s) from disk
 
-</span><span class="kw">use </span><span class="kw">super</span>::csl_to_pla::ToPLA;
-<span class="kw">use </span><span class="kw">crate</span>::wallet::{Wallet, WalletError};
+</span><span class="kw">use </span>std::io::Cursor;
+<span class="kw">use </span>std::path::Path;
+
 <span class="kw">use </span>anyhow::anyhow;
-<span class="kw">use </span>cardano_serialization_lib <span class="kw">as </span>csl;
 <span class="kw">use </span>data_encoding::HEXLOWER;
 <span class="kw">use </span>futures::future::OptionFuture;
+<span class="kw">use </span>plutus_ledger_api::csl::{csl_to_pla::ToPLA, lib <span class="kw">as </span>csl};
 <span class="kw">use </span>plutus_ledger_api::v2::address::{Address, Credential, StakingCredential};
 <span class="kw">use </span>plutus_ledger_api::v2::crypto::Ed25519PubKeyHash;
-<span class="kw">use </span>std::io::Cursor;
-<span class="kw">use </span>std::path::Path;
 <span class="kw">use </span>thiserror::Error;
 <span class="kw">use </span>tokio;
 <span class="kw">use </span>tokio::fs;
+
+<span class="kw">use </span><span class="kw">crate</span>::wallet::{Wallet, WalletError};
 
 <span class="attr">#[derive(Error, Debug)]
 </span><span class="kw">pub enum </span>KeyWalletError {
@@ -248,20 +245,15 @@
 }
 
 <span class="kw">impl </span>Wallet <span class="kw">for </span>KeyWallet {
-    <span class="kw">fn </span>sign_transaction(<span class="kw-2">&amp;</span><span class="self">self</span>, tx: <span class="kw-2">&amp;</span>csl::Transaction) -&gt; csl::Transaction {
-        <span class="kw">let </span>tx_body = tx.body();
-        <span class="kw">let </span><span class="kw-2">mut </span>witness_set = tx.witness_set();
-        <span class="kw">let </span>aux_data = tx.auxiliary_data();
+    <span class="kw">fn </span>sign_transaction(<span class="kw-2">&amp;</span><span class="self">self</span>, tx: <span class="kw-2">&amp;</span>csl::FixedTransaction) -&gt; csl::FixedTransaction {
+        <span class="kw">let </span>tx_hash = tx.transaction_hash();
 
-        <span class="kw">let </span><span class="kw-2">mut </span>vkey_witnesses = witness_set.vkeys().unwrap_or(csl::Vkeywitnesses::new());
-        vkey_witnesses.add(<span class="kw-2">&amp;</span>csl::make_vkey_witness(
-            <span class="kw-2">&amp;</span>csl::hash_transaction(<span class="kw-2">&amp;</span>tx_body),
-            <span class="kw-2">&amp;</span><span class="self">self</span>.pay_priv_key,
-        ));
+        <span class="kw">let </span>witness = <span class="kw-2">&amp;</span>csl::make_vkey_witness(<span class="kw-2">&amp;</span>tx_hash, <span class="kw-2">&amp;</span><span class="self">self</span>.pay_priv_key);
 
-        witness_set.set_vkeys(<span class="kw-2">&amp;</span>vkey_witnesses);
+        <span class="kw">let </span><span class="kw-2">mut </span>tx = tx.clone();
+        tx.add_vkey_witness(witness);
 
-        csl::Transaction::new(<span class="kw-2">&amp;</span>tx_body, <span class="kw-2">&amp;</span>witness_set, aux_data)
+        tx
     }
 
     <span class="kw">fn </span>get_change_pkh(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; Ed25519PubKeyHash {

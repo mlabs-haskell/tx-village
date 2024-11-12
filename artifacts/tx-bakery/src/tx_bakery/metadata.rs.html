@@ -90,12 +90,16 @@
 <a href="#88" id="88">88</a>
 <a href="#89" id="89">89</a>
 <a href="#90" id="90">90</a>
+<a href="#91" id="91">91</a>
+<a href="#92" id="92">92</a>
 </pre></div><pre class="rust"><code><span class="doccomment">//! Transaction Metadata
 
-</span><span class="kw">use crate</span>::{error::Error, utils::pla_to_csl::TryToCSLWithDef};
+</span><span class="kw">use </span>std::collections::BTreeMap;
+
 <span class="kw">use </span>anyhow::anyhow;
-<span class="kw">use </span>cardano_serialization_lib <span class="kw">as </span>csl;
-<span class="kw">use </span>std::collections::BTreeMap;
+<span class="kw">use </span>plutus_ledger_api::csl::{lib <span class="kw">as </span>csl, pla_to_csl::TryToCSL};
+
+<span class="kw">use </span><span class="kw">crate</span>::error::Error;
 
 <span class="doccomment">/// Top level transaction metadata (can only be a Map)
 </span><span class="attr">#[derive(Debug, Clone)]

@@ -1074,15 +1074,17 @@
 <a href="#1072" id="1072">1072</a>
 <a href="#1073" id="1073">1073</a>
 <a href="#1074" id="1074">1074</a>
+<a href="#1075" id="1075">1075</a>
 </pre></div><pre class="rust"><code><span class="attr">#[cfg(feature = <span class="string">"diesel"</span>)]
 </span><span class="kw">use </span>diesel::sql_types::{Array, Bytea, Nullable};
 <span class="kw">use </span>num_bigint::BigInt;
+<span class="kw">use </span>pla::csl::pla_to_csl::TryToCSL;
 <span class="kw">use </span>plutus_ledger_api <span class="kw">as </span>pla;
 <span class="kw">use </span>thiserror::Error;
-<span class="kw">use </span>tx_bakery::csl;
-<span class="kw">use </span>tx_bakery::utils::{
+<span class="kw">use </span>plutus_ledger_api::csl::{
+    lib <span class="kw">as </span>csl,
     csl_to_pla::{TryFromCSLError, TryToPLA},
-    pla_to_csl::{TryFromPLAError, TryToCSLWithDef},
+    pla_to_csl::TryFromPLAError,
 };
 
 <span class="attr">#[derive(Error, Debug)]

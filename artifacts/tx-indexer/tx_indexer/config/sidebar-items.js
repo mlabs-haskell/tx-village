@@ -1,1 +1,1 @@
-window.SIDEBAR_ITEMS = {"enum":["NetworkConfig","NetworkName","NodeAddress"],"mod":["deprecation_usage"],"struct":["NetworkNameParseErr","TxIndexerConfig"]};
+window.SIDEBAR_ITEMS = {"enum":["NetworkConfig","NetworkName","NodeAddress","TxIndexerSource"],"mod":["deprecation_usage"],"struct":["NetworkNameParseErr","TxIndexerConfig"]};

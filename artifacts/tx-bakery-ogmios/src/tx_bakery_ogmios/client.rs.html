@@ -428,6 +428,8 @@
 <a href="#426" id="426">426</a>
 <a href="#427" id="427">427</a>
 <a href="#428" id="428">428</a>
+<a href="#429" id="429">429</a>
+<a href="#430" id="430">430</a>
 </pre></div><pre class="rust"><code><span class="kw">use </span>std::collections::BTreeMap;
 <span class="kw">use </span>std::time;
 
@@ -441,23 +443,24 @@
     rpc_params,
     ws_client::{WsClient, WsClientBuilder},
 };
-<span class="kw">use </span>plutus_ledger_api::v2::{
-    address::Address,
-    transaction::{TransactionHash, TransactionInput},
+<span class="kw">use </span>plutus_ledger_api::csl::pla_to_csl::TryToCSL;
+<span class="kw">use </span>plutus_ledger_api::{
+    csl::lib <span class="kw">as </span>csl,
+    v2::{
+        address::Address,
+        transaction::{TransactionHash, TransactionInput},
+    },
 };
 <span class="kw">use </span>serde::Serialize;
 <span class="kw">use </span>tracing::{debug, error, info, warn};
-<span class="kw">use </span>tx_bakery::csl;
-<span class="kw">use </span>url::Url;
-
 <span class="kw">use </span>tx_bakery::{
     chain_query::{
         ChainQuery, ChainQueryError, ChainTip, EraSummary, FullTransactionOutput, Network,
         ProtocolParameters,
     },
     submitter::{Submitter, SubmitterError},
-    utils::pla_to_csl::TryToCSL,
 };
+<span class="kw">use </span>url::Url;
 
 <span class="kw">use super</span>::{
     api::{
@@ -666,7 +669,8 @@
     {
         <span class="macro">debug!</span>(<span class="question-mark">?</span>address, <span class="string">"Query UTxOs by address"</span>);
         <span class="kw">let </span>addr: csl::Address = address
-            .try_to_csl_with(<span class="self">self</span>.config.network.to_network_id())
+            .with_extra_info(<span class="self">self</span>.config.network.to_network_id())
+            .try_to_csl()
             .map_err(OgmiosError::TryFromPLAError)<span class="question-mark">?</span>;
 
         <span class="kw">let </span>addr = addr.to_bech32(<span class="prelude-val">Some</span>(<span class="string">"addr"</span>.to_owned())).map_err(|source| {
@@ -767,7 +771,7 @@
 
     <span class="kw">async fn </span>submit_transaction(
         <span class="kw-2">&amp;</span><span class="self">self</span>,
-        tx: <span class="kw-2">&amp;</span>csl::Transaction,
+        tx: <span class="kw-2">&amp;</span>csl::FixedTransaction,
     ) -&gt; std::result::Result&lt;TransactionHash, SubmitterError&gt; {
         <span class="macro">debug!</span>(<span class="string">"Submitting transaction"</span>);
         <span class="kw">let </span>params = SubmitTransactionParams {

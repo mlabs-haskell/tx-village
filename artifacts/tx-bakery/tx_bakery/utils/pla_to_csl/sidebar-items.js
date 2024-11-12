@@ -1,1 +1,0 @@
-window.SIDEBAR_ITEMS = {"enum":["TryFromPLAError"],"struct":["TransactionOutputExtraInfo"],"trait":["TryFromPLA","TryFromPLAWithDef","TryToCSL","TryToCSLWithDef"]};

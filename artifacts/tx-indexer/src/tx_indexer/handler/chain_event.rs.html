@@ -283,6 +283,10 @@
 <a href="#281" id="281">281</a>
 <a href="#282" id="282">282</a>
 <a href="#283" id="283">283</a>
+<a href="#284" id="284">284</a>
+<a href="#285" id="285">285</a>
+<a href="#286" id="286">286</a>
+<a href="#287" id="287">287</a>
 </pre></div><pre class="rust"><code><span class="kw">use crate</span>::{
     from_oura::{FromOura, OuraParseError},
     progress_tracker::ProgressTracker,
@@ -299,12 +303,13 @@
     transaction::{ScriptPurpose, TransactionHash, TransactionInput, TransactionOutput, TxInInfo},
     value::{CurrencySymbol, Value},
 };
+<span class="kw">use </span>serde_with::serde_as;
 <span class="kw">use </span>std::fmt::Debug;
 <span class="kw">use </span>std::{collections::HashMap, sync::atomic::Ordering};
 <span class="kw">use </span>tracing::{event, Level};
 
 <span class="doccomment">/// Indication of when an event happened in the context of the chain.
-</span><span class="attr">#[derive(Clone, Debug, PartialEq, Eq)]
+</span><span class="attr">#[derive(Clone, Debug, PartialEq, Eq, serde::Serialize, serde::Deserialize)]
 </span><span class="kw">pub struct </span>ChainEventTime {
     <span class="kw">pub </span>block_number: u64,
     <span class="kw">pub </span>block_hash: String,
@@ -312,7 +317,7 @@
 }
 
 <span class="doccomment">/// Chain events that the indexer is configured to produce.
-</span><span class="attr">#[derive(Clone, Debug, PartialEq)]
+</span><span class="attr">#[derive(Clone, Debug, PartialEq, serde::Serialize, serde::Deserialize)]
 </span><span class="kw">pub enum </span>ChainEvent {
     <span class="doccomment">/// A filtered transaction was confirmed
     </span>TransactionEvent {
@@ -332,7 +337,8 @@
 }
 
 <span class="doccomment">/// Details on an transaction event (excluding unnecessary information).
-</span><span class="attr">#[derive(Clone, Debug, PartialEq, Eq)]
+</span><span class="attr">#[serde_as]
+#[derive(Clone, Debug, PartialEq, Eq, serde::Serialize, serde::Deserialize)]
 </span><span class="kw">pub struct </span>TransactionEventRecord {
     <span class="kw">pub </span>hash: TransactionHash,
     <span class="kw">pub </span>fee: u64,
@@ -341,9 +347,11 @@
     <span class="kw">pub </span>inputs: Vec&lt;TransactionInput&gt;,
     <span class="kw">pub </span>outputs: Vec&lt;TxInInfo&gt;,
     <span class="kw">pub </span>mint: Value,
-    <span class="kw">pub </span>redeemers: HashMap&lt;ScriptPurpose, Redeemer&gt;,
+    <span class="attr">#[serde_as(<span class="kw">as </span>= <span class="string">"Vec&lt;(_, _)&gt;"</span>)]
+    </span><span class="kw">pub </span>redeemers: HashMap&lt;ScriptPurpose, Redeemer&gt;,
 
-    <span class="kw">pub </span>plutus_data: HashMap&lt;DatumHash, Datum&gt;,
+    <span class="attr">#[serde_as(<span class="kw">as </span>= <span class="string">"Vec&lt;(_, _)&gt;"</span>)]
+    </span><span class="kw">pub </span>plutus_data: HashMap&lt;DatumHash, Datum&gt;,
     <span class="comment">// TODO(chase): Which of these would be realistically be interested in?
     // pub vkey_witnesses: Option&lt;Vec&lt;VKeyWitnessRecord&gt;&gt;,
     // pub native_witnesses: Option&lt;Vec&lt;NativeWitnessRecord&gt;&gt;,

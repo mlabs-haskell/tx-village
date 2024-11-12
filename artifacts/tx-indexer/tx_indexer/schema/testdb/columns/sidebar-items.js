@@ -1,1 +1,0 @@
-window.SIDEBAR_ITEMS = {"struct":["address","asset_quantity","chain_pointer","cred","cur_sym","datum","datum_hash","id","plutus_data","pub_key_hash","script_hash","slot","staking_cred","star","token_name","tx_hash","tx_in","tx_in_info","tx_out","value"]};
