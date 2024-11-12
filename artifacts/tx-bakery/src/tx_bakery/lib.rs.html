@@ -955,6 +955,29 @@
 <a href="#953" id="953">953</a>
 <a href="#954" id="954">954</a>
 <a href="#955" id="955">955</a>
+<a href="#956" id="956">956</a>
+<a href="#957" id="957">957</a>
+<a href="#958" id="958">958</a>
+<a href="#959" id="959">959</a>
+<a href="#960" id="960">960</a>
+<a href="#961" id="961">961</a>
+<a href="#962" id="962">962</a>
+<a href="#963" id="963">963</a>
+<a href="#964" id="964">964</a>
+<a href="#965" id="965">965</a>
+<a href="#966" id="966">966</a>
+<a href="#967" id="967">967</a>
+<a href="#968" id="968">968</a>
+<a href="#969" id="969">969</a>
+<a href="#970" id="970">970</a>
+<a href="#971" id="971">971</a>
+<a href="#972" id="972">972</a>
+<a href="#973" id="973">973</a>
+<a href="#974" id="974">974</a>
+<a href="#975" id="975">975</a>
+<a href="#976" id="976">976</a>
+<a href="#977" id="977">977</a>
+<a href="#978" id="978">978</a>
 </pre></div><pre class="rust"><code><span class="doccomment">//! Transaction Bakery
 
 </span><span class="kw">use </span><span class="kw">crate</span>::error::{Error, <span class="prelude-ty">Result</span>};
@@ -964,6 +987,7 @@
 <span class="kw">use </span>anyhow::anyhow;
 <span class="kw">use </span>chain_query::{ChainQuery, EraSummary, Network, ProtocolParameters};
 <span class="kw">use </span>chrono::{DateTime, Utc};
+<span class="kw">use </span>itertools::Itertools;
 <span class="kw">use </span>num_bigint::BigInt;
 <span class="kw">use </span>plutus_ledger_api::csl::{lib <span class="kw">as </span>csl, pla_to_csl::TryToCSL};
 <span class="kw">use </span>plutus_ledger_api::plutus_data::IsPlutusData;
@@ -1065,9 +1089,15 @@
 </span><span class="attr">#[derive(Clone, Debug)]
 </span><span class="kw">pub enum </span>CollateralStrategy {
     <span class="doccomment">/// Automatically pick a suitable UTxO from the transaction inputs
-    </span>Automatic { amount: u64 },
+    </span>Automatic {
+        min_amount: u64,
+        max_utxo_count: usize,
+    },
     <span class="doccomment">/// Explicitly set a UTxO (doesn't have to be an input UTxO)
-    </span>Explicit { utxo: TxInInfo, amount: u64 },
+    </span>Explicit {
+        utxos: Vec&lt;TxInInfo&gt;,
+        min_amount: u64,
+    },
     <span class="doccomment">/// No collateral (for transaction without scripts)
     </span><span class="prelude-val">None</span>,
 }
@@ -1395,51 +1425,69 @@
         <span class="prelude-val">Ok</span>(mint_builder)
     }
 
-    <span class="doccomment">/// Find a suitable UTxO to be used as a collateral. The UTxO has to meet the following
-    /// criteria:
-    /// - must be at a pub key address with
-    /// - must have at least the configured amount of Ada
-    ///         (TODO: we could calculate the exact minimum collateral amount using protocol params)
-    ///
-    </span><span class="kw">fn </span>find_collateral(<span class="kw-2">&amp;</span><span class="self">self</span>, collateral_amount: u64, tx_inputs: <span class="kw-2">&amp;</span>[TxInInfo]) -&gt; <span class="prelude-ty">Option</span>&lt;TxInInfo&gt; {
-        tx_inputs
+    <span class="doccomment">/// Find suitable UTxOs to be used as a collateral. Each UTxO has to be at a pub key address,
+    /// and the total Ada amount of must be at least the configured collateral amount
+    </span><span class="comment">// TODO(szg251): we could calculate the exact minimum collateral amount using protocol params
+    </span><span class="kw">fn </span>find_collaterals(
+        <span class="kw-2">&amp;</span><span class="self">self</span>,
+        min_collateral_amount: u64,
+        max_utxo_count: usize,
+
+        tx_inputs: <span class="kw-2">&amp;</span>[TxInInfo],
+    ) -&gt; <span class="prelude-ty">Result</span>&lt;Vec&lt;TxInInfo&gt;&gt; {
+        <span class="kw">let </span>min_collateral_amount = BigInt::from(min_collateral_amount);
+        <span class="kw">let </span>(amount, collaterals) = tx_inputs
             .iter()
-            .find(
-                |TxInInfo {
-                     reference: <span class="kw">_</span>,
-                     output,
-                 }| {
-                    <span class="kw">if let </span>Credential::PubKey(<span class="kw">_</span>) = output.address.credential {
-                        <span class="kw">let </span>ada_amount = output.value.get_ada_amount();
-                        ada_amount &gt;= BigInt::from(collateral_amount)
-                    } <span class="kw">else </span>{
-                        <span class="bool-val">false
-                    </span>}
+            .sorted_by_key(|input| -input.output.value.get_ada_amount())
+            .take(max_utxo_count)
+            .fold(
+                (BigInt::ZERO, Vec::new()),
+                |(<span class="kw-2">mut </span>acc_amount, <span class="kw-2">mut </span>collaterals), tx_in_info| {
+                    <span class="kw">if </span>acc_amount &lt; min_collateral_amount {
+                        <span class="kw">if let </span>Credential::PubKey(<span class="kw">_</span>) = tx_in_info.output.address.credential {
+                            <span class="kw">let </span>ada_amount = tx_in_info.output.value.get_ada_amount();
+                            acc_amount += ada_amount;
+                            collaterals.push(tx_in_info.clone());
+                        }
+                    };
+
+                    (acc_amount, collaterals)
                 },
-            )
-            .cloned()
+            );
+
+        <span class="kw">if </span>amount &gt;= min_collateral_amount {
+            <span class="prelude-val">Ok</span>(collaterals)
+        } <span class="kw">else </span>{
+            <span class="prelude-val">Err</span>(Error::NotEnoughCollaterals {
+                amount,
+                required: min_collateral_amount,
+                utxos: collaterals,
+            })
+        }
     }
 
-    <span class="kw">fn </span>mk_collateral(<span class="kw-2">&amp;</span><span class="self">self</span>, tx_input: <span class="kw-2">&amp;</span>TxInInfo) -&gt; <span class="prelude-ty">Result</span>&lt;csl::TxInputsBuilder&gt; {
+    <span class="kw">fn </span>mk_collaterals(<span class="kw-2">&amp;</span><span class="self">self</span>, tx_inputs: <span class="kw-2">&amp;</span>[TxInInfo]) -&gt; <span class="prelude-ty">Result</span>&lt;csl::TxInputsBuilder&gt; {
         <span class="kw">let </span><span class="kw-2">mut </span>tx_inputs_builder = csl::TxInputsBuilder::new();
-        <span class="kw">let </span>TxInInfo { reference, output } = tx_input;
-        tx_inputs_builder
-            .add_regular_input(
-                <span class="kw-2">&amp;</span>AddressWithExtraInfo {
-                    address: <span class="kw-2">&amp;</span>output.address,
-                    network_tag: <span class="self">self</span>.network_id,
-                }
-                .try_to_csl()<span class="question-mark">?</span>,
-                <span class="kw-2">&amp;</span>reference.try_to_csl()<span class="question-mark">?</span>,
-                <span class="kw-2">&amp;</span>output.value.try_to_csl()<span class="question-mark">?</span>,
-            )
-            .map_err(|err| {
-                Error::TransactionBuildError(<span class="macro">anyhow!</span>(
-                    <span class="string">"Failed to add regular input {:?}: {}"</span>,
-                    reference,
-                    err
-                ))
-            })<span class="question-mark">?</span>;
+        <span class="kw">for </span>tx_input <span class="kw">in </span>tx_inputs {
+            <span class="kw">let </span>TxInInfo { reference, output } = tx_input;
+
+            tx_inputs_builder
+                .add_regular_input(
+                    <span class="kw-2">&amp;</span>output
+                        .address
+                        .with_extra_info(<span class="self">self</span>.network_id)
+                        .try_to_csl()<span class="question-mark">?</span>,
+                    <span class="kw-2">&amp;</span>reference.try_to_csl()<span class="question-mark">?</span>,
+                    <span class="kw-2">&amp;</span>output.value.try_to_csl()<span class="question-mark">?</span>,
+                )
+                .map_err(|err| {
+                    Error::TransactionBuildError(<span class="macro">anyhow!</span>(
+                        <span class="string">"Failed to add regular input {:?}: {}"</span>,
+                        reference,
+                        err
+                    ))
+                })<span class="question-mark">?</span>;
+        }
 
         <span class="prelude-val">Ok</span>(tx_inputs_builder)
     }
@@ -1526,34 +1574,32 @@
         };
 
         <span class="kw">match </span><span class="kw-2">&amp;</span>tx.collateral_strategy {
-            CollateralStrategy::Automatic { amount } =&gt; {
-                <span class="kw">let </span>tx_input = <span class="self">self
-                    </span>.find_collateral(<span class="kw-2">*</span>amount, <span class="kw-2">&amp;</span>tx.tx_info.inputs)
-                    .ok_or(Error::MissingCollateral)<span class="question-mark">?</span>;
-                <span class="kw">let </span>collateral = <span class="self">self</span>.mk_collateral(<span class="kw-2">&amp;</span>tx_input)<span class="question-mark">?</span>;
+            CollateralStrategy::Automatic {
+                min_amount,
+                max_utxo_count,
+            } =&gt; {
+                <span class="kw">let </span>tx_input =
+                    <span class="self">self</span>.find_collaterals(<span class="kw-2">*</span>min_amount, <span class="kw-2">*</span>max_utxo_count, <span class="kw-2">&amp;</span>tx.tx_info.inputs)<span class="question-mark">?</span>;
+                <span class="kw">let </span>collateral = <span class="self">self</span>.mk_collaterals(<span class="kw-2">&amp;</span>tx_input)<span class="question-mark">?</span>;
                 tx_builder.set_collateral(<span class="kw-2">&amp;</span>collateral);
                 tx_builder
                     .set_total_collateral_and_return(
-                        <span class="kw-2">&amp;</span>csl::BigNum::from(<span class="kw-2">*</span>amount),
-                        <span class="kw-2">&amp;</span>AddressWithExtraInfo {
-                            address: collateral_return_address,
-                            network_tag: <span class="self">self</span>.network_id,
-                        }
-                        .try_to_csl()<span class="question-mark">?</span>,
+                        <span class="kw-2">&amp;</span>csl::BigNum::from(<span class="kw-2">*</span>min_amount),
+                        <span class="kw-2">&amp;</span>collateral_return_address
+                            .with_extra_info(<span class="self">self</span>.network_id)
+                            .try_to_csl()<span class="question-mark">?</span>,
                     )
                     .map_err(|source| Error::TransactionBuildError(<span class="macro">anyhow!</span>(source)))<span class="question-mark">?</span>;
             }
-            CollateralStrategy::Explicit { utxo, amount } =&gt; {
-                <span class="kw">let </span>collateral = <span class="self">self</span>.mk_collateral(utxo)<span class="question-mark">?</span>;
+            CollateralStrategy::Explicit { utxos, min_amount } =&gt; {
+                <span class="kw">let </span>collateral = <span class="self">self</span>.mk_collaterals(utxos)<span class="question-mark">?</span>;
                 tx_builder.set_collateral(<span class="kw-2">&amp;</span>collateral);
                 tx_builder
                     .set_total_collateral_and_return(
-                        <span class="kw-2">&amp;</span>csl::BigNum::from(<span class="kw-2">*</span>amount),
-                        <span class="kw-2">&amp;</span>AddressWithExtraInfo {
-                            address: collateral_return_address,
-                            network_tag: <span class="self">self</span>.network_id,
-                        }
-                        .try_to_csl()<span class="question-mark">?</span>,
+                        <span class="kw-2">&amp;</span>csl::BigNum::from(<span class="kw-2">*</span>min_amount),
+                        <span class="kw-2">&amp;</span>collateral_return_address
+                            .with_extra_info(<span class="self">self</span>.network_id)
+                            .try_to_csl()<span class="question-mark">?</span>,
                     )
                     .map_err(|source| Error::TransactionBuildError(<span class="macro">anyhow!</span>(source)))<span class="question-mark">?</span>;
             }
