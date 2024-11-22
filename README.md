@@ -1,5 +1,7 @@
 # Transaction Village
 
+[![Hercules CI](https://hercules-ci.com/api/v1/site/github/account/Unbox-infinity/project/tx-village/badge)](https://hercules-ci.com/github/Unbox-infinity/tx-village/status)
+
 ## Packages
 
 - [ledger-sim](./ledger-sim/) - Haskell based Ledger simulator
