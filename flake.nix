@@ -65,5 +65,16 @@
       ];
       debug = true;
       systems = [ "x86_64-linux" "x86_64-darwin" ];
+
+      # Add OpenSSL as a dependency
+      nixosModules.default = {
+        config = {
+          environment.systemPackages = with inputs.nixpkgs.lib; [
+            pkgs.openssl
+            pkgs.openssl.dev
+          ];
+        };
+      };
+
     };
 }
