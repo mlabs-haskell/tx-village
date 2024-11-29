@@ -1,5 +1,5 @@
 { inputs, ... }: {
-  perSystem = { config, inputs', system, ... }:
+  perSystem = { config, inputs', system, pkgs, ... }:
 
     let
       rustFlake = inputs.flake-lang.lib."${system}".rustFlake
