@@ -9,6 +9,8 @@
           crateName = "tx-bakery";
           cargoNextestExtraArgs = "--no-capture";
 
+          buildInputs = [ pkgs.openssl pkgs.cacert ];
+
           extraSources = [
             # LB base schema and runtime libs
             inputs'.lbf.packages.lbf-prelude-rust
