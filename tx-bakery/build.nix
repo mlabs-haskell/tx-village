@@ -9,6 +9,7 @@
           crateName = "tx-bakery";
           cargoNextestExtraArgs = "--no-capture";
 
+          nativeBuildInputs = [ pkgs.openssl pkgs.cacert ];
           buildInputs = [ pkgs.openssl pkgs.cacert ];
 
           extraSources = [
