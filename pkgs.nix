@@ -5,11 +5,6 @@
 
     _module.args.pkgs = import inputs.nixpkgs {
       inherit system;
-      overlays = [
-        (final: _: {
-          inherit (final) openssl;
-        })
-      ];
     };
 
   };
