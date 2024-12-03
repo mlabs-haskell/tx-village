@@ -40,5 +40,4 @@ mkEvaluationContext (PlutusCostModel costModel) =
   runExcept
     . fmap fst
     . runWriterT
-    $ PlutusV2.mkEvaluationContext
-    $ map fromInteger (M.elems costModel)
+    $ PlutusV2.mkEvaluationContext (M.elems costModel)

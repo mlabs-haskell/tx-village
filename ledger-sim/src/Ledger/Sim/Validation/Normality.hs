@@ -656,7 +656,7 @@ validateRedeemers =
           contramap fst $
             mapErr InvalidRedeemersError'InvalidScriptPurpose validateScriptPurpose
     , validateRoundtrip
-        (AssocMap.safeFromList . reverse . AssocMap.toList)
+        (AssocMap.fromListSafe . reverse . AssocMap.toList)
         InvalidRedeemersError'HasDuplicateEntries
     ]
 
