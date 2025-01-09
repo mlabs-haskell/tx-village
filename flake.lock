@@ -17641,11 +17641,11 @@
         "proto-nix": "proto-nix"
       },
       "locked": {
-        "lastModified": 1736329522,
-        "narHash": "sha256-by6mk/M3xaXK4t4/gMCVjKXjQ2HFaKZn5FF150Zd6DU=",
+        "lastModified": 1736440211,
+        "narHash": "sha256-uXyj9gvmoLcFnLbwnVixIwr88h2oyyFRj1aJzDPi2cQ=",
         "owner": "mlabs-haskell",
         "repo": "lambda-buffers",
-        "rev": "78b479660a1069271bb3a63a23dae18acd432cae",
+        "rev": "a44324269d5f456891d28cd5463b83a311bdd22f",
         "type": "github"
       },
       "original": {

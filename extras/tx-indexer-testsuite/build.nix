@@ -30,6 +30,11 @@
 
           devShellHook = config.settings.shell.hook + ''
             ln -sf ${../../tx-indexer}/lib-migrations
+
+            echo "TxIndexer testsuite"
+            echo ""
+            echo "Run tx-indexer-tests to execute the testsuite."
+            echo ""
           '';
         };
     in

@@ -19,13 +19,6 @@
             config.packages.lbf-tx-bakery-tests-plutus-api-rust
           ];
 
-          data = [
-            {
-              name = "tx-bakery-test-scripts-config.json";
-              path = config.packages.tx-bakery-test-scripts-config;
-            }
-          ];
-
           devShellHook = config.settings.shell.hook;
         };
     in

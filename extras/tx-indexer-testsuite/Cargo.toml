@@ -19,7 +19,7 @@ tracing = "0.1"
 tracing-subscriber = "0.3"
 strum = "0.24"
 strum_macros = "0.24"
-plutus-ledger-api = { version = "2.1.0", features = ["chrono", "serde"] }
+plutus-ledger-api = { version = "3.0.2", features = ["chrono", "serde"] }
 chrono = "0.4.38"
 prettytable-rs = "0.10.0"
 diesel = { version = "2.2.4", features = ["postgres", "serde_json", "r2d2"] }
@@ -38,3 +38,6 @@ sqlx = { version = "0.8.2", features = [
   "tls-rustls",
 ] }
 url = "2.5.2"
+
+[patch.crates-io]
+plutus-ledger-api = { git = "https://github.com/mlabs-haskell/plutus-ledger-api-rust", branch = "szg251/missing-derive-macros" }
