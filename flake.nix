@@ -3,7 +3,7 @@
 
   inputs = {
     # LambdaBuffers as source of truth for many inputs
-    lbf.url = "github:mlabs-haskell/lambda-buffers?ref=szg251/bump-pla-rust";
+    lbf.url = "github:mlabs-haskell/lambda-buffers?ref=szg251/v3";
 
     # Flake monorepo toolkit
     flake-lang.url = "github:mlabs-haskell/flake-lang.nix";
