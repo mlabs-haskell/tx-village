@@ -2,6 +2,9 @@
 name = "tx-bakery-ogmios"
 version = "2.0.0-beta.4"
 edition = "2021"
+license = "Apache-2.0"
+description = "Ogmios chain query client for TxBakery"
+repository = "https://github.com/mlabs-haskell/tx-village"
 
 [dependencies]
 tx-bakery = { version = "2.0.0-beta.4", path = ".extras/tx-bakery-v2" }
