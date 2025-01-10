@@ -27044,23 +27044,6 @@
         "type": "github"
       }
     },
-    "oura_4": {
-      "flake": false,
-      "locked": {
-        "lastModified": 1736497028,
-        "narHash": "sha256-u913R5lGxR4SNFDNZ4Il7CEae087RF8zEd0v5J39I5c=",
-        "owner": "szg251",
-        "repo": "oura",
-        "rev": "7899cf2b8a545dcbd832512c230477f68c550255",
-        "type": "github"
-      },
-      "original": {
-        "owner": "szg251",
-        "ref": "v1.9.2",
-        "repo": "oura",
-        "type": "github"
-      }
-    },
     "paisano": {
       "inputs": {
         "call-flake": "call-flake",
@@ -28127,7 +28110,6 @@
           "nixpkgs"
         ],
         "ogmios": "ogmios_3",
-        "oura": "oura_4",
         "plutarch": [
           "lbf",
           "plutarch"

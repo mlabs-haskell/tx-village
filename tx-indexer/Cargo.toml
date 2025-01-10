@@ -1,6 +1,6 @@
 [package]
 name = "tx-indexer"
-version = "0.1.0"
+version = "0.1.1"
 edition = "2021"
 license = "Apache-2.0"
 description = "Cardano transaction indexer"
@@ -33,7 +33,7 @@ log = "0.4.22"
 cbor_event = "2.4.0"
 uplc = "0.0.29"
 clap = { version = "4.5.24", features = ["derive"] }
-oura = { path = ".extras/oura-v1" }
+oura = { git = "https://github.com/szg251/oura", tag = "v1.9.2" }
 pallas = "0.30.2"
 async-trait = "0.1.85"
 tokio = { version = "1.43.0", features = ["io-util", "rt-multi-thread"] }

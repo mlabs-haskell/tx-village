@@ -2334,6 +2334,7 @@ checksum = "e2355d85b9a3786f481747ced0e0ff2ba35213a1f9bd406ed906554d7af805a1"
 [[package]]
 name = "oura"
 version = "1.9.2"
+source = "git+https://github.com/szg251/oura?tag=v1.9.2#7899cf2b8a545dcbd832512c230477f68c550255"
 dependencies = [
  "bech32 0.9.1",
  "clap 3.2.25",
@@ -4457,7 +4458,7 @@ dependencies = [
 
 [[package]]
 name = "tx-indexer"
-version = "0.1.0"
+version = "0.1.1"
 dependencies = [
  "anyhow",
  "async-trait",

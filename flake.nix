@@ -25,11 +25,6 @@
     # Light-weight wrapper around cardano-node
     ogmios.url = "github:mlabs-haskell/ogmios-nix?ref=v6.9.0";
 
-    oura = {
-      flake = false;
-      url = "github:szg251/oura?ref=v1.9.2";
-    };
-
     cardano-nix.url = "github:mlabs-haskell/cardano.nix";
 
     cardano-devnet-flake.url = "github:szg251/cardano-devnet-flake?ref=cardano-node-10.1.2";

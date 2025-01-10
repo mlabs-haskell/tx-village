@@ -1,16 +1,6 @@
 { inputs, ... }: {
   perSystem = { system, pkgs, config, inputs', self', ... }:
     let
-      oura = pkgs.stdenv.mkDerivation {
-        src = "${inputs.oura.outPath}";
-        name = "oura-v1";
-        unpackPhase = ''
-          mkdir $out
-          cp -r $src/* $out
-          cd $out
-        '';
-      };
-
       rustFlake =
         inputs.flake-lang.lib.${system}.rustFlake {
           src = ./.;
@@ -20,7 +10,6 @@
             config.packages.tx-bakery-ogmios-rust-src
             config.packages.tx-indexer-rust-src
             config.packages.diesel-derive-pg-rust-src
-            oura
           ];
           buildInputs = [ pkgs.postgresql_16.lib ];
 
