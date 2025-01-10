@@ -26,7 +26,7 @@ diesel = { version = "2.2.4", features = ["postgres", "serde_json", "r2d2"] }
 serial_test = "3.1.1"
 tx-bakery-ogmios = { path = ".extras/tx-bakery-ogmios-v2" }
 tx-bakery = { path = ".extras/tx-bakery-v2" }
-oura = { path = ".extras/oura-v1" }
+oura = { git = "https://github.com/szg251/oura", tag = "v1.9.2" }
 num-bigint = "0.4.4"
 sqlx = { version = "0.8.2", features = [
   "postgres",
