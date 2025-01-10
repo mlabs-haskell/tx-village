@@ -7945,15 +7945,16 @@
         "rust-overlay": "rust-overlay_2"
       },
       "locked": {
-        "lastModified": 1736153079,
-        "narHash": "sha256-XT9zAPPo/Vw83twrVJfxrIKSyxgGQ+DjdEBh5GuvLF0=",
+        "lastModified": 1736499207,
+        "narHash": "sha256-0CQAPiLKTfQTKcPFw//A7SneIWN/OBTp7038gvClyvQ=",
         "owner": "mlabs-haskell",
         "repo": "flake-lang.nix",
-        "rev": "0b61e5e2219dcde60ae187269ec39460ec18a5e3",
+        "rev": "0e4ac9973456691a7279417a717a70b952043b36",
         "type": "github"
       },
       "original": {
         "owner": "mlabs-haskell",
+        "ref": "szg251/add-run-tests-option",
         "repo": "flake-lang.nix",
         "type": "github"
       }

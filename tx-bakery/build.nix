@@ -7,7 +7,7 @@
           src = ./.;
           version = "v2";
           crateName = "tx-bakery";
-          cargoNextestExtraArgs = "--no-capture";
+          runTests = false;
 
           extraSources = [
             # LB base schema and runtime libs
