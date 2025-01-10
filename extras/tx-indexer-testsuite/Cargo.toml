@@ -38,6 +38,3 @@ sqlx = { version = "0.8.2", features = [
   "tls-rustls",
 ] }
 url = "2.5.2"
-
-[patch.crates-io]
-plutus-ledger-api = { git = "https://github.com/mlabs-haskell/plutus-ledger-api-rust", branch = "szg251/missing-derive-macros" }

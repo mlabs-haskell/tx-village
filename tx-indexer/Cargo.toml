@@ -58,6 +58,3 @@ tokio-stream = { version = "0.1.17", features = ["fs"] }
 default = ["diesel"]
 sqlx = ["dep:sqlx"]
 diesel = ["dep:diesel", "dep:diesel-derive-pg"]
-
-[patch.crates-io]
-plutus-ledger-api = { git = "https://github.com/mlabs-haskell/plutus-ledger-api-rust", branch = "szg251/missing-derive-macros", version = "3.0.2" }
