@@ -9,7 +9,7 @@ repository = "https://github.com/mlabs-haskell/tx-village"
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
-diesel-derive-pg = { path = ".extras/diesel-derive-pg-v0", optional = true }
+diesel-derive-pg = { path = ".extras/diesel-derive-pg-v0", version = "^1.0.0", optional = true }
 data-encoding = "2.6.0"
 num-bigint = "0.4.6"
 proptest = "1.6.0"
