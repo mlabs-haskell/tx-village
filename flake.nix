@@ -6,7 +6,7 @@
     lbf.url = "github:mlabs-haskell/lambda-buffers?ref=szg251/v3";
 
     # Flake monorepo toolkit
-    flake-lang.url = "github:mlabs-haskell/flake-lang.nix?ref=szg251/add-run-tests-option";
+    flake-lang.url = "github:mlabs-haskell/flake-lang.nix";
 
     # Nix
     nixpkgs.follows = "lbf/nixpkgs";

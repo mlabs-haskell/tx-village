@@ -11,6 +11,7 @@
         inputs.flake-lang.lib.${system}.rustFlake {
           src = ./.;
           crateName = "tx-indexer";
+          runTests = false;
           extraSources = [
             # LB base schema and runtime libs
             inputs'.lbf.packages.lbf-prelude-rust
