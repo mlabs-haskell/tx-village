@@ -27,7 +27,7 @@
 
     cardano-nix.url = "github:mlabs-haskell/cardano.nix";
 
-    cardano-devnet-flake.url = "github:szg251/cardano-devnet-flake?ref=cardano-node-10.1.2";
+    cardano-devnet-flake.url = "github:szg251/cardano-devnet-flake?ref=356ffb526cef213bd0db5bec04dc351976b28f92";
 
     cardano-node.follows = "cardano-devnet-flake/cardano-node";
 

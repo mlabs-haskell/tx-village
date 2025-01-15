@@ -3422,16 +3422,16 @@
         ]
       },
       "locked": {
-        "lastModified": 1732289866,
-        "narHash": "sha256-fp5RDuAnXU2rdMWByZSAg6z9nM3MkMPiaxO1o7xQYcw=",
+        "lastModified": 1736945242,
+        "narHash": "sha256-+W8j6hgFtMYjY4GLa9jaOQxeulW7TE9I/uuuWOJz4FE=",
         "owner": "szg251",
         "repo": "cardano-devnet-flake",
-        "rev": "b3a04d30e389152f2e57bf76da9e136103eecb1a",
+        "rev": "356ffb526cef213bd0db5bec04dc351976b28f92",
         "type": "github"
       },
       "original": {
         "owner": "szg251",
-        "ref": "cardano-node-10.1.2",
+        "ref": "356ffb526cef213bd0db5bec04dc351976b28f92",
         "repo": "cardano-devnet-flake",
         "type": "github"
       }

@@ -35,7 +35,8 @@
           devShellHook = config.settings.shell.hook + ''
             echo "TxBakery testsuite"
             echo ""
-            echo "Run tx-bakery-tests to execute the testsuite."
+            echo "Run `tx-bakery-tests` to execute the testsuite."
+            echo "or `tx-bakery-tests up ogmios cardano_devnet -t=true` to spin up an environment"
             echo ""
           '';
         };
