@@ -11364,16 +11364,15 @@
         "proto-nix": "proto-nix"
       },
       "locked": {
-        "lastModified": 1738573037,
-        "narHash": "sha256-Hqcqbi2BcgvK03/8bhO6emyOj5R5wjLWYxCVBOImVWw=",
+        "lastModified": 1738668346,
+        "narHash": "sha256-aCDCmg3SLpR0G4hEWPp8JiBA8nva4063ZPNY8YBvge8=",
         "owner": "mlabs-haskell",
         "repo": "lambda-buffers",
-        "rev": "5bb52f56617064463c68f1348d46786ed947d219",
+        "rev": "0954856584fe08fa0f425cfe9e0ed51dcfdc639b",
         "type": "github"
       },
       "original": {
         "owner": "mlabs-haskell",
-        "ref": "szg251/add-aarch",
         "repo": "lambda-buffers",
         "type": "github"
       }
