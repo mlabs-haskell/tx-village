@@ -3,10 +3,10 @@
 
   inputs = {
     # LambdaBuffers as source of truth for many inputs
-    lbf.url = "github:mlabs-haskell/lambda-buffers?ref=szg251/v3";
+    lbf.url = "github:mlabs-haskell/lambda-buffers?ref=szg251/add-aarch";
 
     # Flake monorepo toolkit
-    flake-lang.url = "github:mlabs-haskell/flake-lang.nix";
+    flake-lang.follows = "lbf/flake-lang";
 
     # Nix
     nixpkgs.follows = "lbf/nixpkgs";
@@ -27,7 +27,7 @@
 
     cardano-nix.url = "github:mlabs-haskell/cardano.nix";
 
-    cardano-devnet-flake.url = "github:szg251/cardano-devnet-flake?ref=356ffb526cef213bd0db5bec04dc351976b28f92";
+    cardano-devnet-flake.url = "github:szg251/cardano-devnet-flake?ref=szg251/protocol-version-9";
 
     cardano-node.follows = "cardano-devnet-flake/cardano-node";
 
@@ -59,6 +59,6 @@
         ./extras/tx-bakery-testsuite/tests/build.nix
       ];
       debug = true;
-      systems = [ "x86_64-linux" "x86_64-darwin" ];
+      systems = [ "x86_64-linux" "x86_64-darwin" "aarch64-linux" "aarch64-darwin" ];
     };
 }
