@@ -37,7 +37,7 @@
         ];
 
         devShellTools = [
-          self'.packages.tx-bakery-tests
+          self'.packages.pc-tx-bakery-tests
         ];
 
         devShellHook =
