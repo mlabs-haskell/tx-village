@@ -20,7 +20,7 @@
       rustFlake = inputs.flake-lang.lib."${system}".rustFlake {
         inherit data;
         src = ./.;
-        crateName = "tx-bakery-tests";
+        crateName = "tx-bakery-testsuite";
         exportTests = true;
 
         extraSources = [
@@ -45,8 +45,8 @@
           + ''
             echo "TxBakery testsuite"
             echo ""
-            echo "Run tx-bakery-tests to execute the testsuite."
-            echo "or tx-bakery-tests up ogmios cardano_devnet -t=true to spin up an environment"
+            echo "Run pc-tx-bakery-tests to execute the testsuite."
+            echo "or pc-tx-bakery-tests up ogmios cardano_devnet -t=true to spin up an environment"
             echo ""
           '';
       };
@@ -72,7 +72,7 @@
               ln -s ${./wallets} ./wallets
             '';
             checkPhase = ''
-              ${self'.packages.tx-bakery-tests}/bin/tx-bakery-tests
+              ${self'.packages.pc-tx-bakery-tests}/bin/pc-tx-bakery-tests
             '';
             buildPhase = ''
               mkdir $out
@@ -85,14 +85,14 @@
         "60a5587dc01541d4ad17d7a4416efee274d833f2fc894eef79976a3d06" = 9000000000;
       };
 
-      process-compose.tx-bakery-tests = {
+      process-compose.pc-tx-bakery-tests = {
         imports = [
           inputs.services-flake.processComposeModules.default
         ];
         cli.environment.PC_DISABLE_TUI = true;
         settings.processes = {
           tests = {
-            command = "find ${self'.packages.tx-bakery-tests-rust-test}/bin -maxdepth 1 -type f -executable -exec {} \\;";
+            command = "find ${self'.packages.tx-bakery-testsuite-rust-test}/bin -maxdepth 1 -type f -executable -exec {} \\;";
             depends_on = {
               cardano_devnet.condition = "process_healthy";
               ogmios.condition = "process_healthy";

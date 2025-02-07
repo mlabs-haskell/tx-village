@@ -32,8 +32,8 @@
 
             echo "TxIndexer testsuite"
             echo ""
-            echo "Run tx-indexer-tests to execute the testsuite."
-            echo "or tx-indexer-tests up db_migration ogmios cardano_devnet -t=true to spin up an environment"
+            echo "Run pc-tx-indexer-tests to execute the testsuite."
+            echo "or pc-tx-indexer-tests up db_migration ogmios cardano_devnet -t=true to spin up an environment"
             echo ""
           '';
       };
@@ -43,7 +43,7 @@
 
       checks = {
         "tx-indexer-testsuite" = pkgs.stdenv.mkDerivation {
-          name = "tx-bakery-testsuite-check";
+          name = "tx-indexer-testsuite";
           phases = [
             "unpackPhase"
             "checkPhase"
@@ -52,9 +52,11 @@
           unpackPhase = ''
             echo "Linking data"
             ln -s ${./wallets} ./wallets
+            mkdir ./tests
+            ln -s ${./tests/fixtures} ./tests/fixtures
           '';
           checkPhase = ''
-            ${self'.packages.tx-bakery-tests}/bin/tx-bakery-tests
+            ${self'.packages.pc-tx-indexer-tests}/bin/pc-tx-indexer-tests
           '';
           buildPhase = ''
             mkdir $out
@@ -67,7 +69,7 @@
         "60a5587dc01541d4ad17d7a4416efee274d833f2fc894eef79976a3d06" = 9000000000;
       };
 
-      process-compose.tx-indexer-tests = {
+      process-compose.pc-tx-indexer-tests = {
         imports = [
           inputs.services-flake.processComposeModules.default
         ];
