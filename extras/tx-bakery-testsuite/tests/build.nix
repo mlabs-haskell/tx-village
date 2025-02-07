@@ -1,7 +1,8 @@
 { inputs, ... }:
 {
   perSystem =
-    { config
+    { pkgs
+    , config
     , system
     , inputs'
     , self'
@@ -9,7 +10,15 @@
     }:
 
     let
+      data = [
+        {
+          name = "tx-bakery-test-scripts-config.json";
+          path = config.packages.tx-bakery-test-scripts-config;
+        }
+      ];
+      dataDir = "data";
       rustFlake = inputs.flake-lang.lib."${system}".rustFlake {
+        inherit data;
         src = ./.;
         crateName = "tx-bakery-tests";
         exportTests = true;
@@ -25,13 +34,6 @@
           # Demo API
           config.packages.lbf-tx-bakery-tests-config-api-rust
           config.packages.lbf-tx-bakery-tests-plutus-api-rust
-        ];
-
-        data = [
-          {
-            name = "tx-bakery-test-scripts-config.json";
-            path = config.packages.tx-bakery-test-scripts-config;
-          }
         ];
 
         devShellTools = [
@@ -52,9 +54,32 @@
     {
       inherit (rustFlake) packages devShells;
 
-      checks = {
-        "tx-bakery-testsuite" = self'.packages.tx-bakery-tests;
-      };
+      checks =
+        let
+          data-drv = pkgs.linkFarm "data" data;
+        in
+        {
+          "tx-bakery-testsuite" = pkgs.stdenv.mkDerivation {
+            name = "tx-bakery-testsuite-check";
+            phases = [
+              "unpackPhase"
+              "checkPhase"
+              "buildPhase"
+            ];
+            unpackPhase = ''
+              echo "Linking data"
+              ln -s ${data-drv} ./${dataDir}
+              ln -s ${./wallets} ./wallets
+            '';
+            checkPhase = ''
+              ${self'.packages.tx-bakery-tests}/bin/tx-bakery-tests
+            '';
+            buildPhase = ''
+              mkdir $out
+            '';
+            doCheck = true;
+          };
+        };
 
       cardano-devnet.initialFunds = {
         "60a5587dc01541d4ad17d7a4416efee274d833f2fc894eef79976a3d06" = 9000000000;

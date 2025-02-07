@@ -41,6 +41,28 @@
     {
       inherit (rustFlake) devShells packages;
 
+      checks = {
+        "tx-indexer-testsuite" = pkgs.stdenv.mkDerivation {
+          name = "tx-bakery-testsuite-check";
+          phases = [
+            "unpackPhase"
+            "checkPhase"
+            "buildPhase"
+          ];
+          unpackPhase = ''
+            echo "Linking data"
+            ln -s ${./wallets} ./wallets
+          '';
+          checkPhase = ''
+            ${self'.packages.tx-bakery-tests}/bin/tx-bakery-tests
+          '';
+          buildPhase = ''
+            mkdir $out
+          '';
+          doCheck = true;
+        };
+      };
+
       cardano-devnet.initialFunds = {
         "60a5587dc01541d4ad17d7a4416efee274d833f2fc894eef79976a3d06" = 9000000000;
       };
