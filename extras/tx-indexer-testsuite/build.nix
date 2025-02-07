@@ -12,6 +12,7 @@
       rustFlake = inputs.flake-lang.lib.${system}.rustFlake {
         src = ./.;
         crateName = "tx-indexer-testsuite";
+        exportTests = true;
         extraSources = [
           config.packages.tx-bakery-rust-src
           config.packages.tx-bakery-ogmios-rust-src
@@ -62,13 +63,9 @@
           ];
         };
         settings.processes = {
-          build = {
-            command = "${pkgs.cargo}/bin/cargo build --tests";
-          };
           tests = {
-            command = "${pkgs.cargo}/bin/cargo test";
+            command = "find ${self'.packages.tx-indexer-testsuite-rust-test}/bin -maxdepth 1 -type f -executable -exec {} \\;";
             depends_on = {
-              build.condition = "process_completed_successfully";
               cardano_devnet.condition = "process_healthy";
               ogmios.condition = "process_healthy";
               db.condition = "process_healthy";
@@ -82,7 +79,6 @@
 
           cardano_devnet = {
             command = config.packages.cardano-devnet;
-            depends_on.build.condition = "process_completed_successfully";
             readiness_probe = {
               exec.command = ''
                 ${inputs'.cardano-node.packages.cardano-cli}/bin/cardano-cli query tip \

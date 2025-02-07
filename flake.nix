@@ -6,7 +6,7 @@
     lbf.url = "github:mlabs-haskell/lambda-buffers";
 
     # Flake monorepo toolkit
-    flake-lang.follows = "lbf/flake-lang";
+    flake-lang.url = "github:mlabs-haskell/flake-lang.nix?ref=szg251/rust-build-artifacts";
 
     # Nix
     nixpkgs.follows = "lbf/nixpkgs";
@@ -34,7 +34,8 @@
     process-compose-flake.url = "github:Platonic-Systems/process-compose-flake";
     services-flake.url = "github:juspay/services-flake";
   };
-  outputs = inputs@{ flake-parts, ... }:
+  outputs =
+    inputs@{ flake-parts, ... }:
     flake-parts.lib.mkFlake { inherit inputs; } {
       imports = [
         ./pkgs.nix
@@ -59,6 +60,11 @@
         ./extras/tx-bakery-testsuite/tests/build.nix
       ];
       debug = true;
-      systems = [ "x86_64-linux" "x86_64-darwin" "aarch64-linux" "aarch64-darwin" ];
+      systems = [
+        "x86_64-linux"
+        "x86_64-darwin"
+        "aarch64-linux"
+        "aarch64-darwin"
+      ];
     };
 }

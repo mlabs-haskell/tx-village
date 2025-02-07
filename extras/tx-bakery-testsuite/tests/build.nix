@@ -1,8 +1,7 @@
 { inputs, ... }:
 {
   perSystem =
-    { pkgs
-    , config
+    { config
     , system
     , inputs'
     , self'
@@ -13,7 +12,7 @@
       rustFlake = inputs.flake-lang.lib."${system}".rustFlake {
         src = ./.;
         crateName = "tx-bakery-tests";
-        cargoNextestExtraArgs = "--no-capture";
+        exportTests = true;
 
         extraSources = [
           config.packages.tx-bakery-rust-src
@@ -65,23 +64,22 @@
         imports = [
           inputs.services-flake.processComposeModules.default
         ];
+        cli.environment.PC_DISABLE_TUI = true;
         settings.processes = {
-          build = {
-            command = "${pkgs.cargo}/bin/cargo build --tests";
-          };
-
           tests = {
-            command = "${pkgs.cargo}/bin/cargo test";
+            command = "find ${self'.packages.tx-bakery-tests-rust-test}/bin -maxdepth 1 -type f -executable -exec {} \\;";
             depends_on = {
-              build.condition = "process_completed_successfully";
               cardano_devnet.condition = "process_healthy";
               ogmios.condition = "process_healthy";
+            };
+            availability = {
+              exit_on_end = true;
+              exit_on_skipped = true;
             };
           };
 
           cardano_devnet = {
             command = config.packages.cardano-devnet;
-            depends_on.build.condition = "process_completed_successfully";
             readiness_probe = {
               exec.command = ''
                 ${inputs'.cardano-node.packages.cardano-cli}/bin/cardano-cli query tip \
