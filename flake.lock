@@ -173,11 +173,11 @@
     "CHaP_3": {
       "flake": false,
       "locked": {
-        "lastModified": 1730295876,
-        "narHash": "sha256-ijnHTQ6eKIQ9FpEqDKt6c7vuFYN8aOBDhonp67utx2s=",
+        "lastModified": 1735857786,
+        "narHash": "sha256-X6Fp2uU++62rgaH4J1pIN5AalfV7f9rM5dmFaByMWqU=",
         "owner": "intersectmbo",
         "repo": "cardano-haskell-packages",
-        "rev": "25591f43ab943d5a070db5e8a2b9ff3a499d4d92",
+        "rev": "b9eaf0bbe60ccf64b7afc969b79f9820a4534bcf",
         "type": "github"
       },
       "original": {
@@ -3639,11 +3639,11 @@
         "treefmt-nix": "treefmt-nix"
       },
       "locked": {
-        "lastModified": 1738055465,
-        "narHash": "sha256-ScHHve+PbF/iDJCrkYVIn4Rwu1pb/DlcRowrhyFL/lg=",
+        "lastModified": 1738590756,
+        "narHash": "sha256-yrg1m0BLC3isFNDSYCrZZ/Qehl9KHHOfmeeIaglPb3Y=",
         "owner": "mlabs-haskell",
         "repo": "cardano.nix",
-        "rev": "86b5ddba2f174b0920e0d32b0f57f5166863c407",
+        "rev": "4cdea767a7efaabe0c75358416de3cf18175169e",
         "type": "github"
       },
       "original": {
@@ -4040,16 +4040,16 @@
         "utils": "utils_5"
       },
       "locked": {
-        "lastModified": 1730468447,
-        "narHash": "sha256-yNEv7MQEcOPY9I9k9RCzeMfJY6gzuGc7K53GKNHs6v8=",
+        "lastModified": 1736202991,
+        "narHash": "sha256-Oys38YkpSpB48/H2NseP9kTWXm92a7kjAZtdnorcIEY=",
         "owner": "intersectmbo",
         "repo": "cardano-node",
-        "rev": "01bda2e2cb0a70cd95067d696dbb44665f1d680a",
+        "rev": "1f63dbf2ab39e0b32bf6901dc203866d3e37de08",
         "type": "github"
       },
       "original": {
         "owner": "intersectmbo",
-        "ref": "10.1.2",
+        "ref": "10.1.4",
         "repo": "cardano-node",
         "type": "github"
       }
@@ -7945,11 +7945,11 @@
         "rust-overlay": "rust-overlay_2"
       },
       "locked": {
-        "lastModified": 1739046116,
-        "narHash": "sha256-m0xcruyJ9qf8OYR62a5huacEBjWMr8koV4gQLLDQgtw=",
+        "lastModified": 1739107160,
+        "narHash": "sha256-zfoJX48HRMCppL7/9N5aOl9AgjXEBnJ3Dt/Pcb8orYM=",
         "owner": "mlabs-haskell",
         "repo": "flake-lang.nix",
-        "rev": "64923fbb4ba96257c925833f8a4b822efde33a73",
+        "rev": "32d3f94770b37cac96e4bc55ced6ca4931409345",
         "type": "github"
       },
       "original": {
@@ -28659,11 +28659,11 @@
     },
     "services-flake": {
       "locked": {
-        "lastModified": 1738284400,
-        "narHash": "sha256-GmFJGQnq8OXEjq1Y7SpBC1cqfbCAaxVFslC2e2hafyo=",
+        "lastModified": 1739061182,
+        "narHash": "sha256-mToIcX7GLpEhObwDDVDOu3B5h/VIBVBpmfJZKgIAicc=",
         "owner": "juspay",
         "repo": "services-flake",
-        "rev": "e4f0c4039f970c6df1daea66d342ce7b47f2994d",
+        "rev": "bcae25837fa1341ec5218a24e92da9d9c96cc28e",
         "type": "github"
       },
       "original": {
