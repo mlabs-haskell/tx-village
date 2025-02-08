@@ -92,7 +92,9 @@
         cli.environment.PC_DISABLE_TUI = true;
         settings.processes = {
           tests = {
-            command = "find ${self'.packages.tx-bakery-testsuite-rust-test}/bin -maxdepth 1 -type f -executable -exec {} \\;";
+            command = "
+              ${self'.packages.tx-bakery-testsuite-rust-test}/bin/run_tests.sh
+            ";
             depends_on = {
               cardano_devnet.condition = "process_healthy";
               ogmios.condition = "process_healthy";
