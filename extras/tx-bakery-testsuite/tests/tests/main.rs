@@ -883,8 +883,6 @@ mod tests {
 
         ogmios.await_tx_confirm(&tx_hash_lock_a).await?;
 
-        assert_eq!(1,2);
-
         // TODO(chfanghr): We need something more thorough than this
         assert_eq!(
             ogmios
