@@ -7945,16 +7945,15 @@
         "rust-overlay": "rust-overlay_2"
       },
       "locked": {
-        "lastModified": 1739107160,
+        "lastModified": 1739355163,
         "narHash": "sha256-zfoJX48HRMCppL7/9N5aOl9AgjXEBnJ3Dt/Pcb8orYM=",
         "owner": "mlabs-haskell",
         "repo": "flake-lang.nix",
-        "rev": "32d3f94770b37cac96e4bc55ced6ca4931409345",
+        "rev": "0383cb2da4abf3914fa5a1efa591152220fc04fe",
         "type": "github"
       },
       "original": {
         "owner": "mlabs-haskell",
-        "ref": "szg251/rust-build-artifacts",
         "repo": "flake-lang.nix",
         "type": "github"
       }
