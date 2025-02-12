@@ -12,6 +12,7 @@
       rustFlake = inputs.flake-lang.lib.${system}.rustFlake {
         src = ./.;
         crateName = "tx-indexer-testsuite";
+        exportTests = true;
         extraSources = [
           config.packages.tx-bakery-rust-src
           config.packages.tx-bakery-ogmios-rust-src
@@ -21,7 +22,7 @@
         buildInputs = [ pkgs.postgresql_16.lib ];
 
         devShellTools = [
-          self'.packages.tx-indexer-tests
+          self'.packages.pc-tx-indexer-tests
         ];
 
         devShellHook =
@@ -31,8 +32,8 @@
 
             echo "TxIndexer testsuite"
             echo ""
-            echo "Run tx-indexer-tests to execute the testsuite."
-            echo "or tx-indexer-tests up db_migration ogmios cardano_devnet -t=true to spin up an environment"
+            echo "Run pc-tx-indexer-tests to execute the testsuite."
+            echo "or pc-tx-indexer-tests up db_migration ogmios cardano_devnet -t=true to spin up an environment"
             echo ""
           '';
       };
@@ -40,11 +41,35 @@
     {
       inherit (rustFlake) devShells packages;
 
+      checks = {
+        "tx-indexer-testsuite" = pkgs.stdenv.mkDerivation {
+          name = "tx-indexer-testsuite";
+          phases = [
+            "unpackPhase"
+            "checkPhase"
+            "buildPhase"
+          ];
+          unpackPhase = ''
+            echo "Linking data"
+            ln -s ${./wallets} ./wallets
+            mkdir ./tests
+            ln -s ${./tests/fixtures} ./tests/fixtures
+          '';
+          checkPhase = ''
+            ${self'.packages.pc-tx-indexer-tests}/bin/pc-tx-indexer-tests
+          '';
+          buildPhase = ''
+            mkdir $out
+          '';
+          doCheck = true;
+        };
+      };
+
       cardano-devnet.initialFunds = {
         "60a5587dc01541d4ad17d7a4416efee274d833f2fc894eef79976a3d06" = 9000000000;
       };
 
-      process-compose.tx-indexer-tests = {
+      process-compose.pc-tx-indexer-tests = {
         imports = [
           inputs.services-flake.processComposeModules.default
         ];
@@ -62,13 +87,9 @@
           ];
         };
         settings.processes = {
-          build = {
-            command = "${pkgs.cargo}/bin/cargo build --tests";
-          };
           tests = {
-            command = "${pkgs.cargo}/bin/cargo test";
+            command = "${self'.packages.tx-indexer-testsuite-rust-test}/bin/run_tests.sh";
             depends_on = {
-              build.condition = "process_completed_successfully";
               cardano_devnet.condition = "process_healthy";
               ogmios.condition = "process_healthy";
               db.condition = "process_healthy";
@@ -82,7 +103,6 @@
 
           cardano_devnet = {
             command = config.packages.cardano-devnet;
-            depends_on.build.condition = "process_completed_successfully";
             readiness_probe = {
               exec.command = ''
                 ${inputs'.cardano-node.packages.cardano-cli}/bin/cardano-cli query tip \
