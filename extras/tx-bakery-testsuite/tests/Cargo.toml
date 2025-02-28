@@ -14,10 +14,10 @@ lbf-tx-bakery-tests-plutus-api = { path = ".extras/lbf-tx-bakery-tests-plutus-ap
 lbr-prelude = { version = "0.1.3", features = ["derive"] }
 lbf-prelude = { path = ".extras/lbf-prelude-0.1.0" }
 plutus-ledger-api = { version = "3.0.1", features = ["lbf", "chrono"] }
-tx-bakery = { version = "2.0.0-beta.4", path = ".extras/tx-bakery-v2" }
+tx-bakery = { path = ".extras/tx-bakery-v2" }
 tokio = { version = "1.43.0", features = ["full"] }
 chrono = "0.4.39"
 num-bigint = { version = "0.4.6", features = ["serde"] }
 url = "2.5.4"
 assertables = "7.0.1"
-tx-bakery-ogmios = { version = "2.0.0-beta.4", path = ".extras/tx-bakery-ogmios-v2" }
+tx-bakery-ogmios = { path = ".extras/tx-bakery-ogmios-v2" }
