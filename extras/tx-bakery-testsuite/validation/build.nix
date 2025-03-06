@@ -1,6 +1,13 @@
 { inputs, ... }:
 {
-  perSystem = { config, system, pkgs, inputs', ... }:
+  perSystem =
+    {
+      config,
+      system,
+      pkgs,
+      inputs',
+      ...
+    }:
     let
       hsFlake = inputs.flake-lang.lib."${system}".haskellPlutusFlake {
         src = ./.;
@@ -40,7 +47,8 @@
         # WARN(bladyjoker): We have to pick the hsFlake.packages like this otherwise flake-parts goes into `infinite recursion`.
         tx-bakery-test-scripts-lib = hsFlake.packages."tx-bakery-test-scripts:lib:tx-bakery-test-scripts";
 
-        tx-bakery-test-scripts-cli = hsFlake.packages."tx-bakery-test-scripts:exe:tx-bakery-test-scripts-cli";
+        tx-bakery-test-scripts-cli =
+          hsFlake.packages."tx-bakery-test-scripts:exe:tx-bakery-test-scripts-cli";
 
         tx-bakery-test-scripts-config = pkgs.stdenv.mkDerivation {
           name = "tx-bakery-test-scripts-config";

@@ -1,12 +1,13 @@
 { inputs, ... }:
 {
   perSystem =
-    { system
-    , pkgs
-    , config
-    , inputs'
-    , self'
-    , ...
+    {
+      system,
+      pkgs,
+      config,
+      inputs',
+      self',
+      ...
     }:
     let
       rustFlake = inputs.flake-lang.lib.${system}.rustFlake {

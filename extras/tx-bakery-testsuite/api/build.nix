@@ -1,5 +1,7 @@
-{ inputs, ... }: {
-  perSystem = { system, ... }:
+{ inputs, ... }:
+{
+  perSystem =
+    { system, ... }:
     {
       packages = {
         lbf-tx-bakery-tests-plutus-api-plutarch = inputs.lbf.lib."${system}".lbfPlutarch {
@@ -28,4 +30,3 @@
       };
     };
 }
-

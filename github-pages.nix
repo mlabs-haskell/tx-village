@@ -1,7 +1,8 @@
 {
   hercules-ci.github-pages.branch = "main";
 
-  perSystem = { config, pkgs, ... }:
+  perSystem =
+    { config, pkgs, ... }:
     let
       github-pages-main-page = pkgs.writeText "README.md" ''
         # [Transaction Village](https://github.com/Unbox-infinity/tx-village)

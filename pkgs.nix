@@ -1,11 +1,13 @@
 # Repo-wide Nixpkgs with a ton of overlays
 { inputs, ... }:
 {
-  perSystem = { pkgs, system, ... }: {
+  perSystem =
+    { pkgs, system, ... }:
+    {
 
-    _module.args.pkgs = import inputs.nixpkgs {
-      inherit system;
+      _module.args.pkgs = import inputs.nixpkgs {
+        inherit system;
+      };
+
     };
-
-  };
 }

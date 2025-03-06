@@ -1,10 +1,17 @@
-_: { lib
-   , config
-   , pkgs
-   , ...
-   }:
+_:
+{
+  lib,
+  config,
+  pkgs,
+  ...
+}:
 let
-  inherit (lib) mkOption types mkEnableOption mkIf;
+  inherit (lib)
+    mkOption
+    types
+    mkEnableOption
+    mkIf
+    ;
   inherit (builtins) toString;
 
   cfg = config.services.cardano-dev-net;
