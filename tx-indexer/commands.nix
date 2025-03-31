@@ -1,33 +1,32 @@
-{ pkgs
-, extraDDLs ? [ ]
-, pgUser ? "tx_indexer"
-, pgPort ? "5555"
-, pgDir ? ".pg"
-, postgresql ? pkgs.postgresql_16
-, extraPostgresConf ? ""
-, schemaDumpIncludePlutus ? false
+{
+  pkgs,
+  extraDDLs ? [ ],
+  pgUser ? "tx_indexer",
+  pgPort ? "5555",
+  pgDir ? ".pg",
+  postgresql ? pkgs.postgresql_16,
+  extraPostgresConf ? "",
+  schemaDumpIncludePlutus ? false,
 }:
 let
-  postgresConf =
-    pkgs.writeText "postgresql.conf"
-      ''
-        # Add Custom Settings
-        log_min_messages = warning
-        log_min_error_statement = error
-        log_min_duration_statement = 100  # ms
-        log_connections = on
-        log_disconnections = on
-        log_duration = on
-        #log_line_prefix = '[] '
-        log_timezone = 'UTC'
-        log_statement = 'all'
-        log_directory = 'pg_log'
-        log_filename = 'postgresql-%Y-%m-%d_%H%M%S.log'
-        logging_collector = on
-        log_min_error_statement = error
+  postgresConf = pkgs.writeText "postgresql.conf" ''
+    # Add Custom Settings
+    log_min_messages = warning
+    log_min_error_statement = error
+    log_min_duration_statement = 100  # ms
+    log_connections = on
+    log_disconnections = on
+    log_duration = on
+    #log_line_prefix = '[] '
+    log_timezone = 'UTC'
+    log_statement = 'all'
+    log_directory = 'pg_log'
+    log_filename = 'postgresql-%Y-%m-%d_%H%M%S.log'
+    logging_collector = on
+    log_min_error_statement = error
 
-        ${extraPostgresConf}
-      '';
+    ${extraPostgresConf}
+  '';
 
   ddls = [
     ./lib-migrations/00000000000001_plutus/up.sql
@@ -100,12 +99,19 @@ let
         -U ${pgUser} \
         -h 127.0.0.1 \
         -p ${pgPort} \
-        ${pkgs.lib.optionalString (! schemaDumpIncludePlutus) "-N plutus" }
+        ${pkgs.lib.optionalString (!schemaDumpIncludePlutus) "-N plutus"}
     '';
   };
 
 in
 {
   inherit postgresConf;
-  devShellTools = [ init-db start-db stop-db pg init-empty-db dump-schema ];
+  devShellTools = [
+    init-db
+    start-db
+    stop-db
+    pg
+    init-empty-db
+    dump-schema
+  ];
 }

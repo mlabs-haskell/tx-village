@@ -1,10 +1,17 @@
 # Repo wide settings
-{ lib, flake-parts-lib, inputs, ... }: {
+{
+  lib,
+  flake-parts-lib,
+  inputs,
+  ...
+}:
+{
 
   options = {
 
-    perSystem = flake-parts-lib.mkPerSystemOption
-      ({ system, config, ... }: {
+    perSystem = flake-parts-lib.mkPerSystemOption (
+      { system, config, ... }:
+      {
         options.settings = {
 
           shell = {
@@ -36,21 +43,20 @@
 
         };
 
-
         config = {
 
           settings = {
 
             haskell = {
-              index-state = "2024-01-16T11:00:00Z";
-              compiler-nix-name = "ghc963";
+              index-state = "2024-10-09T22:38:57Z";
+              compiler-nix-name = "ghc966";
             };
 
             shell = {
 
               tools = [
                 inputs.pre-commit-hooks.outputs.packages.${system}.deadnix
-                inputs.pre-commit-hooks.outputs.packages.${system}.nixpkgs-fmt
+                inputs.pre-commit-hooks.outputs.packages.${system}.nixfmt-rfc-style
 
                 inputs.pre-commit-hooks.outputs.packages.${system}.shellcheck
 
@@ -73,7 +79,8 @@
           };
         };
 
-      });
+      }
+    );
 
   };
 

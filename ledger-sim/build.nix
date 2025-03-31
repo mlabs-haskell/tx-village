@@ -1,17 +1,17 @@
-{ inputs, ... }: {
-  perSystem = { config, system, ... }:
+{ inputs, ... }:
+{
+  perSystem =
+    { config, system, ... }:
     let
-      hsFlake =
-        inputs.flake-lang.lib.${system}.haskellPlutusFlake
-          {
-            src = ./.;
-            name = "ledger-sim";
-            inherit (config.settings.haskell) index-state compiler-nix-name;
+      hsFlake = inputs.flake-lang.lib.${system}.haskellPlutusFlake {
+        src = ./.;
+        name = "ledger-sim";
+        inherit (config.settings.haskell) index-state compiler-nix-name;
 
-            devShellTools = config.settings.shell.tools;
+        devShellTools = config.settings.shell.tools;
 
-            devShellHook = config.settings.shell.hook;
-          };
+        devShellHook = config.settings.shell.hook;
+      };
     in
     {
       devShells.dev-ledger-sim = hsFlake.devShell;
