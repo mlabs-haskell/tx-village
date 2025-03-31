@@ -967,8 +967,6 @@ impl TxBakery {
             .iter()
             .for_each(|script| script_witnesses.add(script));
 
-        // let ref_scripts = tx.tx_info.reference_inputs.iter().any(|tx_in_info| tx_in_info.output.reference_script.is_so);
-
         let mut redeemer_witnesses = csl::Redeemers::new();
 
         redeemers_w_ex_u
