@@ -2428,16 +2428,8 @@
     "cardano-automation": {
       "inputs": {
         "flake-utils": "flake-utils",
-        "haskellNix": [
-          "cardano-devnet-flake",
-          "cardano-node",
-          "haskellNix"
-        ],
-        "nixpkgs": [
-          "cardano-devnet-flake",
-          "cardano-node",
-          "nixpkgs"
-        ],
+        "haskellNix": ["cardano-devnet-flake", "cardano-node", "haskellNix"],
+        "nixpkgs": ["cardano-devnet-flake", "cardano-node", "nixpkgs"],
         "tullia": "tullia"
       },
       "locked": {
@@ -2457,16 +2449,8 @@
     "cardano-automation_2": {
       "inputs": {
         "flake-utils": "flake-utils_5",
-        "haskellNix": [
-          "cardano-nix",
-          "cardano-node",
-          "haskellNix"
-        ],
-        "nixpkgs": [
-          "cardano-nix",
-          "cardano-node",
-          "nixpkgs"
-        ],
+        "haskellNix": ["cardano-nix", "cardano-node", "haskellNix"],
+        "nixpkgs": ["cardano-nix", "cardano-node", "nixpkgs"],
         "tullia": "tullia_2"
       },
       "locked": {
@@ -2519,18 +2503,8 @@
     "cardano-automation_4": {
       "inputs": {
         "flake-utils": "flake-utils_13",
-        "haskellNix": [
-          "flake-lang",
-          "ctl",
-          "cardano-node",
-          "haskellNix"
-        ],
-        "nixpkgs": [
-          "flake-lang",
-          "ctl",
-          "cardano-node",
-          "nixpkgs"
-        ],
+        "haskellNix": ["flake-lang", "ctl", "cardano-node", "haskellNix"],
+        "nixpkgs": ["flake-lang", "ctl", "cardano-node", "nixpkgs"],
         "tullia": "tullia_4"
       },
       "locked": {
@@ -2634,13 +2608,7 @@
           "cardano-node",
           "haskellNix"
         ],
-        "nixpkgs": [
-          "lbf",
-          "flake-lang",
-          "ctl",
-          "cardano-node",
-          "nixpkgs"
-        ],
+        "nixpkgs": ["lbf", "flake-lang", "ctl", "cardano-node", "nixpkgs"],
         "tullia": "tullia_8"
       },
       "locked": {
@@ -2876,11 +2844,7 @@
       "inputs": {
         "cardano-node": "cardano-node",
         "flake-parts": "flake-parts",
-        "nixpkgs": [
-          "cardano-devnet-flake",
-          "cardano-node",
-          "nixpkgs"
-        ]
+        "nixpkgs": ["cardano-devnet-flake", "cardano-node", "nixpkgs"]
       },
       "locked": {
         "lastModified": 1740493924,
@@ -3105,11 +3069,7 @@
         "flake-parts": "flake-parts_3",
         "flake-root": "flake-root_2",
         "hercules-ci-effects": "hercules-ci-effects_2",
-        "nixpkgs": [
-          "flake-lang",
-          "ctl",
-          "nixpkgs"
-        ],
+        "nixpkgs": ["flake-lang", "ctl", "nixpkgs"],
         "oura": "oura_2",
         "pre-commit-hooks-nix": "pre-commit-hooks-nix_2",
         "treefmt-nix": "treefmt-nix_2"
@@ -3142,12 +3102,7 @@
         "flake-parts": "flake-parts_11",
         "flake-root": "flake-root_3",
         "hercules-ci-effects": "hercules-ci-effects_4",
-        "nixpkgs": [
-          "lbf",
-          "flake-lang",
-          "ctl",
-          "nixpkgs"
-        ],
+        "nixpkgs": ["lbf", "flake-lang", "ctl", "nixpkgs"],
         "oura": "oura_3",
         "pre-commit-hooks-nix": "pre-commit-hooks-nix_3",
         "treefmt-nix": "treefmt-nix_5"
@@ -3177,11 +3132,7 @@
         "flake-compat": "flake-compat_2",
         "hackageNix": "hackageNix",
         "haskellNix": "haskellNix",
-        "hostNixpkgs": [
-          "cardano-devnet-flake",
-          "cardano-node",
-          "nixpkgs"
-        ],
+        "hostNixpkgs": ["cardano-devnet-flake", "cardano-node", "nixpkgs"],
         "iohkNix": "iohkNix",
         "nixpkgs": [
           "cardano-devnet-flake",
@@ -3343,11 +3294,7 @@
         "flake-compat": "flake-compat_7",
         "hackageNix": "hackageNix_3",
         "haskellNix": "haskellNix_3",
-        "hostNixpkgs": [
-          "cardano-nix",
-          "cardano-node",
-          "nixpkgs"
-        ],
+        "hostNixpkgs": ["cardano-nix", "cardano-node", "nixpkgs"],
         "iohkNix": "iohkNix_3",
         "nixpkgs": [
           "cardano-nix",
@@ -3431,12 +3378,7 @@
         "flake-compat": "flake-compat_17",
         "hackageNix": "hackageNix_6",
         "haskellNix": "haskellNix_6",
-        "hostNixpkgs": [
-          "flake-lang",
-          "ctl",
-          "cardano-node",
-          "nixpkgs"
-        ],
+        "hostNixpkgs": ["flake-lang", "ctl", "cardano-node", "nixpkgs"],
         "iohkNix": "iohkNix_6",
         "nixpkgs": [
           "flake-lang",
@@ -3475,13 +3417,7 @@
         "flake-compat": "flake-compat_39",
         "hackageNix": "hackageNix_10",
         "haskellNix": "haskellNix_11",
-        "hostNixpkgs": [
-          "lbf",
-          "flake-lang",
-          "ctl",
-          "cardano-node",
-          "nixpkgs"
-        ],
+        "hostNixpkgs": ["lbf", "flake-lang", "ctl", "cardano-node", "nixpkgs"],
         "iohkNix": "iohkNix_11",
         "nix2container": "nix2container_11",
         "nixpkgs": [
@@ -4016,13 +3952,7 @@
     },
     "crane_6": {
       "inputs": {
-        "nixpkgs": [
-          "lbf",
-          "flake-lang",
-          "ctl",
-          "cardano-nix",
-          "nixpkgs"
-        ]
+        "nixpkgs": ["lbf", "flake-lang", "ctl", "cardano-nix", "nixpkgs"]
       },
       "locked": {
         "lastModified": 1721058578,
@@ -4140,19 +4070,11 @@
         "cardano-configurations": "cardano-configurations",
         "cardano-nix": "cardano-nix_2",
         "cardano-node": "cardano-node_4",
-        "db-sync": [
-          "flake-lang",
-          "db-sync-ctl"
-        ],
+        "db-sync": ["flake-lang", "db-sync-ctl"],
         "easy-purescript-nix": "easy-purescript-nix",
         "flake-compat": "flake-compat_19",
         "hercules-ci-effects": "hercules-ci-effects_3",
-        "nixpkgs": [
-          "flake-lang",
-          "ctl",
-          "cardano-node",
-          "nixpkgs"
-        ],
+        "nixpkgs": ["flake-lang", "ctl", "cardano-node", "nixpkgs"],
         "nixpkgs-arion": "nixpkgs-arion",
         "ogmios": "ogmios"
       },
@@ -4178,11 +4100,7 @@
         "cardano-configurations": "cardano-configurations_2",
         "cardano-nix": "cardano-nix_3",
         "cardano-node": "cardano-node_5",
-        "db-sync": [
-          "lbf",
-          "flake-lang",
-          "db-sync-ctl"
-        ],
+        "db-sync": ["lbf", "flake-lang", "db-sync-ctl"],
         "easy-purescript-nix": "easy-purescript-nix_2",
         "flake-compat": "flake-compat_41",
         "hackage-nix": "hackage-nix",
@@ -4362,12 +4280,7 @@
           "haskellNix",
           "nixpkgs-unstable"
         ],
-        "std": [
-          "flake-lang",
-          "db-sync-ctl",
-          "tullia",
-          "std"
-        ],
+        "std": ["flake-lang", "db-sync-ctl", "tullia", "std"],
         "tullia": "tullia_5",
         "utils": "utils_14"
       },
@@ -4400,13 +4313,7 @@
           "haskellNix",
           "nixpkgs-unstable"
         ],
-        "std": [
-          "lbf",
-          "flake-lang",
-          "db-sync-ctl",
-          "tullia",
-          "std"
-        ],
+        "std": ["lbf", "flake-lang", "db-sync-ctl", "tullia", "std"],
         "tullia": "tullia_9",
         "utils": "utils_24"
       },
@@ -4535,13 +4442,7 @@
     },
     "devshell_11": {
       "inputs": {
-        "nixpkgs": [
-          "lbf",
-          "flake-lang",
-          "ctl",
-          "cardano-nix",
-          "nixpkgs"
-        ],
+        "nixpkgs": ["lbf", "flake-lang", "ctl", "cardano-nix", "nixpkgs"],
         "systems": "systems_9"
       },
       "locked": {
@@ -4663,10 +4564,7 @@
     },
     "devshell_3": {
       "inputs": {
-        "nixpkgs": [
-          "cardano-nix",
-          "nixpkgs"
-        ]
+        "nixpkgs": ["cardano-nix", "nixpkgs"]
       },
       "locked": {
         "lastModified": 1728330715,
@@ -4721,12 +4619,7 @@
     },
     "devshell_5": {
       "inputs": {
-        "nixpkgs": [
-          "flake-lang",
-          "ctl",
-          "cardano-nix",
-          "nixpkgs"
-        ]
+        "nixpkgs": ["flake-lang", "ctl", "cardano-nix", "nixpkgs"]
       },
       "locked": {
         "lastModified": 1728330715,
@@ -4786,13 +4679,7 @@
           "std",
           "flake-utils"
         ],
-        "nixpkgs": [
-          "flake-lang",
-          "db-sync-ctl",
-          "tullia",
-          "std",
-          "nixpkgs"
-        ]
+        "nixpkgs": ["flake-lang", "db-sync-ctl", "tullia", "std", "nixpkgs"]
       },
       "locked": {
         "lastModified": 1663445644,
@@ -5078,30 +4965,9 @@
     },
     "dmerge_14": {
       "inputs": {
-        "haumea": [
-          "lbf",
-          "flake-lang",
-          "ctl",
-          "cardano-node",
-          "std",
-          "haumea"
-        ],
-        "nixlib": [
-          "lbf",
-          "flake-lang",
-          "ctl",
-          "cardano-node",
-          "std",
-          "lib"
-        ],
-        "yants": [
-          "lbf",
-          "flake-lang",
-          "ctl",
-          "cardano-node",
-          "std",
-          "yants"
-        ]
+        "haumea": ["lbf", "flake-lang", "ctl", "cardano-node", "std", "haumea"],
+        "nixlib": ["lbf", "flake-lang", "ctl", "cardano-node", "std", "lib"],
+        "yants": ["lbf", "flake-lang", "ctl", "cardano-node", "std", "yants"]
       },
       "locked": {
         "lastModified": 1686862774,
@@ -5128,14 +4994,7 @@
           "std",
           "nixpkgs"
         ],
-        "yants": [
-          "lbf",
-          "flake-lang",
-          "db-sync-ctl",
-          "tullia",
-          "std",
-          "yants"
-        ]
+        "yants": ["lbf", "flake-lang", "db-sync-ctl", "tullia", "std", "yants"]
       },
       "locked": {
         "lastModified": 1659548052,
@@ -5153,24 +5012,9 @@
     },
     "dmerge_2": {
       "inputs": {
-        "haumea": [
-          "cardano-devnet-flake",
-          "cardano-node",
-          "std",
-          "haumea"
-        ],
-        "nixlib": [
-          "cardano-devnet-flake",
-          "cardano-node",
-          "std",
-          "lib"
-        ],
-        "yants": [
-          "cardano-devnet-flake",
-          "cardano-node",
-          "std",
-          "yants"
-        ]
+        "haumea": ["cardano-devnet-flake", "cardano-node", "std", "haumea"],
+        "nixlib": ["cardano-devnet-flake", "cardano-node", "std", "lib"],
+        "yants": ["cardano-devnet-flake", "cardano-node", "std", "yants"]
       },
       "locked": {
         "lastModified": 1686862774,
@@ -5222,24 +5066,9 @@
     },
     "dmerge_4": {
       "inputs": {
-        "haumea": [
-          "cardano-nix",
-          "cardano-node",
-          "std",
-          "haumea"
-        ],
-        "nixlib": [
-          "cardano-nix",
-          "cardano-node",
-          "std",
-          "lib"
-        ],
-        "yants": [
-          "cardano-nix",
-          "cardano-node",
-          "std",
-          "yants"
-        ]
+        "haumea": ["cardano-nix", "cardano-node", "std", "haumea"],
+        "nixlib": ["cardano-nix", "cardano-node", "std", "lib"],
+        "yants": ["cardano-nix", "cardano-node", "std", "yants"]
       },
       "locked": {
         "lastModified": 1686862774,
@@ -5372,27 +5201,9 @@
     },
     "dmerge_8": {
       "inputs": {
-        "haumea": [
-          "flake-lang",
-          "ctl",
-          "cardano-node",
-          "std",
-          "haumea"
-        ],
-        "nixlib": [
-          "flake-lang",
-          "ctl",
-          "cardano-node",
-          "std",
-          "lib"
-        ],
-        "yants": [
-          "flake-lang",
-          "ctl",
-          "cardano-node",
-          "std",
-          "yants"
-        ]
+        "haumea": ["flake-lang", "ctl", "cardano-node", "std", "haumea"],
+        "nixlib": ["flake-lang", "ctl", "cardano-node", "std", "lib"],
+        "yants": ["flake-lang", "ctl", "cardano-node", "std", "yants"]
       },
       "locked": {
         "lastModified": 1686862774,
@@ -5411,20 +5222,8 @@
     },
     "dmerge_9": {
       "inputs": {
-        "nixlib": [
-          "flake-lang",
-          "db-sync-ctl",
-          "tullia",
-          "std",
-          "nixpkgs"
-        ],
-        "yants": [
-          "flake-lang",
-          "db-sync-ctl",
-          "tullia",
-          "std",
-          "yants"
-        ]
+        "nixlib": ["flake-lang", "db-sync-ctl", "tullia", "std", "nixpkgs"],
+        "yants": ["flake-lang", "db-sync-ctl", "tullia", "std", "yants"]
       },
       "locked": {
         "lastModified": 1659548052,
@@ -6835,12 +6634,7 @@
     },
     "flake-parts_14": {
       "inputs": {
-        "nixpkgs-lib": [
-          "lbf",
-          "flake-lang",
-          "hci-effects",
-          "nixpkgs"
-        ]
+        "nixpkgs-lib": ["lbf", "flake-lang", "hci-effects", "nixpkgs"]
       },
       "locked": {
         "lastModified": 1736143030,
@@ -6875,11 +6669,7 @@
     },
     "flake-parts_16": {
       "inputs": {
-        "nixpkgs-lib": [
-          "lbf",
-          "hci-effects",
-          "nixpkgs"
-        ]
+        "nixpkgs-lib": ["lbf", "hci-effects", "nixpkgs"]
       },
       "locked": {
         "lastModified": 1736143030,
@@ -6932,12 +6722,7 @@
     },
     "flake-parts_19": {
       "inputs": {
-        "nixpkgs-lib": [
-          "lbf",
-          "plutarch",
-          "hercules-ci-effects",
-          "nixpkgs"
-        ]
+        "nixpkgs-lib": ["lbf", "plutarch", "hercules-ci-effects", "nixpkgs"]
       },
       "locked": {
         "lastModified": 1712014858,
@@ -7071,12 +6856,7 @@
     },
     "flake-parts_25": {
       "inputs": {
-        "nixpkgs-lib": [
-          "lbf",
-          "proto-nix",
-          "hci-effects",
-          "nixpkgs"
-        ]
+        "nixpkgs-lib": ["lbf", "proto-nix", "hci-effects", "nixpkgs"]
       },
       "locked": {
         "lastModified": 1701473968,
@@ -7111,12 +6891,7 @@
     },
     "flake-parts_4": {
       "inputs": {
-        "nixpkgs-lib": [
-          "flake-lang",
-          "ctl",
-          "hercules-ci-effects",
-          "nixpkgs"
-        ]
+        "nixpkgs-lib": ["flake-lang", "ctl", "hercules-ci-effects", "nixpkgs"]
       },
       "locked": {
         "lastModified": 1736143030,
@@ -7151,11 +6926,7 @@
     },
     "flake-parts_6": {
       "inputs": {
-        "nixpkgs-lib": [
-          "flake-lang",
-          "hci-effects",
-          "nixpkgs"
-        ]
+        "nixpkgs-lib": ["flake-lang", "hci-effects", "nixpkgs"]
       },
       "locked": {
         "lastModified": 1738453229,
@@ -8602,11 +8373,7 @@
     },
     "gitignore": {
       "inputs": {
-        "nixpkgs": [
-          "cardano-nix",
-          "pre-commit-hooks-nix",
-          "nixpkgs"
-        ]
+        "nixpkgs": ["cardano-nix", "pre-commit-hooks-nix", "nixpkgs"]
       },
       "locked": {
         "lastModified": 1709087332,
@@ -8624,12 +8391,7 @@
     },
     "gitignore_10": {
       "inputs": {
-        "nixpkgs": [
-          "lbf",
-          "proto-nix",
-          "pre-commit-hooks",
-          "nixpkgs"
-        ]
+        "nixpkgs": ["lbf", "proto-nix", "pre-commit-hooks", "nixpkgs"]
       },
       "locked": {
         "lastModified": 1703887061,
@@ -8671,11 +8433,7 @@
     },
     "gitignore_3": {
       "inputs": {
-        "nixpkgs": [
-          "flake-lang",
-          "pre-commit-hooks",
-          "nixpkgs"
-        ]
+        "nixpkgs": ["flake-lang", "pre-commit-hooks", "nixpkgs"]
       },
       "locked": {
         "lastModified": 1709087332,
@@ -8718,12 +8476,7 @@
     },
     "gitignore_5": {
       "inputs": {
-        "nixpkgs": [
-          "lbf",
-          "flake-lang",
-          "pre-commit-hooks",
-          "nixpkgs"
-        ]
+        "nixpkgs": ["lbf", "flake-lang", "pre-commit-hooks", "nixpkgs"]
       },
       "locked": {
         "lastModified": 1709087332,
@@ -8741,12 +8494,7 @@
     },
     "gitignore_6": {
       "inputs": {
-        "nixpkgs": [
-          "lbf",
-          "plutarch",
-          "pre-commit-hooks",
-          "nixpkgs"
-        ]
+        "nixpkgs": ["lbf", "plutarch", "pre-commit-hooks", "nixpkgs"]
       },
       "locked": {
         "lastModified": 1709087332,
@@ -8811,11 +8559,7 @@
     },
     "gitignore_9": {
       "inputs": {
-        "nixpkgs": [
-          "lbf",
-          "pre-commit-hooks",
-          "nixpkgs"
-        ]
+        "nixpkgs": ["lbf", "pre-commit-hooks", "nixpkgs"]
       },
       "locked": {
         "lastModified": 1709087332,
@@ -9379,11 +9123,7 @@
         "hls-2.9": "hls-2.9_3",
         "hpc-coveralls": "hpc-coveralls_8",
         "iserv-proxy": "iserv-proxy_8",
-        "nixpkgs": [
-          "flake-lang",
-          "haskell-nix",
-          "nixpkgs-unstable"
-        ],
+        "nixpkgs": ["flake-lang", "haskell-nix", "nixpkgs-unstable"],
         "nixpkgs-2305": "nixpkgs-2305_7",
         "nixpkgs-2311": "nixpkgs-2311_7",
         "nixpkgs-2405": "nixpkgs-2405_3",
@@ -9473,12 +9213,7 @@
         "cardano-shell": "cardano-shell_14",
         "flake-compat": "flake-compat_42",
         "ghc-8.6.5-iohk": "ghc-8.6.5-iohk_14",
-        "hackage": [
-          "lbf",
-          "flake-lang",
-          "ctl",
-          "hackage-nix"
-        ],
+        "hackage": ["lbf", "flake-lang", "ctl", "hackage-nix"],
         "hls-1.10": "hls-1.10_14",
         "hls-2.0": "hls-2.0_12",
         "hls-2.2": "hls-2.2_11",
@@ -9492,12 +9227,7 @@
         "hpc-coveralls": "hpc-coveralls_14",
         "hydra": "hydra_13",
         "iserv-proxy": "iserv-proxy_14",
-        "nixpkgs": [
-          "lbf",
-          "flake-lang",
-          "ctl",
-          "nixpkgs"
-        ],
+        "nixpkgs": ["lbf", "flake-lang", "ctl", "nixpkgs"],
         "nixpkgs-2003": "nixpkgs-2003_13",
         "nixpkgs-2105": "nixpkgs-2105_13",
         "nixpkgs-2111": "nixpkgs-2111_13",
@@ -9547,12 +9277,7 @@
         "hpc-coveralls": "hpc-coveralls_16",
         "hydra": "hydra_15",
         "iserv-proxy": "iserv-proxy_16",
-        "nixpkgs": [
-          "lbf",
-          "flake-lang",
-          "haskell-nix",
-          "nixpkgs-unstable"
-        ],
+        "nixpkgs": ["lbf", "flake-lang", "haskell-nix", "nixpkgs-unstable"],
         "nixpkgs-2003": "nixpkgs-2003_15",
         "nixpkgs-2105": "nixpkgs-2105_15",
         "nixpkgs-2111": "nixpkgs-2111_15",
@@ -9602,12 +9327,7 @@
         "hpc-coveralls": "hpc-coveralls_17",
         "hydra": "hydra_16",
         "iserv-proxy": "iserv-proxy_17",
-        "nixpkgs": [
-          "lbf",
-          "plutarch",
-          "haskell-nix",
-          "nixpkgs-unstable"
-        ],
+        "nixpkgs": ["lbf", "plutarch", "haskell-nix", "nixpkgs-unstable"],
         "nixpkgs-2003": "nixpkgs-2003_16",
         "nixpkgs-2105": "nixpkgs-2105_16",
         "nixpkgs-2111": "nixpkgs-2111_16",
@@ -9713,12 +9433,7 @@
         "hydra": "hydra_18",
         "iserv-proxy": "iserv-proxy_19",
         "nix-tools-static": "nix-tools-static",
-        "nixpkgs": [
-          "lbf",
-          "proto-nix",
-          "haskell-nix",
-          "nixpkgs-unstable"
-        ],
+        "nixpkgs": ["lbf", "proto-nix", "haskell-nix", "nixpkgs-unstable"],
         "nixpkgs-2003": "nixpkgs-2003_18",
         "nixpkgs-2105": "nixpkgs-2105_18",
         "nixpkgs-2111": "nixpkgs-2111_18",
@@ -9767,10 +9482,7 @@
         "hls-2.9": "hls-2.9_8",
         "hpc-coveralls": "hpc-coveralls_20",
         "iserv-proxy": "iserv-proxy_20",
-        "nixpkgs": [
-          "ogmios",
-          "nixpkgs"
-        ],
+        "nixpkgs": ["ogmios", "nixpkgs"],
         "nixpkgs-2305": "nixpkgs-2305_17",
         "nixpkgs-2311": "nixpkgs-2311_14",
         "nixpkgs-2405": "nixpkgs-2405_7",
@@ -9804,11 +9516,7 @@
         "ghc-8.6.5-iohk": "ghc-8.6.5-iohk",
         "ghc910X": "ghc910X",
         "ghc911": "ghc911",
-        "hackage": [
-          "cardano-devnet-flake",
-          "cardano-node",
-          "hackageNix"
-        ],
+        "hackage": ["cardano-devnet-flake", "cardano-node", "hackageNix"],
         "hls-1.10": "hls-1.10",
         "hls-2.0": "hls-2.0",
         "hls-2.2": "hls-2.2",
@@ -9821,11 +9529,7 @@
         "hpc-coveralls": "hpc-coveralls",
         "hydra": "hydra",
         "iserv-proxy": "iserv-proxy",
-        "nixpkgs": [
-          "cardano-devnet-flake",
-          "cardano-node",
-          "nixpkgs"
-        ],
+        "nixpkgs": ["cardano-devnet-flake", "cardano-node", "nixpkgs"],
         "nixpkgs-2003": "nixpkgs-2003",
         "nixpkgs-2105": "nixpkgs-2105",
         "nixpkgs-2111": "nixpkgs-2111",
@@ -9922,13 +9626,7 @@
         "ghc-8.6.5-iohk": "ghc-8.6.5-iohk_13",
         "ghc910X": "ghc910X_5",
         "ghc911": "ghc911_5",
-        "hackage": [
-          "lbf",
-          "flake-lang",
-          "ctl",
-          "cardano-node",
-          "hackageNix"
-        ],
+        "hackage": ["lbf", "flake-lang", "ctl", "cardano-node", "hackageNix"],
         "hls-1.10": "hls-1.10_13",
         "hls-2.0": "hls-2.0_11",
         "hls-2.2": "hls-2.2_10",
@@ -9942,13 +9640,7 @@
         "hpc-coveralls": "hpc-coveralls_13",
         "hydra": "hydra_12",
         "iserv-proxy": "iserv-proxy_13",
-        "nixpkgs": [
-          "lbf",
-          "flake-lang",
-          "ctl",
-          "cardano-node",
-          "nixpkgs"
-        ],
+        "nixpkgs": ["lbf", "flake-lang", "ctl", "cardano-node", "nixpkgs"],
         "nixpkgs-2003": "nixpkgs-2003_12",
         "nixpkgs-2105": "nixpkgs-2105_12",
         "nixpkgs-2111": "nixpkgs-2111_12",
@@ -10028,11 +9720,7 @@
         "cardano-shell": "cardano-shell_2",
         "flake-compat": "flake-compat_5",
         "ghc-8.6.5-iohk": "ghc-8.6.5-iohk_2",
-        "hackage": [
-          "cardano-nix",
-          "cardano-db-sync",
-          "hackageNix"
-        ],
+        "hackage": ["cardano-nix", "cardano-db-sync", "hackageNix"],
         "hls-1.10": "hls-1.10_2",
         "hls-2.0": "hls-2.0_2",
         "hls-2.2": "hls-2.2_2",
@@ -10089,11 +9777,7 @@
         "ghc-8.6.5-iohk": "ghc-8.6.5-iohk_3",
         "ghc910X": "ghc910X_2",
         "ghc911": "ghc911_2",
-        "hackage": [
-          "cardano-nix",
-          "cardano-node",
-          "hackageNix"
-        ],
+        "hackage": ["cardano-nix", "cardano-node", "hackageNix"],
         "hls-1.10": "hls-1.10_3",
         "hls-2.0": "hls-2.0_3",
         "hls-2.2": "hls-2.2_3",
@@ -10106,11 +9790,7 @@
         "hpc-coveralls": "hpc-coveralls_3",
         "hydra": "hydra_3",
         "iserv-proxy": "iserv-proxy_3",
-        "nixpkgs": [
-          "cardano-nix",
-          "cardano-node",
-          "nixpkgs"
-        ],
+        "nixpkgs": ["cardano-nix", "cardano-node", "nixpkgs"],
         "nixpkgs-2003": "nixpkgs-2003_3",
         "nixpkgs-2105": "nixpkgs-2105_3",
         "nixpkgs-2111": "nixpkgs-2111_3",
@@ -10274,12 +9954,7 @@
         "ghc-8.6.5-iohk": "ghc-8.6.5-iohk_6",
         "ghc910X": "ghc910X_4",
         "ghc911": "ghc911_4",
-        "hackage": [
-          "flake-lang",
-          "ctl",
-          "cardano-node",
-          "hackageNix"
-        ],
+        "hackage": ["flake-lang", "ctl", "cardano-node", "hackageNix"],
         "hls-1.10": "hls-1.10_6",
         "hls-2.0": "hls-2.0_6",
         "hls-2.2": "hls-2.2_6",
@@ -10292,12 +9967,7 @@
         "hpc-coveralls": "hpc-coveralls_6",
         "hydra": "hydra_6",
         "iserv-proxy": "iserv-proxy_6",
-        "nixpkgs": [
-          "flake-lang",
-          "ctl",
-          "cardano-node",
-          "nixpkgs"
-        ],
+        "nixpkgs": ["flake-lang", "ctl", "cardano-node", "nixpkgs"],
         "nixpkgs-2003": "nixpkgs-2003_6",
         "nixpkgs-2105": "nixpkgs-2105_6",
         "nixpkgs-2111": "nixpkgs-2111_6",
@@ -10483,12 +10153,7 @@
     },
     "haumea": {
       "inputs": {
-        "nixpkgs": [
-          "cardano-devnet-flake",
-          "cardano-node",
-          "std",
-          "lib"
-        ]
+        "nixpkgs": ["cardano-devnet-flake", "cardano-node", "std", "lib"]
       },
       "locked": {
         "lastModified": 1685133229,
@@ -10507,12 +10172,7 @@
     },
     "haumea_2": {
       "inputs": {
-        "nixpkgs": [
-          "cardano-nix",
-          "cardano-node",
-          "std",
-          "lib"
-        ]
+        "nixpkgs": ["cardano-nix", "cardano-node", "std", "lib"]
       },
       "locked": {
         "lastModified": 1685133229,
@@ -10557,13 +10217,7 @@
     },
     "haumea_4": {
       "inputs": {
-        "nixpkgs": [
-          "flake-lang",
-          "ctl",
-          "cardano-node",
-          "std",
-          "lib"
-        ]
+        "nixpkgs": ["flake-lang", "ctl", "cardano-node", "std", "lib"]
       },
       "locked": {
         "lastModified": 1685133229,
@@ -10601,14 +10255,7 @@
     },
     "haumea_6": {
       "inputs": {
-        "nixpkgs": [
-          "lbf",
-          "flake-lang",
-          "ctl",
-          "cardano-node",
-          "std",
-          "lib"
-        ]
+        "nixpkgs": ["lbf", "flake-lang", "ctl", "cardano-node", "std", "lib"]
       },
       "locked": {
         "lastModified": 1685133229,
@@ -10761,14 +10408,8 @@
     },
     "hercules-ci-effects": {
       "inputs": {
-        "flake-parts": [
-          "cardano-nix",
-          "flake-parts"
-        ],
-        "nixpkgs": [
-          "cardano-nix",
-          "nixpkgs"
-        ]
+        "flake-parts": ["cardano-nix", "flake-parts"],
+        "nixpkgs": ["cardano-nix", "nixpkgs"]
       },
       "locked": {
         "lastModified": 1714676393,
@@ -10787,18 +10428,8 @@
     },
     "hercules-ci-effects_2": {
       "inputs": {
-        "flake-parts": [
-          "flake-lang",
-          "ctl",
-          "cardano-nix",
-          "flake-parts"
-        ],
-        "nixpkgs": [
-          "flake-lang",
-          "ctl",
-          "cardano-nix",
-          "nixpkgs"
-        ]
+        "flake-parts": ["flake-lang", "ctl", "cardano-nix", "flake-parts"],
+        "nixpkgs": ["flake-lang", "ctl", "cardano-nix", "nixpkgs"]
       },
       "locked": {
         "lastModified": 1714676393,
@@ -10843,13 +10474,7 @@
           "cardano-nix",
           "flake-parts"
         ],
-        "nixpkgs": [
-          "lbf",
-          "flake-lang",
-          "ctl",
-          "cardano-nix",
-          "nixpkgs"
-        ]
+        "nixpkgs": ["lbf", "flake-lang", "ctl", "cardano-nix", "nixpkgs"]
       },
       "locked": {
         "lastModified": 1710396488,
@@ -13921,14 +13546,7 @@
     "hydra_16": {
       "inputs": {
         "nix": "nix_17",
-        "nixpkgs": [
-          "lbf",
-          "plutarch",
-          "haskell-nix",
-          "hydra",
-          "nix",
-          "nixpkgs"
-        ]
+        "nixpkgs": ["lbf", "plutarch", "haskell-nix", "hydra", "nix", "nixpkgs"]
       },
       "locked": {
         "lastModified": 1671755331,
@@ -14208,12 +13826,7 @@
     },
     "incl": {
       "inputs": {
-        "nixlib": [
-          "cardano-devnet-flake",
-          "cardano-node",
-          "std",
-          "lib"
-        ]
+        "nixlib": ["cardano-devnet-flake", "cardano-node", "std", "lib"]
       },
       "locked": {
         "lastModified": 1669263024,
@@ -14256,12 +13869,7 @@
     },
     "incl_2": {
       "inputs": {
-        "nixlib": [
-          "cardano-nix",
-          "cardano-node",
-          "std",
-          "lib"
-        ]
+        "nixlib": ["cardano-nix", "cardano-node", "std", "lib"]
       },
       "locked": {
         "lastModified": 1669263024,
@@ -14304,13 +13912,7 @@
     },
     "incl_4": {
       "inputs": {
-        "nixlib": [
-          "flake-lang",
-          "ctl",
-          "cardano-node",
-          "std",
-          "lib"
-        ]
+        "nixlib": ["flake-lang", "ctl", "cardano-node", "std", "lib"]
       },
       "locked": {
         "lastModified": 1669263024,
@@ -14328,13 +13930,7 @@
     },
     "incl_5": {
       "inputs": {
-        "nixlib": [
-          "flake-lang",
-          "db-sync-ctl",
-          "tullia",
-          "std",
-          "nixpkgs"
-        ]
+        "nixlib": ["flake-lang", "db-sync-ctl", "tullia", "std", "nixpkgs"]
       },
       "locked": {
         "lastModified": 1669263024,
@@ -14434,14 +14030,7 @@
     },
     "incl_9": {
       "inputs": {
-        "nixlib": [
-          "lbf",
-          "flake-lang",
-          "ctl",
-          "cardano-node",
-          "std",
-          "lib"
-        ]
+        "nixlib": ["lbf", "flake-lang", "ctl", "cardano-node", "std", "lib"]
       },
       "locked": {
         "lastModified": 1669263024,
@@ -14561,12 +14150,7 @@
     "iohk-nix_3": {
       "inputs": {
         "blst": "blst_15",
-        "nixpkgs": [
-          "lbf",
-          "flake-lang",
-          "ctl",
-          "nixpkgs"
-        ],
+        "nixpkgs": ["lbf", "flake-lang", "ctl", "nixpkgs"],
         "secp256k1": "secp256k1_15",
         "sodium": "sodium_15"
       },
@@ -14608,12 +14192,7 @@
     "iohk-nix_5": {
       "inputs": {
         "blst": "blst_18",
-        "nixpkgs": [
-          "lbf",
-          "plutarch",
-          "haskell-nix",
-          "nixpkgs"
-        ],
+        "nixpkgs": ["lbf", "plutarch", "haskell-nix", "nixpkgs"],
         "secp256k1": "secp256k1_18",
         "sodium": "sodium_18"
       },
@@ -14634,10 +14213,7 @@
     "iohk-nix_6": {
       "inputs": {
         "blst": "blst_19",
-        "nixpkgs": [
-          "ogmios",
-          "nixpkgs"
-        ],
+        "nixpkgs": ["ogmios", "nixpkgs"],
         "secp256k1": "secp256k1_19",
         "sodium": "sodium_19"
       },
@@ -14658,11 +14234,7 @@
     "iohkNix": {
       "inputs": {
         "blst": "blst",
-        "nixpkgs": [
-          "cardano-devnet-flake",
-          "cardano-node",
-          "nixpkgs"
-        ],
+        "nixpkgs": ["cardano-devnet-flake", "cardano-node", "nixpkgs"],
         "secp256k1": "secp256k1",
         "sodium": "sodium"
       },
@@ -14711,13 +14283,7 @@
     "iohkNix_11": {
       "inputs": {
         "blst": "blst_14",
-        "nixpkgs": [
-          "lbf",
-          "flake-lang",
-          "ctl",
-          "cardano-node",
-          "nixpkgs"
-        ],
+        "nixpkgs": ["lbf", "flake-lang", "ctl", "cardano-node", "nixpkgs"],
         "secp256k1": "secp256k1_14",
         "sodium": "sodium_14"
       },
@@ -14738,12 +14304,7 @@
     "iohkNix_12": {
       "inputs": {
         "blst": "blst_16",
-        "nixpkgs": [
-          "lbf",
-          "flake-lang",
-          "db-sync-ctl",
-          "nixpkgs"
-        ],
+        "nixpkgs": ["lbf", "flake-lang", "db-sync-ctl", "nixpkgs"],
         "secp256k1": "secp256k1_16",
         "sodium": "sodium_16"
       },
@@ -14764,11 +14325,7 @@
     "iohkNix_2": {
       "inputs": {
         "blst": "blst_2",
-        "nixpkgs": [
-          "cardano-nix",
-          "cardano-db-sync",
-          "nixpkgs"
-        ],
+        "nixpkgs": ["cardano-nix", "cardano-db-sync", "nixpkgs"],
         "secp256k1": "secp256k1_2",
         "sodium": "sodium_2"
       },
@@ -14789,11 +14346,7 @@
     "iohkNix_3": {
       "inputs": {
         "blst": "blst_3",
-        "nixpkgs": [
-          "cardano-nix",
-          "cardano-node",
-          "nixpkgs"
-        ],
+        "nixpkgs": ["cardano-nix", "cardano-node", "nixpkgs"],
         "secp256k1": "secp256k1_3",
         "sodium": "sodium_3"
       },
@@ -14868,12 +14421,7 @@
     "iohkNix_6": {
       "inputs": {
         "blst": "blst_6",
-        "nixpkgs": [
-          "flake-lang",
-          "ctl",
-          "cardano-node",
-          "nixpkgs"
-        ],
+        "nixpkgs": ["flake-lang", "ctl", "cardano-node", "nixpkgs"],
         "secp256k1": "secp256k1_6",
         "sodium": "sodium_6"
       },
@@ -14894,11 +14442,7 @@
     "iohkNix_7": {
       "inputs": {
         "blst": "blst_7",
-        "nixpkgs": [
-          "flake-lang",
-          "db-sync-ctl",
-          "nixpkgs"
-        ],
+        "nixpkgs": ["flake-lang", "db-sync-ctl", "nixpkgs"],
         "secp256k1": "secp256k1_7",
         "sodium": "sodium_7"
       },
@@ -15314,19 +14858,11 @@
     },
     "lbf": {
       "inputs": {
-        "ctl": [
-          "lbf",
-          "flake-lang",
-          "ctl"
-        ],
+        "ctl": ["lbf", "flake-lang", "ctl"],
         "flake-lang": "flake-lang_2",
         "flake-parts": "flake-parts_15",
         "hci-effects": "hci-effects_3",
-        "nixpkgs": [
-          "lbf",
-          "flake-lang",
-          "nixpkgs"
-        ],
+        "nixpkgs": ["lbf", "flake-lang", "nixpkgs"],
         "plutarch": "plutarch_3",
         "plutus-ledger-api-typescript": "plutus-ledger-api-typescript",
         "pre-commit-hooks": "pre-commit-hooks_4",
@@ -15960,13 +15496,7 @@
           "std",
           "flake-utils"
         ],
-        "nixpkgs": [
-          "flake-lang",
-          "db-sync-ctl",
-          "tullia",
-          "std",
-          "nixpkgs"
-        ]
+        "nixpkgs": ["flake-lang", "db-sync-ctl", "tullia", "std", "nixpkgs"]
       },
       "locked": {
         "lastModified": 1665039323,
@@ -16326,18 +15856,8 @@
           "flake-utils"
         ],
         "gomod2nix": "gomod2nix_5",
-        "nixpkgs": [
-          "flake-lang",
-          "db-sync-ctl",
-          "tullia",
-          "nixpkgs"
-        ],
-        "nixpkgs-lib": [
-          "flake-lang",
-          "db-sync-ctl",
-          "tullia",
-          "nixpkgs"
-        ]
+        "nixpkgs": ["flake-lang", "db-sync-ctl", "tullia", "nixpkgs"],
+        "nixpkgs-lib": ["flake-lang", "db-sync-ctl", "tullia", "nixpkgs"]
       },
       "locked": {
         "lastModified": 1658277770,
@@ -16509,20 +16029,8 @@
           "flake-utils"
         ],
         "gomod2nix": "gomod2nix_9",
-        "nixpkgs": [
-          "lbf",
-          "flake-lang",
-          "db-sync-ctl",
-          "tullia",
-          "nixpkgs"
-        ],
-        "nixpkgs-lib": [
-          "lbf",
-          "flake-lang",
-          "db-sync-ctl",
-          "tullia",
-          "nixpkgs"
-        ]
+        "nixpkgs": ["lbf", "flake-lang", "db-sync-ctl", "tullia", "nixpkgs"],
+        "nixpkgs-lib": ["lbf", "flake-lang", "db-sync-ctl", "tullia", "nixpkgs"]
       },
       "locked": {
         "lastModified": 1658277770,
@@ -16911,50 +16419,13 @@
     },
     "nix_16": {
       "inputs": {
-        "flake-compat": [
-          "lbf",
-          "flake-lang",
-          "haskell-nix",
-          "hydra"
-        ],
-        "flake-parts": [
-          "lbf",
-          "flake-lang",
-          "haskell-nix",
-          "hydra"
-        ],
-        "git-hooks-nix": [
-          "lbf",
-          "flake-lang",
-          "haskell-nix",
-          "hydra"
-        ],
-        "libgit2": [
-          "lbf",
-          "flake-lang",
-          "haskell-nix",
-          "hydra",
-          "libgit2"
-        ],
-        "nixpkgs": [
-          "lbf",
-          "flake-lang",
-          "haskell-nix",
-          "hydra",
-          "nixpkgs"
-        ],
-        "nixpkgs-23-11": [
-          "lbf",
-          "flake-lang",
-          "haskell-nix",
-          "hydra"
-        ],
-        "nixpkgs-regression": [
-          "lbf",
-          "flake-lang",
-          "haskell-nix",
-          "hydra"
-        ]
+        "flake-compat": ["lbf", "flake-lang", "haskell-nix", "hydra"],
+        "flake-parts": ["lbf", "flake-lang", "haskell-nix", "hydra"],
+        "git-hooks-nix": ["lbf", "flake-lang", "haskell-nix", "hydra"],
+        "libgit2": ["lbf", "flake-lang", "haskell-nix", "hydra", "libgit2"],
+        "nixpkgs": ["lbf", "flake-lang", "haskell-nix", "hydra", "nixpkgs"],
+        "nixpkgs-23-11": ["lbf", "flake-lang", "haskell-nix", "hydra"],
+        "nixpkgs-regression": ["lbf", "flake-lang", "haskell-nix", "hydra"]
       },
       "locked": {
         "lastModified": 1737582558,
@@ -17426,20 +16897,8 @@
           "std",
           "flake-utils"
         ],
-        "nixago-exts": [
-          "flake-lang",
-          "db-sync-ctl",
-          "tullia",
-          "std",
-          "blank"
-        ],
-        "nixpkgs": [
-          "flake-lang",
-          "db-sync-ctl",
-          "tullia",
-          "std",
-          "nixpkgs"
-        ]
+        "nixago-exts": ["flake-lang", "db-sync-ctl", "tullia", "std", "blank"],
+        "nixpkgs": ["flake-lang", "db-sync-ctl", "tullia", "std", "nixpkgs"]
       },
       "locked": {
         "lastModified": 1661824785,
@@ -22547,11 +22006,7 @@
         "CHaP": "CHaP_15",
         "haskell-nix": "haskell-nix_8",
         "iohk-nix": "iohk-nix_6",
-        "nixpkgs": [
-          "ogmios",
-          "haskell-nix",
-          "nixpkgs-unstable"
-        ],
+        "nixpkgs": ["ogmios", "haskell-nix", "nixpkgs-unstable"],
         "ogmios-src": "ogmios-src"
       },
       "locked": {
@@ -23023,10 +22478,7 @@
     },
     "oura": {
       "inputs": {
-        "crane": [
-          "cardano-nix",
-          "crane"
-        ],
+        "crane": ["cardano-nix", "crane"],
         "utils": "utils_6"
       },
       "locked": {
@@ -23046,12 +22498,7 @@
     },
     "oura_2": {
       "inputs": {
-        "crane": [
-          "flake-lang",
-          "ctl",
-          "cardano-nix",
-          "crane"
-        ],
+        "crane": ["flake-lang", "ctl", "cardano-nix", "crane"],
         "utils": "utils_10"
       },
       "locked": {
@@ -23071,13 +22518,7 @@
     },
     "oura_3": {
       "inputs": {
-        "crane": [
-          "lbf",
-          "flake-lang",
-          "ctl",
-          "cardano-nix",
-          "crane"
-        ],
+        "crane": ["lbf", "flake-lang", "ctl", "cardano-nix", "crane"],
         "utils": "utils_20"
       },
       "locked": {
@@ -23098,19 +22539,9 @@
     "paisano": {
       "inputs": {
         "call-flake": "call-flake",
-        "nixpkgs": [
-          "cardano-devnet-flake",
-          "cardano-node",
-          "std",
-          "nixpkgs"
-        ],
+        "nixpkgs": ["cardano-devnet-flake", "cardano-node", "std", "nixpkgs"],
         "nosys": "nosys",
-        "yants": [
-          "cardano-devnet-flake",
-          "cardano-node",
-          "std",
-          "yants"
-        ]
+        "yants": ["cardano-devnet-flake", "cardano-node", "std", "yants"]
       },
       "locked": {
         "lastModified": 1708640854,
@@ -23352,19 +22783,9 @@
     "paisano_2": {
       "inputs": {
         "call-flake": "call-flake_2",
-        "nixpkgs": [
-          "cardano-nix",
-          "cardano-node",
-          "std",
-          "nixpkgs"
-        ],
+        "nixpkgs": ["cardano-nix", "cardano-node", "std", "nixpkgs"],
         "nosys": "nosys_2",
-        "yants": [
-          "cardano-nix",
-          "cardano-node",
-          "std",
-          "yants"
-        ]
+        "yants": ["cardano-nix", "cardano-node", "std", "yants"]
       },
       "locked": {
         "lastModified": 1708640854,
@@ -23420,21 +22841,9 @@
     "paisano_4": {
       "inputs": {
         "call-flake": "call-flake_4",
-        "nixpkgs": [
-          "flake-lang",
-          "ctl",
-          "cardano-node",
-          "std",
-          "nixpkgs"
-        ],
+        "nixpkgs": ["flake-lang", "ctl", "cardano-node", "std", "nixpkgs"],
         "nosys": "nosys_4",
-        "yants": [
-          "flake-lang",
-          "ctl",
-          "cardano-node",
-          "std",
-          "yants"
-        ]
+        "yants": ["flake-lang", "ctl", "cardano-node", "std", "yants"]
       },
       "locked": {
         "lastModified": 1708640854,
@@ -23540,14 +22949,7 @@
           "nixpkgs"
         ],
         "nosys": "nosys_9",
-        "yants": [
-          "lbf",
-          "flake-lang",
-          "ctl",
-          "cardano-node",
-          "std",
-          "yants"
-        ]
+        "yants": ["lbf", "flake-lang", "ctl", "cardano-node", "std", "yants"]
       },
       "locked": {
         "lastModified": 1708640854,
@@ -23626,10 +23028,7 @@
     },
     "plutus-ledger-api-typescript": {
       "inputs": {
-        "flake-lang": [
-          "lbf",
-          "flake-lang"
-        ],
+        "flake-lang": ["lbf", "flake-lang"],
         "flake-parts": "flake-parts_20",
         "hci-effects": "hci-effects_4",
         "nixpkgs": "nixpkgs_100",
@@ -23675,14 +23074,8 @@
       "inputs": {
         "flake-compat": "flake-compat_9",
         "gitignore": "gitignore",
-        "nixpkgs": [
-          "cardano-nix",
-          "nixpkgs"
-        ],
-        "nixpkgs-stable": [
-          "cardano-nix",
-          "nixpkgs"
-        ]
+        "nixpkgs": ["cardano-nix", "nixpkgs"],
+        "nixpkgs-stable": ["cardano-nix", "nixpkgs"]
       },
       "locked": {
         "lastModified": 1731363552,
@@ -23702,18 +23095,8 @@
       "inputs": {
         "flake-compat": "flake-compat_15",
         "gitignore": "gitignore_2",
-        "nixpkgs": [
-          "flake-lang",
-          "ctl",
-          "cardano-nix",
-          "nixpkgs"
-        ],
-        "nixpkgs-stable": [
-          "flake-lang",
-          "ctl",
-          "cardano-nix",
-          "nixpkgs"
-        ]
+        "nixpkgs": ["flake-lang", "ctl", "cardano-nix", "nixpkgs"],
+        "nixpkgs-stable": ["flake-lang", "ctl", "cardano-nix", "nixpkgs"]
       },
       "locked": {
         "lastModified": 1731363552,
@@ -23734,20 +23117,8 @@
         "flake-compat": "flake-compat_37",
         "flake-utils": "flake-utils_34",
         "gitignore": "gitignore_4",
-        "nixpkgs": [
-          "lbf",
-          "flake-lang",
-          "ctl",
-          "cardano-nix",
-          "nixpkgs"
-        ],
-        "nixpkgs-stable": [
-          "lbf",
-          "flake-lang",
-          "ctl",
-          "cardano-nix",
-          "nixpkgs"
-        ]
+        "nixpkgs": ["lbf", "flake-lang", "ctl", "cardano-nix", "nixpkgs"],
+        "nixpkgs-stable": ["lbf", "flake-lang", "ctl", "cardano-nix", "nixpkgs"]
       },
       "locked": {
         "lastModified": 1708018599,
@@ -23767,11 +23138,7 @@
       "inputs": {
         "flake-compat": "flake-compat_51",
         "gitignore": "gitignore_7",
-        "nixpkgs": [
-          "lbf",
-          "plutus-ledger-api-typescript",
-          "nixpkgs"
-        ]
+        "nixpkgs": ["lbf", "plutus-ledger-api-typescript", "nixpkgs"]
       },
       "locked": {
         "lastModified": 1737465171,
@@ -23897,18 +23264,10 @@
     },
     "prelude-typescript": {
       "inputs": {
-        "flake-lang": [
-          "lbf",
-          "plutus-ledger-api-typescript",
-          "flake-lang"
-        ],
+        "flake-lang": ["lbf", "plutus-ledger-api-typescript", "flake-lang"],
         "flake-parts": "flake-parts_22",
         "hci-effects": "hci-effects_5",
-        "nixpkgs": [
-          "lbf",
-          "plutus-ledger-api-typescript",
-          "nixpkgs"
-        ],
+        "nixpkgs": ["lbf", "plutus-ledger-api-typescript", "nixpkgs"],
         "pre-commit-hooks-nix": "pre-commit-hooks-nix_5"
       },
       "locked": {
@@ -23985,37 +23344,16 @@
       "inputs": {
         "cardano-devnet-flake": "cardano-devnet-flake",
         "cardano-nix": "cardano-nix",
-        "cardano-node": [
-          "cardano-devnet-flake",
-          "cardano-node"
-        ],
-        "ctl": [
-          "lbf",
-          "ctl"
-        ],
+        "cardano-node": ["cardano-devnet-flake", "cardano-node"],
+        "ctl": ["lbf", "ctl"],
         "flake-lang": "flake-lang",
-        "flake-parts": [
-          "lbf",
-          "flake-parts"
-        ],
-        "hci-effects": [
-          "lbf",
-          "hci-effects"
-        ],
+        "flake-parts": ["lbf", "flake-parts"],
+        "hci-effects": ["lbf", "hci-effects"],
         "lbf": "lbf",
-        "nixpkgs": [
-          "lbf",
-          "nixpkgs"
-        ],
+        "nixpkgs": ["lbf", "nixpkgs"],
         "ogmios": "ogmios_3",
-        "plutarch": [
-          "lbf",
-          "plutarch"
-        ],
-        "pre-commit-hooks": [
-          "lbf",
-          "pre-commit-hooks"
-        ],
+        "plutarch": ["lbf", "plutarch"],
+        "pre-commit-hooks": ["lbf", "pre-commit-hooks"],
         "process-compose-flake": "process-compose-flake",
         "services-flake": "services-flake"
       }
@@ -25413,14 +24751,7 @@
     },
     "std_14": {
       "inputs": {
-        "arion": [
-          "lbf",
-          "flake-lang",
-          "ctl",
-          "cardano-node",
-          "std",
-          "blank"
-        ],
+        "arion": ["lbf", "flake-lang", "ctl", "cardano-node", "std", "blank"],
         "blank": "blank_14",
         "devshell": [
           "lbf",
@@ -25434,38 +24765,10 @@
         "haumea": "haumea_6",
         "incl": "incl_9",
         "lib": "lib_5",
-        "makes": [
-          "lbf",
-          "flake-lang",
-          "ctl",
-          "cardano-node",
-          "std",
-          "blank"
-        ],
-        "microvm": [
-          "lbf",
-          "flake-lang",
-          "ctl",
-          "cardano-node",
-          "std",
-          "blank"
-        ],
-        "n2c": [
-          "lbf",
-          "flake-lang",
-          "ctl",
-          "cardano-node",
-          "std",
-          "blank"
-        ],
-        "nixago": [
-          "lbf",
-          "flake-lang",
-          "ctl",
-          "cardano-node",
-          "std",
-          "blank"
-        ],
+        "makes": ["lbf", "flake-lang", "ctl", "cardano-node", "std", "blank"],
+        "microvm": ["lbf", "flake-lang", "ctl", "cardano-node", "std", "blank"],
+        "n2c": ["lbf", "flake-lang", "ctl", "cardano-node", "std", "blank"],
+        "nixago": ["lbf", "flake-lang", "ctl", "cardano-node", "std", "blank"],
         "nixpkgs": "nixpkgs_78",
         "paisano": "paisano_7",
         "paisano-tui": "paisano-tui_7",
@@ -25495,27 +24798,13 @@
     },
     "std_15": {
       "inputs": {
-        "arion": [
-          "lbf",
-          "flake-lang",
-          "db-sync-ctl",
-          "tullia",
-          "std",
-          "blank"
-        ],
+        "arion": ["lbf", "flake-lang", "db-sync-ctl", "tullia", "std", "blank"],
         "blank": "blank_15",
         "devshell": "devshell_13",
         "dmerge": "dmerge_15",
         "flake-utils": "flake-utils_42",
         "incl": "incl_10",
-        "makes": [
-          "lbf",
-          "flake-lang",
-          "db-sync-ctl",
-          "tullia",
-          "std",
-          "blank"
-        ],
+        "makes": ["lbf", "flake-lang", "db-sync-ctl", "tullia", "std", "blank"],
         "microvm": [
           "lbf",
           "flake-lang",
@@ -25546,56 +24835,21 @@
     },
     "std_2": {
       "inputs": {
-        "arion": [
-          "cardano-devnet-flake",
-          "cardano-node",
-          "std",
-          "blank"
-        ],
+        "arion": ["cardano-devnet-flake", "cardano-node", "std", "blank"],
         "blank": "blank_2",
-        "devshell": [
-          "cardano-devnet-flake",
-          "cardano-node",
-          "std",
-          "blank"
-        ],
+        "devshell": ["cardano-devnet-flake", "cardano-node", "std", "blank"],
         "dmerge": "dmerge_2",
         "haumea": "haumea",
         "incl": "incl",
         "lib": "lib",
-        "makes": [
-          "cardano-devnet-flake",
-          "cardano-node",
-          "std",
-          "blank"
-        ],
-        "microvm": [
-          "cardano-devnet-flake",
-          "cardano-node",
-          "std",
-          "blank"
-        ],
-        "n2c": [
-          "cardano-devnet-flake",
-          "cardano-node",
-          "std",
-          "blank"
-        ],
-        "nixago": [
-          "cardano-devnet-flake",
-          "cardano-node",
-          "std",
-          "blank"
-        ],
+        "makes": ["cardano-devnet-flake", "cardano-node", "std", "blank"],
+        "microvm": ["cardano-devnet-flake", "cardano-node", "std", "blank"],
+        "n2c": ["cardano-devnet-flake", "cardano-node", "std", "blank"],
+        "nixago": ["cardano-devnet-flake", "cardano-node", "std", "blank"],
         "nixpkgs": "nixpkgs_6",
         "paisano": "paisano",
         "paisano-tui": "paisano-tui",
-        "terranix": [
-          "cardano-devnet-flake",
-          "cardano-node",
-          "std",
-          "blank"
-        ],
+        "terranix": ["cardano-devnet-flake", "cardano-node", "std", "blank"],
         "yants": "yants_2"
       },
       "locked": {
@@ -25656,56 +24910,21 @@
     },
     "std_4": {
       "inputs": {
-        "arion": [
-          "cardano-nix",
-          "cardano-node",
-          "std",
-          "blank"
-        ],
+        "arion": ["cardano-nix", "cardano-node", "std", "blank"],
         "blank": "blank_4",
-        "devshell": [
-          "cardano-nix",
-          "cardano-node",
-          "std",
-          "blank"
-        ],
+        "devshell": ["cardano-nix", "cardano-node", "std", "blank"],
         "dmerge": "dmerge_4",
         "haumea": "haumea_2",
         "incl": "incl_2",
         "lib": "lib_2",
-        "makes": [
-          "cardano-nix",
-          "cardano-node",
-          "std",
-          "blank"
-        ],
-        "microvm": [
-          "cardano-nix",
-          "cardano-node",
-          "std",
-          "blank"
-        ],
-        "n2c": [
-          "cardano-nix",
-          "cardano-node",
-          "std",
-          "blank"
-        ],
-        "nixago": [
-          "cardano-nix",
-          "cardano-node",
-          "std",
-          "blank"
-        ],
+        "makes": ["cardano-nix", "cardano-node", "std", "blank"],
+        "microvm": ["cardano-nix", "cardano-node", "std", "blank"],
+        "n2c": ["cardano-nix", "cardano-node", "std", "blank"],
+        "nixago": ["cardano-nix", "cardano-node", "std", "blank"],
         "nixpkgs": "nixpkgs_14",
         "paisano": "paisano_2",
         "paisano-tui": "paisano-tui_2",
-        "terranix": [
-          "cardano-nix",
-          "cardano-node",
-          "std",
-          "blank"
-        ],
+        "terranix": ["cardano-nix", "cardano-node", "std", "blank"],
         "yants": "yants_4"
       },
       "locked": {
@@ -25896,63 +25115,21 @@
     },
     "std_8": {
       "inputs": {
-        "arion": [
-          "flake-lang",
-          "ctl",
-          "cardano-node",
-          "std",
-          "blank"
-        ],
+        "arion": ["flake-lang", "ctl", "cardano-node", "std", "blank"],
         "blank": "blank_8",
-        "devshell": [
-          "flake-lang",
-          "ctl",
-          "cardano-node",
-          "std",
-          "blank"
-        ],
+        "devshell": ["flake-lang", "ctl", "cardano-node", "std", "blank"],
         "dmerge": "dmerge_8",
         "haumea": "haumea_4",
         "incl": "incl_4",
         "lib": "lib_4",
-        "makes": [
-          "flake-lang",
-          "ctl",
-          "cardano-node",
-          "std",
-          "blank"
-        ],
-        "microvm": [
-          "flake-lang",
-          "ctl",
-          "cardano-node",
-          "std",
-          "blank"
-        ],
-        "n2c": [
-          "flake-lang",
-          "ctl",
-          "cardano-node",
-          "std",
-          "blank"
-        ],
-        "nixago": [
-          "flake-lang",
-          "ctl",
-          "cardano-node",
-          "std",
-          "blank"
-        ],
+        "makes": ["flake-lang", "ctl", "cardano-node", "std", "blank"],
+        "microvm": ["flake-lang", "ctl", "cardano-node", "std", "blank"],
+        "n2c": ["flake-lang", "ctl", "cardano-node", "std", "blank"],
+        "nixago": ["flake-lang", "ctl", "cardano-node", "std", "blank"],
         "nixpkgs": "nixpkgs_30",
         "paisano": "paisano_4",
         "paisano-tui": "paisano-tui_4",
-        "terranix": [
-          "flake-lang",
-          "ctl",
-          "cardano-node",
-          "std",
-          "blank"
-        ],
+        "terranix": ["flake-lang", "ctl", "cardano-node", "std", "blank"],
         "yants": "yants_8"
       },
       "locked": {
@@ -25971,32 +25148,14 @@
     },
     "std_9": {
       "inputs": {
-        "arion": [
-          "flake-lang",
-          "db-sync-ctl",
-          "tullia",
-          "std",
-          "blank"
-        ],
+        "arion": ["flake-lang", "db-sync-ctl", "tullia", "std", "blank"],
         "blank": "blank_9",
         "devshell": "devshell_7",
         "dmerge": "dmerge_9",
         "flake-utils": "flake-utils_19",
         "incl": "incl_5",
-        "makes": [
-          "flake-lang",
-          "db-sync-ctl",
-          "tullia",
-          "std",
-          "blank"
-        ],
-        "microvm": [
-          "flake-lang",
-          "db-sync-ctl",
-          "tullia",
-          "std",
-          "blank"
-        ],
+        "makes": ["flake-lang", "db-sync-ctl", "tullia", "std", "blank"],
+        "microvm": ["flake-lang", "db-sync-ctl", "tullia", "std", "blank"],
         "n2c": "n2c_5",
         "nixago": "nixago_5",
         "nixpkgs": "nixpkgs_36",
@@ -26284,10 +25443,7 @@
     },
     "treefmt-nix": {
       "inputs": {
-        "nixpkgs": [
-          "cardano-nix",
-          "nixpkgs"
-        ]
+        "nixpkgs": ["cardano-nix", "nixpkgs"]
       },
       "locked": {
         "lastModified": 1730321837,
@@ -26305,12 +25461,7 @@
     },
     "treefmt-nix_2": {
       "inputs": {
-        "nixpkgs": [
-          "flake-lang",
-          "ctl",
-          "cardano-nix",
-          "nixpkgs"
-        ]
+        "nixpkgs": ["flake-lang", "ctl", "cardano-nix", "nixpkgs"]
       },
       "locked": {
         "lastModified": 1730321837,
@@ -26372,13 +25523,7 @@
     },
     "treefmt-nix_5": {
       "inputs": {
-        "nixpkgs": [
-          "lbf",
-          "flake-lang",
-          "ctl",
-          "cardano-nix",
-          "nixpkgs"
-        ]
+        "nixpkgs": ["lbf", "flake-lang", "ctl", "cardano-nix", "nixpkgs"]
       },
       "locked": {
         "lastModified": 1697388351,
@@ -27141,14 +26286,7 @@
     },
     "yants_14": {
       "inputs": {
-        "nixpkgs": [
-          "lbf",
-          "flake-lang",
-          "ctl",
-          "cardano-node",
-          "std",
-          "lib"
-        ]
+        "nixpkgs": ["lbf", "flake-lang", "ctl", "cardano-node", "std", "lib"]
       },
       "locked": {
         "lastModified": 1686863218,
@@ -27191,12 +26329,7 @@
     },
     "yants_2": {
       "inputs": {
-        "nixpkgs": [
-          "cardano-devnet-flake",
-          "cardano-node",
-          "std",
-          "lib"
-        ]
+        "nixpkgs": ["cardano-devnet-flake", "cardano-node", "std", "lib"]
       },
       "locked": {
         "lastModified": 1686863218,
@@ -27239,12 +26372,7 @@
     },
     "yants_4": {
       "inputs": {
-        "nixpkgs": [
-          "cardano-nix",
-          "cardano-node",
-          "std",
-          "lib"
-        ]
+        "nixpkgs": ["cardano-nix", "cardano-node", "std", "lib"]
       },
       "locked": {
         "lastModified": 1686863218,
@@ -27340,13 +26468,7 @@
     },
     "yants_8": {
       "inputs": {
-        "nixpkgs": [
-          "flake-lang",
-          "ctl",
-          "cardano-node",
-          "std",
-          "lib"
-        ]
+        "nixpkgs": ["flake-lang", "ctl", "cardano-node", "std", "lib"]
       },
       "locked": {
         "lastModified": 1686863218,
@@ -27364,13 +26486,7 @@
     },
     "yants_9": {
       "inputs": {
-        "nixpkgs": [
-          "flake-lang",
-          "db-sync-ctl",
-          "tullia",
-          "std",
-          "nixpkgs"
-        ]
+        "nixpkgs": ["flake-lang", "db-sync-ctl", "tullia", "std", "nixpkgs"]
       },
       "locked": {
         "lastModified": 1667096281,

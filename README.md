@@ -1,6 +1,6 @@
 # Transaction Village
 
-[![Hercules CI](https://hercules-ci.com/api/v1/site/github/account/Unbox-infinity/project/tx-village/badge)](https://hercules-ci.com/github/Unbox-infinity/tx-village/status)
+[![Hercules CI](https://hercules-ci.com/api/v1/site/github/account/mlabs-haskell/project/tx-village/badge)](https://hercules-ci.com/github/mlabs-haskell/tx-village/status)
 
 ## Packages
 

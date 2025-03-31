@@ -5,14 +5,14 @@
     { config, pkgs, ... }:
     let
       github-pages-main-page = pkgs.writeText "README.md" ''
-        # [Transaction Village](https://github.com/Unbox-infinity/tx-village)
+        # [Transaction Village](https://github.com/mlabs-haskell/tx-village)
 
         ## Packages
 
-        - [tx-bakery](https://github.com/Unbox-infinity/tx-village/tree/main/tx-bakery) - Transaction Bakery - Rust based transaction builder
+        - [tx-bakery](https://github.com/mlabs-haskell/tx-village/tree/main/tx-bakery) - Transaction Bakery - Rust based transaction builder
           library
-        - [tx-bakery-ogmios](https://github.com/Unbox-infinity/tx-village/tree/main/tx-bakery-ogmios) - Ogmios support for Transaction Bakery
-        - [tx-indexer](https://github.com/Unbox-infinity/tx-village/tree/main/tx-indexer) - Transaction Indexer - Rust based chain follower
+        - [tx-bakery-ogmios](https://github.com/mlabs-haskell/tx-village/tree/main/tx-bakery-ogmios) - Ogmios support for Transaction Bakery
+        - [tx-indexer](https://github.com/mlabs-haskell/tx-village/tree/main/tx-indexer) - Transaction Indexer - Rust based chain follower
           and indexer
 
         ## API References
@@ -23,8 +23,8 @@
 
         ## Documents
 
-        - [Contributing guideline](https://github.com/Unbox-infinity/tx-village/blob/main/CONTRIBUTING.md)
-        - [License](https://github.com/Unbox-infinity/tx-village/blob/main/LICENSE)
+        - [Contributing guideline](https://github.com/mlabs-haskell/tx-village/blob/main/CONTRIBUTING.md)
+        - [License](https://github.com/mlabs-haskell/tx-village/blob/main/LICENSE)
       '';
 
       github-pages = pkgs.stdenv.mkDerivation {
