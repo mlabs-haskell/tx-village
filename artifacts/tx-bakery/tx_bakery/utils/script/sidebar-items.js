@@ -1,1 +1,1 @@
-window.SIDEBAR_ITEMS = {"enum":["Script","ScriptOrRef"]};
+window.SIDEBAR_ITEMS = {"enum":["PlutusVersion","Script","ScriptOrRef"]};

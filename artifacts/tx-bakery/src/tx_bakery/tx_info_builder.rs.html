@@ -1,6 +1,5 @@
-<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="generator" content="rustdoc"><meta name="description" content="Source of the Rust file `src/tx_info_builder.rs`."><title>tx_info_builder.rs - source</title><script> if (window.location.protocol !== "file:") document.write(`<link rel="preload" as="font" type="font/woff2" crossorigin href="../../static.files/SourceSerif4-Regular-46f98efaafac5295.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../static.files/FiraSans-Regular-018c141bf0843ffd.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../static.files/FiraSans-Medium-8f9a781e4970d388.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../static.files/SourceCodePro-Regular-562dcc5011b6de7d.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../static.files/SourceCodePro-Semibold-d899c5a5c4aeb14a.ttf.woff2">`)</script><link rel="stylesheet" href="../../static.files/normalize-76eba96aa4d2e634.css"><link rel="stylesheet" href="../../static.files/rustdoc-e935ef01ae1c1829.css"><meta name="rustdoc-vars" data-root-path="../../" data-static-root-path="../../static.files/" data-current-crate="tx_bakery" data-themes="" data-resource-suffix="" data-rustdoc-version="1.78.0 (9b00956e5 2024-04-29)" data-channel="1.78.0" data-search-js="search-42d8da7a6b9792c2.js" data-settings-js="settings-4313503d2e1961c2.js" ><script src="../../static.files/storage-4c98445ec4002617.js"></script><script defer src="../../static.files/src-script-e66d777a5a92e9b2.js"></script><script defer src="../../src-files.js"></script><script defer src="../../static.files/main-12cf3b4f4f9dc36d.js"></script><noscript><link rel="stylesheet" href="../../static.files/noscript-04d5337699b92874.css"></noscript><link rel="alternate icon" type="image/png" href="../../static.files/favicon-16x16-8b506e7a72182f1c.png"><link rel="alternate icon" type="image/png" href="../../static.files/favicon-32x32-422f7d1d52889060.png"><link rel="icon" type="image/svg+xml" href="../../static.files/favicon-2c020d218678b618.svg"></head><body class="rustdoc src"><!--[if lte IE 11]><div class="warning">This old browser is unsupported and will most likely display funky things.</div><![endif]--><nav class="sidebar"><div class="src-sidebar-title">
-            <h2>Files</h2></div></nav><div class="sidebar-resizer"></div>
-    <main><nav class="sub"><form class="search-form"><span></span><div id="sidebar-button" tabindex="-1"><a href="../../tx_bakery/all.html" title="show sidebar"></a></div><input class="search-input" name="search" aria-label="Run search in the documentation" autocomplete="off" spellcheck="false" placeholder="Click or press ‘S’ to search, ‘?’ for more options…" type="search"><div id="help-button" tabindex="-1"><a href="../../help.html" title="help">?</a></div><div id="settings-menu" tabindex="-1"><a href="../../settings.html" title="settings"><img width="22" height="22" alt="Change settings" src="../../static.files/wheel-7b819b6101059cd0.svg"></a></div></form></nav><section id="main-content" class="content"><div class="example-wrap"><div data-nosnippet><pre class="src-line-numbers"><a href="#1" id="1">1</a>
+<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="generator" content="rustdoc"><meta name="description" content="Source of the Rust file `src/tx_info_builder.rs`."><title>tx_info_builder.rs - source</title><script>if(window.location.protocol!=="file:")document.head.insertAdjacentHTML("beforeend","SourceSerif4-Regular-6b053e98.ttf.woff2,FiraSans-Regular-0fe48ade.woff2,FiraSans-Medium-e1aa3f0a.woff2,SourceCodePro-Regular-8badfe75.ttf.woff2,SourceCodePro-Semibold-aa29a496.ttf.woff2".split(",").map(f=>`<link rel="preload" as="font" type="font/woff2" crossorigin href="../../static.files/${f}">`).join(""))</script><link rel="stylesheet" href="../../static.files/normalize-9960930a.css"><link rel="stylesheet" href="../../static.files/rustdoc-46132b98.css"><meta name="rustdoc-vars" data-root-path="../../" data-static-root-path="../../static.files/" data-current-crate="tx_bakery" data-themes="" data-resource-suffix="" data-rustdoc-version="1.85.0 (4d91de4e4 2025-02-17)" data-channel="1.85.0" data-search-js="search-75f5ac3e.js" data-settings-js="settings-0f613d39.js" ><script src="../../static.files/storage-59e33391.js"></script><script defer src="../../static.files/src-script-56102188.js"></script><script defer src="../../src-files.js"></script><script defer src="../../static.files/main-5f194d8c.js"></script><noscript><link rel="stylesheet" href="../../static.files/noscript-893ab5e7.css"></noscript><link rel="alternate icon" type="image/png" href="../../static.files/favicon-32x32-6580c154.png"><link rel="icon" type="image/svg+xml" href="../../static.files/favicon-044be391.svg"></head><body class="rustdoc src"><!--[if lte IE 11]><div class="warning">This old browser is unsupported and will most likely display funky things.</div><![endif]--><nav class="sidebar"><div class="src-sidebar-title"><h2>Files</h2></div></nav><div class="sidebar-resizer"></div><main><rustdoc-search></rustdoc-search><section id="main-content" class="content"><div class="main-heading"><h1><div class="sub-heading">tx_bakery/</div>tx_info_builder.rs</h1><rustdoc-toolbar></rustdoc-toolbar></div><div class="example-wrap"><div data-nosnippet><pre class="src-line-numbers">
+<a href="#1" id="1">1</a>
 <a href="#2" id="2">2</a>
 <a href="#3" id="3">3</a>
 <a href="#4" id="4">4</a>
@@ -271,21 +270,62 @@
 <a href="#269" id="269">269</a>
 <a href="#270" id="270">270</a>
 <a href="#271" id="271">271</a>
-</pre></div><pre class="rust"><code><span class="doccomment">//! Transaction Info builder
+<a href="#272" id="272">272</a>
+<a href="#273" id="273">273</a>
+<a href="#274" id="274">274</a>
+<a href="#275" id="275">275</a>
+<a href="#276" id="276">276</a>
+<a href="#277" id="277">277</a>
+<a href="#278" id="278">278</a>
+<a href="#279" id="279">279</a>
+<a href="#280" id="280">280</a>
+<a href="#281" id="281">281</a>
+<a href="#282" id="282">282</a>
+<a href="#283" id="283">283</a>
+<a href="#284" id="284">284</a>
+<a href="#285" id="285">285</a>
+<a href="#286" id="286">286</a>
+<a href="#287" id="287">287</a>
+<a href="#288" id="288">288</a>
+<a href="#289" id="289">289</a>
+<a href="#290" id="290">290</a>
+<a href="#291" id="291">291</a>
+<a href="#292" id="292">292</a>
+<a href="#293" id="293">293</a>
+<a href="#294" id="294">294</a>
+<a href="#295" id="295">295</a>
+<a href="#296" id="296">296</a>
+<a href="#297" id="297">297</a>
+<a href="#298" id="298">298</a>
+<a href="#299" id="299">299</a>
+<a href="#300" id="300">300</a>
+<a href="#301" id="301">301</a>
+<a href="#302" id="302">302</a>
+<a href="#303" id="303">303</a>
+<a href="#304" id="304">304</a>
+<a href="#305" id="305">305</a>
+<a href="#306" id="306">306</a>
+<a href="#307" id="307">307</a>
+<a href="#308" id="308">308</a>
+<a href="#309" id="309">309</a>
+<a href="#310" id="310">310</a>
+<a href="#311" id="311">311</a>
+<a href="#312" id="312">312</a>
+<a href="#313" id="313">313</a></pre></div><pre class="rust"><code><span class="doccomment">//! Transaction Info builder
 
 </span><span class="kw">use </span>num_bigint::BigInt;
-<span class="kw">use </span>plutus_ledger_api::v2::{
-    address::StakingCredential,
+<span class="kw">use </span>plutus_ledger_api::v3::{
+    address::Credential,
     assoc_map::AssocMap,
     crypto::{LedgerBytes, PaymentPubKeyHash},
     datum::{Datum, DatumHash},
     interval::Interval,
     redeemer::Redeemer,
     transaction::{
-        DCert, POSIXTimeRange, ScriptPurpose, TransactionHash, TransactionInfo, TransactionInput,
-        TransactionOutput, TxInInfo,
+        GovernanceActionId, POSIXTimeRange, ProposalProcedure, ScriptPurpose, TransactionHash,
+        TransactionInfo, TransactionInput, TransactionOutput, TxCert, TxInInfo, Vote, Voter,
     },
-    value::{AssetClass, Value},
+    value::{AssetClass, Lovelace, Value},
 };
 <span class="kw">use </span>std::collections::{BTreeMap, BTreeSet};
 
@@ -295,10 +335,14 @@
     reference_inputs: BTreeMap&lt;TransactionInput, TransactionOutput&gt;,
     outputs: Vec&lt;TransactionOutput&gt;,
     mint: Vec&lt;(AssetClass, i64, Redeemer)&gt;,
-    dcert: Vec&lt;DCert&gt;,
-    withdrawals: BTreeMap&lt;StakingCredential, u64&gt;,
+    tx_certs: Vec&lt;TxCert&gt;,
+    withdrawals: BTreeMap&lt;Credential, u64&gt;,
     valid_range: POSIXTimeRange,
     signatories: BTreeSet&lt;PaymentPubKeyHash&gt;,
+    votes: BTreeMap&lt;Voter, BTreeMap&lt;GovernanceActionId, Vote&gt;&gt;,
+    proposal_procedures: Vec&lt;ProposalProcedure&gt;,
+    current_treasury_amount: <span class="prelude-ty">Option</span>&lt;BigInt&gt;,
+    treasury_donation: <span class="prelude-ty">Option</span>&lt;BigInt&gt;,
 }
 
 <span class="doccomment">/// Input to a transaction
@@ -332,10 +376,14 @@
             reference_inputs: BTreeMap::new(),
             outputs: Vec::new(),
             mint: Vec::new(),
-            dcert: Vec::new(),
+            tx_certs: Vec::new(),
             withdrawals: BTreeMap::new(),
             valid_range: Interval::Always.into(),
             signatories: BTreeSet::new(),
+            votes: BTreeMap::new(),
+            proposal_procedures: Vec::new(),
+            current_treasury_amount: <span class="prelude-val">None</span>,
+            treasury_donation: <span class="prelude-val">None</span>,
         }
     }
 }
@@ -426,26 +474,26 @@
         <span class="self">self
     </span>}
 
-    <span class="doccomment">/// Add a DCert
-    </span><span class="kw">pub fn </span>add_dcert(<span class="kw-2">mut </span><span class="self">self</span>, dcert: DCert) -&gt; <span class="self">Self </span>{
-        <span class="self">self</span>.dcert.push(dcert);
+    <span class="doccomment">/// Add a Tx Cert
+    </span><span class="kw">pub fn </span>add_txcert(<span class="kw-2">mut </span><span class="self">self</span>, dcert: TxCert) -&gt; <span class="self">Self </span>{
+        <span class="self">self</span>.tx_certs.push(dcert);
         <span class="self">self
     </span>}
 
-    <span class="doccomment">/// Add multiple DCerts
-    </span><span class="kw">pub fn </span>add_dcerts(<span class="kw-2">mut </span><span class="self">self</span>, <span class="kw-2">mut </span>dcerts: Vec&lt;DCert&gt;) -&gt; <span class="self">Self </span>{
-        <span class="self">self</span>.dcert.append(<span class="kw-2">&amp;mut </span>dcerts);
+    <span class="doccomment">/// Add multiple TxCerts
+    </span><span class="kw">pub fn </span>add_dcerts(<span class="kw-2">mut </span><span class="self">self</span>, <span class="kw-2">mut </span>dcerts: Vec&lt;TxCert&gt;) -&gt; <span class="self">Self </span>{
+        <span class="self">self</span>.tx_certs.append(<span class="kw-2">&amp;mut </span>dcerts);
         <span class="self">self
     </span>}
 
     <span class="doccomment">/// Add a withdrawal
-    </span><span class="kw">pub fn </span>add_withdrawals(<span class="kw-2">mut </span><span class="self">self</span>, <span class="kw-2">mut </span>withdrawals: BTreeMap&lt;StakingCredential, u64&gt;) -&gt; <span class="self">Self </span>{
+    </span><span class="kw">pub fn </span>add_withdrawals(<span class="kw-2">mut </span><span class="self">self</span>, <span class="kw-2">mut </span>withdrawals: BTreeMap&lt;Credential, u64&gt;) -&gt; <span class="self">Self </span>{
         <span class="self">self</span>.withdrawals.append(<span class="kw-2">&amp;mut </span>withdrawals);
         <span class="self">self
     </span>}
 
     <span class="doccomment">/// Add multiple withdrawals
-    </span><span class="kw">pub fn </span>add_withdrawal(<span class="kw-2">mut </span><span class="self">self</span>, staking_credential: StakingCredential, amount: u64) -&gt; <span class="self">Self </span>{
+    </span><span class="kw">pub fn </span>add_withdrawal(<span class="kw-2">mut </span><span class="self">self</span>, staking_credential: Credential, amount: u64) -&gt; <span class="self">Self </span>{
         <span class="self">self</span>.withdrawals.insert(staking_credential, amount);
         <span class="self">self
     </span>}
@@ -465,6 +513,31 @@
     <span class="doccomment">/// Add multiple required signers of the transaction
     </span><span class="kw">pub fn </span>add_signatories(<span class="kw-2">mut </span><span class="self">self</span>, <span class="kw-2">mut </span>signatories: BTreeSet&lt;PaymentPubKeyHash&gt;) -&gt; <span class="self">Self </span>{
         <span class="self">self</span>.signatories.append(<span class="kw-2">&amp;mut </span>signatories);
+        <span class="self">self
+    </span>}
+
+    <span class="kw">pub fn </span>add_votes(
+        <span class="kw-2">mut </span><span class="self">self</span>,
+        <span class="kw-2">mut </span>votes: BTreeMap&lt;Voter, BTreeMap&lt;GovernanceActionId, Vote&gt;&gt;,
+    ) -&gt; <span class="self">Self </span>{
+        <span class="self">self</span>.votes.append(<span class="kw-2">&amp;mut </span>votes);
+        <span class="self">self
+    </span>}
+
+    <span class="kw">pub fn </span>add_proposal_procedures(
+        <span class="kw-2">mut </span><span class="self">self</span>,
+        <span class="kw-2">mut </span>proposal_procedures: Vec&lt;ProposalProcedure&gt;,
+    ) -&gt; <span class="self">Self </span>{
+        <span class="self">self</span>.proposal_procedures.append(<span class="kw-2">&amp;mut </span>proposal_procedures);
+        <span class="self">self
+    </span>}
+
+    <span class="kw">pub fn </span>add_current_treasury_amount(<span class="kw-2">mut </span><span class="self">self</span>, current_treasury_amount: <span class="prelude-ty">Option</span>&lt;BigInt&gt;) -&gt; <span class="self">Self </span>{
+        <span class="self">self</span>.current_treasury_amount = current_treasury_amount;
+        <span class="self">self
+    </span>}
+    <span class="kw">pub fn </span>add_treasury_donation(<span class="kw-2">mut </span><span class="self">self</span>, treasury_donation: <span class="prelude-ty">Option</span>&lt;BigInt&gt;) -&gt; <span class="self">Self </span>{
+        <span class="self">self</span>.treasury_donation = treasury_donation;
         <span class="self">self
     </span>}
 
@@ -491,7 +564,7 @@
                 })
                 .collect(),
             outputs: <span class="self">self</span>.outputs,
-            fee: Value::new(),
+            fee: Lovelace(BigInt::ZERO),
             mint: <span class="self">self
                 </span>.mint
                 .iter()
@@ -503,11 +576,11 @@
                             <span class="kw-2">&amp;</span>BigInt::from(<span class="kw-2">*</span>amount),
                         )
                 }),
-            d_cert: <span class="self">self</span>.dcert,
+            tx_certs: <span class="self">self</span>.tx_certs,
             wdrl: AssocMap(
                 <span class="self">self</span>.withdrawals
                     .into_iter()
-                    .map(|(staking_credential, amount)| (staking_credential, BigInt::from(amount)))
+                    .map(|(credential, amount)| (credential, Lovelace(BigInt::from(amount))))
                     .collect(),
             ),
             valid_range: <span class="self">self</span>.valid_range,
@@ -539,6 +612,15 @@
                     .collect(),
             ),
             id: TransactionHash(LedgerBytes(Vec::new())),
+            votes: AssocMap(
+                <span class="self">self</span>.votes
+                    .into_iter()
+                    .map(|(voter, votes)| (voter, AssocMap(votes.into_iter().collect())))
+                    .collect(),
+            ),
+            proposal_procedures: <span class="self">self</span>.proposal_procedures,
+            current_treasury_amount: <span class="self">self</span>.current_treasury_amount.map(Lovelace),
+            treasury_donation: <span class="self">self</span>.treasury_donation.map(Lovelace),
         }
     }
 }

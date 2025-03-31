@@ -1,6 +1,5 @@
-<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="generator" content="rustdoc"><meta name="description" content="Source of the Rust file `src/database/plutus.rs`."><title>plutus.rs - source</title><script> if (window.location.protocol !== "file:") document.write(`<link rel="preload" as="font" type="font/woff2" crossorigin href="../../../static.files/SourceSerif4-Regular-46f98efaafac5295.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../static.files/FiraSans-Regular-018c141bf0843ffd.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../static.files/FiraSans-Medium-8f9a781e4970d388.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../static.files/SourceCodePro-Regular-562dcc5011b6de7d.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../static.files/SourceCodePro-Semibold-d899c5a5c4aeb14a.ttf.woff2">`)</script><link rel="stylesheet" href="../../../static.files/normalize-76eba96aa4d2e634.css"><link rel="stylesheet" href="../../../static.files/rustdoc-e935ef01ae1c1829.css"><meta name="rustdoc-vars" data-root-path="../../../" data-static-root-path="../../../static.files/" data-current-crate="tx_indexer" data-themes="" data-resource-suffix="" data-rustdoc-version="1.78.0 (9b00956e5 2024-04-29)" data-channel="1.78.0" data-search-js="search-42d8da7a6b9792c2.js" data-settings-js="settings-4313503d2e1961c2.js" ><script src="../../../static.files/storage-4c98445ec4002617.js"></script><script defer src="../../../static.files/src-script-e66d777a5a92e9b2.js"></script><script defer src="../../../src-files.js"></script><script defer src="../../../static.files/main-12cf3b4f4f9dc36d.js"></script><noscript><link rel="stylesheet" href="../../../static.files/noscript-04d5337699b92874.css"></noscript><link rel="alternate icon" type="image/png" href="../../../static.files/favicon-16x16-8b506e7a72182f1c.png"><link rel="alternate icon" type="image/png" href="../../../static.files/favicon-32x32-422f7d1d52889060.png"><link rel="icon" type="image/svg+xml" href="../../../static.files/favicon-2c020d218678b618.svg"></head><body class="rustdoc src"><!--[if lte IE 11]><div class="warning">This old browser is unsupported and will most likely display funky things.</div><![endif]--><nav class="sidebar"><div class="src-sidebar-title">
-            <h2>Files</h2></div></nav><div class="sidebar-resizer"></div>
-    <main><nav class="sub"><form class="search-form"><span></span><div id="sidebar-button" tabindex="-1"><a href="../../../tx_indexer/all.html" title="show sidebar"></a></div><input class="search-input" name="search" aria-label="Run search in the documentation" autocomplete="off" spellcheck="false" placeholder="Click or press ‘S’ to search, ‘?’ for more options…" type="search"><div id="help-button" tabindex="-1"><a href="../../../help.html" title="help">?</a></div><div id="settings-menu" tabindex="-1"><a href="../../../settings.html" title="settings"><img width="22" height="22" alt="Change settings" src="../../../static.files/wheel-7b819b6101059cd0.svg"></a></div></form></nav><section id="main-content" class="content"><div class="example-wrap"><div data-nosnippet><pre class="src-line-numbers"><a href="#1" id="1">1</a>
+<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="generator" content="rustdoc"><meta name="description" content="Source of the Rust file `src/database/plutus.rs`."><title>plutus.rs - source</title><script>if(window.location.protocol!=="file:")document.head.insertAdjacentHTML("beforeend","SourceSerif4-Regular-6b053e98.ttf.woff2,FiraSans-Regular-0fe48ade.woff2,FiraSans-Medium-e1aa3f0a.woff2,SourceCodePro-Regular-8badfe75.ttf.woff2,SourceCodePro-Semibold-aa29a496.ttf.woff2".split(",").map(f=>`<link rel="preload" as="font" type="font/woff2" crossorigin href="../../../static.files/${f}">`).join(""))</script><link rel="stylesheet" href="../../../static.files/normalize-9960930a.css"><link rel="stylesheet" href="../../../static.files/rustdoc-46132b98.css"><meta name="rustdoc-vars" data-root-path="../../../" data-static-root-path="../../../static.files/" data-current-crate="tx_indexer" data-themes="" data-resource-suffix="" data-rustdoc-version="1.85.0 (4d91de4e4 2025-02-17)" data-channel="1.85.0" data-search-js="search-75f5ac3e.js" data-settings-js="settings-0f613d39.js" ><script src="../../../static.files/storage-59e33391.js"></script><script defer src="../../../static.files/src-script-56102188.js"></script><script defer src="../../../src-files.js"></script><script defer src="../../../static.files/main-5f194d8c.js"></script><noscript><link rel="stylesheet" href="../../../static.files/noscript-893ab5e7.css"></noscript><link rel="alternate icon" type="image/png" href="../../../static.files/favicon-32x32-6580c154.png"><link rel="icon" type="image/svg+xml" href="../../../static.files/favicon-044be391.svg"></head><body class="rustdoc src"><!--[if lte IE 11]><div class="warning">This old browser is unsupported and will most likely display funky things.</div><![endif]--><nav class="sidebar"><div class="src-sidebar-title"><h2>Files</h2></div></nav><div class="sidebar-resizer"></div><main><rustdoc-search></rustdoc-search><section id="main-content" class="content"><div class="main-heading"><h1><div class="sub-heading">tx_indexer/database/</div>plutus.rs</h1><rustdoc-toolbar></rustdoc-toolbar></div><div class="example-wrap"><div data-nosnippet><pre class="src-line-numbers">
+<a href="#1" id="1">1</a>
 <a href="#2" id="2">2</a>
 <a href="#3" id="3">3</a>
 <a href="#4" id="4">4</a>
@@ -1074,8 +1073,7 @@
 <a href="#1072" id="1072">1072</a>
 <a href="#1073" id="1073">1073</a>
 <a href="#1074" id="1074">1074</a>
-<a href="#1075" id="1075">1075</a>
-</pre></div><pre class="rust"><code><span class="attr">#[cfg(feature = <span class="string">"diesel"</span>)]
+<a href="#1075" id="1075">1075</a></pre></div><pre class="rust"><code><span class="attr">#[cfg(feature = <span class="string">"diesel"</span>)]
 </span><span class="kw">use </span>diesel::sql_types::{Array, Bytea, Nullable};
 <span class="kw">use </span>num_bigint::BigInt;
 <span class="kw">use </span>pla::csl::pla_to_csl::TryToCSL;
@@ -1197,15 +1195,15 @@
 )]
 </span><span class="kw">pub struct </span>Hash28(<span class="attr">#[cfg_attr(feature = <span class="string">"diesel"</span>, diesel_derive_pg(sql_type = Bytea))] </span><span class="kw">pub </span>Vec&lt;u8&gt;);
 
-<span class="kw">impl </span>From&lt;pla::v2::crypto::LedgerBytes&gt; <span class="kw">for </span>Hash28 {
-    <span class="kw">fn </span>from(item: pla::v2::crypto::LedgerBytes) -&gt; <span class="self">Self </span>{
+<span class="kw">impl </span>From&lt;pla::v3::crypto::LedgerBytes&gt; <span class="kw">for </span>Hash28 {
+    <span class="kw">fn </span>from(item: pla::v3::crypto::LedgerBytes) -&gt; <span class="self">Self </span>{
         Hash28(item.<span class="number">0</span>)
     }
 }
 
-<span class="kw">impl </span>From&lt;Hash28&gt; <span class="kw">for </span>pla::v2::crypto::LedgerBytes {
+<span class="kw">impl </span>From&lt;Hash28&gt; <span class="kw">for </span>pla::v3::crypto::LedgerBytes {
     <span class="kw">fn </span>from(item: Hash28) -&gt; <span class="self">Self </span>{
-        pla::v2::crypto::LedgerBytes(item.<span class="number">0</span>)
+        pla::v3::crypto::LedgerBytes(item.<span class="number">0</span>)
     }
 }
 
@@ -1233,15 +1231,15 @@
 )]
 </span><span class="kw">pub struct </span>Hash32(<span class="attr">#[cfg_attr(feature = <span class="string">"diesel"</span>, diesel_derive_pg(sql_type = Bytea))] </span><span class="kw">pub </span>Vec&lt;u8&gt;);
 
-<span class="kw">impl </span>From&lt;pla::v2::crypto::LedgerBytes&gt; <span class="kw">for </span>Hash32 {
-    <span class="kw">fn </span>from(item: pla::v2::crypto::LedgerBytes) -&gt; <span class="self">Self </span>{
+<span class="kw">impl </span>From&lt;pla::v3::crypto::LedgerBytes&gt; <span class="kw">for </span>Hash32 {
+    <span class="kw">fn </span>from(item: pla::v3::crypto::LedgerBytes) -&gt; <span class="self">Self </span>{
         Hash32(item.<span class="number">0</span>)
     }
 }
 
-<span class="kw">impl </span>From&lt;Hash32&gt; <span class="kw">for </span>pla::v2::crypto::LedgerBytes {
+<span class="kw">impl </span>From&lt;Hash32&gt; <span class="kw">for </span>pla::v3::crypto::LedgerBytes {
     <span class="kw">fn </span>from(item: Hash32) -&gt; <span class="self">Self </span>{
-        pla::v2::crypto::LedgerBytes(item.<span class="number">0</span>)
+        pla::v3::crypto::LedgerBytes(item.<span class="number">0</span>)
     }
 }
 
@@ -1269,25 +1267,25 @@
 )]
 </span><span class="kw">pub struct </span>CurrencySymbol(<span class="attr">#[cfg_attr(feature = <span class="string">"diesel"</span>, diesel_derive_pg(sql_type = Bytea))] </span><span class="kw">pub </span>Vec&lt;u8&gt;);
 
-<span class="kw">impl </span>From&lt;pla::v2::value::CurrencySymbol&gt; <span class="kw">for </span>CurrencySymbol {
-    <span class="kw">fn </span>from(item: pla::v2::value::CurrencySymbol) -&gt; <span class="self">Self </span>{
+<span class="kw">impl </span>From&lt;pla::v3::value::CurrencySymbol&gt; <span class="kw">for </span>CurrencySymbol {
+    <span class="kw">fn </span>from(item: pla::v3::value::CurrencySymbol) -&gt; <span class="self">Self </span>{
         <span class="kw">match </span>item {
-            pla::v2::value::CurrencySymbol::Ada =&gt; CurrencySymbol(Vec::with_capacity(<span class="number">0</span>)),
-            pla::v2::value::CurrencySymbol::NativeToken(pla::v2::script::MintingPolicyHash(
-                pla::v2::script::ScriptHash(pla::v2::crypto::LedgerBytes(bytes)),
+            pla::v3::value::CurrencySymbol::Ada =&gt; CurrencySymbol(Vec::with_capacity(<span class="number">0</span>)),
+            pla::v3::value::CurrencySymbol::NativeToken(pla::v3::script::MintingPolicyHash(
+                pla::v3::script::ScriptHash(pla::v3::crypto::LedgerBytes(bytes)),
             )) =&gt; CurrencySymbol(bytes),
         }
     }
 }
 
-<span class="kw">impl </span>From&lt;CurrencySymbol&gt; <span class="kw">for </span>pla::v2::value::CurrencySymbol {
+<span class="kw">impl </span>From&lt;CurrencySymbol&gt; <span class="kw">for </span>pla::v3::value::CurrencySymbol {
     <span class="kw">fn </span>from(item: CurrencySymbol) -&gt; <span class="self">Self </span>{
         <span class="kw">let </span>CurrencySymbol(bytes) = item;
         <span class="kw">if </span>bytes.is_empty() {
-            pla::v2::value::CurrencySymbol::Ada
+            pla::v3::value::CurrencySymbol::Ada
         } <span class="kw">else </span>{
-            pla::v2::value::CurrencySymbol::NativeToken(pla::v2::script::MintingPolicyHash(
-                pla::v2::script::ScriptHash(pla::v2::crypto::LedgerBytes(bytes)),
+            pla::v3::value::CurrencySymbol::NativeToken(pla::v3::script::MintingPolicyHash(
+                pla::v3::script::ScriptHash(pla::v3::crypto::LedgerBytes(bytes)),
             ))
         }
     }
@@ -1317,15 +1315,15 @@
 )]
 </span><span class="kw">pub struct </span>TokenName(<span class="attr">#[cfg_attr(feature = <span class="string">"diesel"</span>, diesel_derive_pg(sql_type = Bytea))] </span><span class="kw">pub </span>Vec&lt;u8&gt;);
 
-<span class="kw">impl </span>From&lt;pla::v2::value::TokenName&gt; <span class="kw">for </span>TokenName {
-    <span class="kw">fn </span>from(item: pla::v2::value::TokenName) -&gt; <span class="self">Self </span>{
+<span class="kw">impl </span>From&lt;pla::v3::value::TokenName&gt; <span class="kw">for </span>TokenName {
+    <span class="kw">fn </span>from(item: pla::v3::value::TokenName) -&gt; <span class="self">Self </span>{
         TokenName(item.<span class="number">0 </span>.<span class="number">0</span>)
     }
 }
 
-<span class="kw">impl </span>From&lt;TokenName&gt; <span class="kw">for </span>pla::v2::value::TokenName {
+<span class="kw">impl </span>From&lt;TokenName&gt; <span class="kw">for </span>pla::v3::value::TokenName {
     <span class="kw">fn </span>from(item: TokenName) -&gt; <span class="self">Self </span>{
-        pla::v2::value::TokenName(pla::v2::crypto::LedgerBytes(item.<span class="number">0</span>))
+        pla::v3::value::TokenName(pla::v3::crypto::LedgerBytes(item.<span class="number">0</span>))
     }
 }
 
@@ -1353,15 +1351,15 @@
 )]
 </span><span class="kw">pub struct </span>TransactionHash(<span class="attr">#[cfg_attr(feature = <span class="string">"diesel"</span>, diesel_derive_pg(sql_type = sql_types::Hash32))] </span><span class="kw">pub </span>Hash32);
 
-<span class="kw">impl </span>From&lt;pla::v2::transaction::TransactionHash&gt; <span class="kw">for </span>TransactionHash {
-    <span class="kw">fn </span>from(item: pla::v2::transaction::TransactionHash) -&gt; <span class="self">Self </span>{
+<span class="kw">impl </span>From&lt;pla::v3::transaction::TransactionHash&gt; <span class="kw">for </span>TransactionHash {
+    <span class="kw">fn </span>from(item: pla::v3::transaction::TransactionHash) -&gt; <span class="self">Self </span>{
         TransactionHash(item.<span class="number">0</span>.into())
     }
 }
 
-<span class="kw">impl </span>From&lt;TransactionHash&gt; <span class="kw">for </span>pla::v2::transaction::TransactionHash {
+<span class="kw">impl </span>From&lt;TransactionHash&gt; <span class="kw">for </span>pla::v3::transaction::TransactionHash {
     <span class="kw">fn </span>from(item: TransactionHash) -&gt; <span class="self">Self </span>{
-        pla::v2::transaction::TransactionHash(item.<span class="number">0</span>.into())
+        pla::v3::transaction::TransactionHash(item.<span class="number">0</span>.into())
     }
 }
 
@@ -1389,15 +1387,15 @@
 )]
 </span><span class="kw">pub struct </span>Ed25519PubKeyHash(<span class="attr">#[cfg_attr(feature = <span class="string">"diesel"</span>, diesel_derive_pg(sql_type = sql_types::Hash28))] </span><span class="kw">pub </span>Hash28);
 
-<span class="kw">impl </span>From&lt;pla::v2::crypto::Ed25519PubKeyHash&gt; <span class="kw">for </span>Ed25519PubKeyHash {
-    <span class="kw">fn </span>from(item: pla::v2::crypto::Ed25519PubKeyHash) -&gt; <span class="self">Self </span>{
+<span class="kw">impl </span>From&lt;pla::v3::crypto::Ed25519PubKeyHash&gt; <span class="kw">for </span>Ed25519PubKeyHash {
+    <span class="kw">fn </span>from(item: pla::v3::crypto::Ed25519PubKeyHash) -&gt; <span class="self">Self </span>{
         Ed25519PubKeyHash(item.<span class="number">0</span>.into())
     }
 }
 
-<span class="kw">impl </span>From&lt;Ed25519PubKeyHash&gt; <span class="kw">for </span>pla::v2::crypto::Ed25519PubKeyHash {
+<span class="kw">impl </span>From&lt;Ed25519PubKeyHash&gt; <span class="kw">for </span>pla::v3::crypto::Ed25519PubKeyHash {
     <span class="kw">fn </span>from(item: Ed25519PubKeyHash) -&gt; <span class="self">Self </span>{
-        pla::v2::crypto::Ed25519PubKeyHash(item.<span class="number">0</span>.into())
+        pla::v3::crypto::Ed25519PubKeyHash(item.<span class="number">0</span>.into())
     }
 }
 
@@ -1425,15 +1423,15 @@
 )]
 </span><span class="kw">pub struct </span>ScriptHash(<span class="attr">#[cfg_attr(feature = <span class="string">"diesel"</span>, diesel_derive_pg(sql_type = sql_types::Hash28))] </span><span class="kw">pub </span>Hash28);
 
-<span class="kw">impl </span>From&lt;pla::v2::script::ScriptHash&gt; <span class="kw">for </span>ScriptHash {
-    <span class="kw">fn </span>from(item: pla::v2::script::ScriptHash) -&gt; <span class="self">Self </span>{
+<span class="kw">impl </span>From&lt;pla::v3::script::ScriptHash&gt; <span class="kw">for </span>ScriptHash {
+    <span class="kw">fn </span>from(item: pla::v3::script::ScriptHash) -&gt; <span class="self">Self </span>{
         ScriptHash(item.<span class="number">0</span>.into())
     }
 }
 
-<span class="kw">impl </span>From&lt;ScriptHash&gt; <span class="kw">for </span>pla::v2::script::ScriptHash {
+<span class="kw">impl </span>From&lt;ScriptHash&gt; <span class="kw">for </span>pla::v3::script::ScriptHash {
     <span class="kw">fn </span>from(item: ScriptHash) -&gt; <span class="self">Self </span>{
-        pla::v2::script::ScriptHash(item.<span class="number">0</span>.into())
+        pla::v3::script::ScriptHash(item.<span class="number">0</span>.into())
     }
 }
 
@@ -1461,15 +1459,15 @@
     )]
 </span><span class="kw">pub struct </span>DatumHash(<span class="attr">#[cfg_attr(feature = <span class="string">"diesel"</span>, diesel_derive_pg(sql_type = sql_types::Hash32))] </span><span class="kw">pub </span>Hash32);
 
-<span class="kw">impl </span>From&lt;pla::v2::datum::DatumHash&gt; <span class="kw">for </span>DatumHash {
-    <span class="kw">fn </span>from(item: pla::v2::datum::DatumHash) -&gt; <span class="self">Self </span>{
+<span class="kw">impl </span>From&lt;pla::v3::datum::DatumHash&gt; <span class="kw">for </span>DatumHash {
+    <span class="kw">fn </span>from(item: pla::v3::datum::DatumHash) -&gt; <span class="self">Self </span>{
         DatumHash(item.<span class="number">0</span>.into())
     }
 }
 
-<span class="kw">impl </span>From&lt;DatumHash&gt; <span class="kw">for </span>pla::v2::datum::DatumHash {
+<span class="kw">impl </span>From&lt;DatumHash&gt; <span class="kw">for </span>pla::v3::datum::DatumHash {
     <span class="kw">fn </span>from(item: DatumHash) -&gt; <span class="self">Self </span>{
-        pla::v2::datum::DatumHash(item.<span class="number">0</span>.into())
+        pla::v3::datum::DatumHash(item.<span class="number">0</span>.into())
     }
 }
 
@@ -1607,14 +1605,14 @@
     </span>script_hash: <span class="prelude-ty">Option</span>&lt;ScriptHash&gt;,
 }
 
-<span class="kw">impl </span>From&lt;pla::v2::address::Credential&gt; <span class="kw">for </span>Credential {
-    <span class="kw">fn </span>from(item: pla::v2::address::Credential) -&gt; <span class="self">Self </span>{
+<span class="kw">impl </span>From&lt;pla::v3::address::Credential&gt; <span class="kw">for </span>Credential {
+    <span class="kw">fn </span>from(item: pla::v3::address::Credential) -&gt; <span class="self">Self </span>{
         <span class="kw">match </span>item {
-            pla::v2::address::Credential::PubKey(pkh) =&gt; Credential {
+            pla::v3::address::Credential::PubKey(pkh) =&gt; Credential {
                 pub_key_hash: <span class="prelude-val">Some</span>(pkh.into()),
                 script_hash: <span class="prelude-val">None</span>,
             },
-            pla::v2::address::Credential::Script(pla::v2::script::ValidatorHash(sh)) =&gt; {
+            pla::v3::address::Credential::Script(pla::v3::script::ValidatorHash(sh)) =&gt; {
                 Credential {
                     pub_key_hash: <span class="prelude-val">None</span>,
                     script_hash: <span class="prelude-val">Some</span>(sh.into()),
@@ -1624,7 +1622,7 @@
     }
 }
 
-<span class="kw">impl </span>TryFrom&lt;Credential&gt; <span class="kw">for </span>pla::v2::address::Credential {
+<span class="kw">impl </span>TryFrom&lt;Credential&gt; <span class="kw">for </span>pla::v3::address::Credential {
     <span class="kw">type </span>Error = DBTypeConversionError;
 
     <span class="kw">fn </span>try_from(item: Credential) -&gt; <span class="prelude-ty">Result</span>&lt;<span class="self">Self</span>, <span class="self">Self</span>::Error&gt; {
@@ -1632,11 +1630,11 @@
             Credential {
                 pub_key_hash: <span class="prelude-val">Some</span>(pkh_db),
                 script_hash: <span class="prelude-val">None</span>,
-            } =&gt; pla::v2::address::Credential::PubKey(pkh_db.into()),
+            } =&gt; pla::v3::address::Credential::PubKey(pkh_db.into()),
             Credential {
                 pub_key_hash: <span class="prelude-val">None</span>,
                 script_hash: <span class="prelude-val">Some</span>(sh_db),
-            } =&gt; pla::v2::address::Credential::Script(pla::v2::script::ValidatorHash(sh_db.into())),
+            } =&gt; pla::v3::address::Credential::Script(pla::v3::script::ValidatorHash(sh_db.into())),
             <span class="kw">_ </span>=&gt; <span class="prelude-val">Err</span>(DBTypeConversionError::InvariantBroken(
                 <span class="string">"DB Credential must have either 'pub_key_hash' or 'script_hash'"</span>.to_string(),
             ))<span class="question-mark">?</span>,
@@ -1668,10 +1666,10 @@
     </span>cert_idx: i64,
 }
 
-<span class="kw">impl </span>TryFrom&lt;pla::v2::address::ChainPointer&gt; <span class="kw">for </span>ChainPointer {
+<span class="kw">impl </span>TryFrom&lt;pla::v3::address::ChainPointer&gt; <span class="kw">for </span>ChainPointer {
     <span class="kw">type </span>Error = DBTypeConversionError;
 
-    <span class="kw">fn </span>try_from(item: pla::v2::address::ChainPointer) -&gt; <span class="prelude-ty">Result</span>&lt;<span class="self">Self</span>, <span class="self">Self</span>::Error&gt; {
+    <span class="kw">fn </span>try_from(item: pla::v3::address::ChainPointer) -&gt; <span class="prelude-ty">Result</span>&lt;<span class="self">Self</span>, <span class="self">Self</span>::Error&gt; {
         <span class="prelude-val">Ok</span>(ChainPointer {
             slot_num: item
                 .slot_number
@@ -1692,12 +1690,12 @@
     }
 }
 
-<span class="kw">impl </span>From&lt;ChainPointer&gt; <span class="kw">for </span>pla::v2::address::ChainPointer {
+<span class="kw">impl </span>From&lt;ChainPointer&gt; <span class="kw">for </span>pla::v3::address::ChainPointer {
     <span class="kw">fn </span>from(item: ChainPointer) -&gt; <span class="self">Self </span>{
-        pla::v2::address::ChainPointer {
-            slot_number: pla::v2::address::Slot(BigInt::from(item.slot_num)),
-            transaction_index: pla::v2::address::TransactionIndex(BigInt::from(item.tx_idx)),
-            certificate_index: pla::v2::address::CertificateIndex(BigInt::from(item.cert_idx)),
+        pla::v3::address::ChainPointer {
+            slot_number: pla::v3::address::Slot(BigInt::from(item.slot_num)),
+            transaction_index: pla::v3::address::TransactionIndex(BigInt::from(item.tx_idx)),
+            certificate_index: pla::v3::address::CertificateIndex(BigInt::from(item.cert_idx)),
         }
     }
 }
@@ -1722,16 +1720,16 @@
     </span>staking_ptr: <span class="prelude-ty">Option</span>&lt;ChainPointer&gt;,
 }
 
-<span class="kw">impl </span>TryFrom&lt;pla::v2::address::StakingCredential&gt; <span class="kw">for </span>StakingCredential {
+<span class="kw">impl </span>TryFrom&lt;pla::v3::address::StakingCredential&gt; <span class="kw">for </span>StakingCredential {
     <span class="kw">type </span>Error = DBTypeConversionError;
 
-    <span class="kw">fn </span>try_from(item: pla::v2::address::StakingCredential) -&gt; <span class="prelude-ty">Result</span>&lt;<span class="self">Self</span>, <span class="self">Self</span>::Error&gt; {
+    <span class="kw">fn </span>try_from(item: pla::v3::address::StakingCredential) -&gt; <span class="prelude-ty">Result</span>&lt;<span class="self">Self</span>, <span class="self">Self</span>::Error&gt; {
         <span class="prelude-val">Ok</span>(<span class="kw">match </span>item {
-            pla::v2::address::StakingCredential::Hash(cred) =&gt; StakingCredential {
+            pla::v3::address::StakingCredential::Hash(cred) =&gt; StakingCredential {
                 staking_hash: <span class="prelude-val">Some</span>(cred.into()),
                 staking_ptr: <span class="prelude-val">None</span>,
             },
-            pla::v2::address::StakingCredential::Pointer(ptr) =&gt; StakingCredential {
+            pla::v3::address::StakingCredential::Pointer(ptr) =&gt; StakingCredential {
                 staking_hash: <span class="prelude-val">None</span>,
                 staking_ptr: <span class="prelude-val">Some</span>(ptr.try_into()<span class="question-mark">?</span>),
             },
@@ -1739,7 +1737,7 @@
     }
 }
 
-<span class="kw">impl </span>TryFrom&lt;StakingCredential&gt; <span class="kw">for </span>pla::v2::address::StakingCredential {
+<span class="kw">impl </span>TryFrom&lt;StakingCredential&gt; <span class="kw">for </span>pla::v3::address::StakingCredential {
     <span class="kw">type </span>Error = DBTypeConversionError;
 
     <span class="kw">fn </span>try_from(item: StakingCredential) -&gt; <span class="prelude-ty">Result</span>&lt;<span class="self">Self</span>, <span class="self">Self</span>::Error&gt; {
@@ -1747,11 +1745,11 @@
             StakingCredential {
                 staking_hash: <span class="prelude-val">Some</span>(cred),
                 staking_ptr: <span class="prelude-val">None</span>,
-            } =&gt; pla::v2::address::StakingCredential::Hash(cred.try_into()<span class="question-mark">?</span>),
+            } =&gt; pla::v3::address::StakingCredential::Hash(cred.try_into()<span class="question-mark">?</span>),
             StakingCredential {
                 staking_hash: <span class="prelude-val">None</span>,
                 staking_ptr: <span class="prelude-val">Some</span>(ptr),
-            } =&gt; pla::v2::address::StakingCredential::Pointer(ptr.into()),
+            } =&gt; pla::v3::address::StakingCredential::Pointer(ptr.into()),
 
             <span class="kw">_ </span>=&gt; <span class="prelude-val">Err</span>(DBTypeConversionError::InvariantBroken(
                 <span class="string">"DB StakingCredential must have either 'staking_hash' or 'staking_ptr'"</span>.to_string(),
@@ -1784,10 +1782,10 @@
     </span>staking_credential: <span class="prelude-ty">Option</span>&lt;StakingCredential&gt;,
 }
 
-<span class="kw">impl </span>TryFrom&lt;pla::v2::address::Address&gt; <span class="kw">for </span>Address {
+<span class="kw">impl </span>TryFrom&lt;pla::v3::address::Address&gt; <span class="kw">for </span>Address {
     <span class="kw">type </span>Error = DBTypeConversionError;
 
-    <span class="kw">fn </span>try_from(item: pla::v2::address::Address) -&gt; <span class="prelude-ty">Result</span>&lt;<span class="self">Self</span>, <span class="self">Self</span>::Error&gt; {
+    <span class="kw">fn </span>try_from(item: pla::v3::address::Address) -&gt; <span class="prelude-ty">Result</span>&lt;<span class="self">Self</span>, <span class="self">Self</span>::Error&gt; {
         <span class="prelude-val">Ok</span>(Address {
             credential: item.credential.into(),
             staking_credential: item
@@ -1798,15 +1796,15 @@
     }
 }
 
-<span class="kw">impl </span>TryFrom&lt;Address&gt; <span class="kw">for </span>pla::v2::address::Address {
+<span class="kw">impl </span>TryFrom&lt;Address&gt; <span class="kw">for </span>pla::v3::address::Address {
     <span class="kw">type </span>Error = DBTypeConversionError;
 
     <span class="kw">fn </span>try_from(item: Address) -&gt; <span class="prelude-ty">Result</span>&lt;<span class="self">Self</span>, <span class="self">Self</span>::Error&gt; {
-        <span class="prelude-val">Ok</span>(pla::v2::address::Address {
+        <span class="prelude-val">Ok</span>(pla::v3::address::Address {
             credential: item.credential.try_into()<span class="question-mark">?</span>,
             staking_credential: item
                 .staking_credential
-                .map(pla::v2::address::StakingCredential::try_from)
+                .map(pla::v3::address::StakingCredential::try_from)
                 .transpose()<span class="question-mark">?</span>,
         })
     }
@@ -1840,8 +1838,8 @@
 
 <span class="kw">impl
     </span>TryFrom&lt;(
-        pla::v2::value::CurrencySymbol,
-        pla::v2::value::TokenName,
+        pla::v3::value::CurrencySymbol,
+        pla::v3::value::TokenName,
         BigInt,
     )&gt; <span class="kw">for </span>AssetQuantity
 {
@@ -1849,8 +1847,8 @@
 
     <span class="kw">fn </span>try_from(
         item: (
-            pla::v2::value::CurrencySymbol,
-            pla::v2::value::TokenName,
+            pla::v3::value::CurrencySymbol,
+            pla::v3::value::TokenName,
             BigInt,
         ),
     ) -&gt; <span class="prelude-ty">Result</span>&lt;<span class="self">Self</span>, <span class="self">Self</span>::Error&gt; {
@@ -1867,8 +1865,8 @@
 
 <span class="kw">impl </span>From&lt;AssetQuantity&gt;
     <span class="kw">for </span>(
-        pla::v2::value::CurrencySymbol,
-        pla::v2::value::TokenName,
+        pla::v3::value::CurrencySymbol,
+        pla::v3::value::TokenName,
         BigInt,
     )
 {
@@ -1899,10 +1897,10 @@
 )]
 </span><span class="kw">pub struct </span>Value(<span class="attr">#[cfg_attr(feature = <span class="string">"diesel"</span>, diesel_derive_pg(sql_type = Array&lt;sql_types::AssetQuantity&gt;))] </span><span class="kw">pub </span>Vec&lt;AssetQuantity&gt;);
 
-<span class="kw">impl </span>TryFrom&lt;pla::v2::value::Value&gt; <span class="kw">for </span>Value {
+<span class="kw">impl </span>TryFrom&lt;pla::v3::value::Value&gt; <span class="kw">for </span>Value {
     <span class="kw">type </span>Error = DBTypeConversionError;
 
-    <span class="kw">fn </span>try_from(item: pla::v2::value::Value) -&gt; <span class="prelude-ty">Result</span>&lt;<span class="self">Self</span>, <span class="self">Self</span>::Error&gt; {
+    <span class="kw">fn </span>try_from(item: pla::v3::value::Value) -&gt; <span class="prelude-ty">Result</span>&lt;<span class="self">Self</span>, <span class="self">Self</span>::Error&gt; {
         <span class="kw">let </span>assets = item
             .<span class="number">0
             </span>.iter()
@@ -1920,10 +1918,10 @@
     }
 }
 
-<span class="kw">impl </span>From&lt;Value&gt; <span class="kw">for </span>pla::v2::value::Value {
+<span class="kw">impl </span>From&lt;Value&gt; <span class="kw">for </span>pla::v3::value::Value {
     <span class="kw">fn </span>from(item: Value) -&gt; <span class="self">Self </span>{
         item.<span class="number">0</span>.into_iter().fold(
-            pla::v2::value::Value::new(),
+            pla::v3::value::Value::new(),
             |value,
              AssetQuantity {
                  currency_symbol,
@@ -1960,10 +1958,10 @@
     </span>tx_idx: i64,
 }
 
-<span class="kw">impl </span>TryFrom&lt;pla::v2::transaction::TransactionInput&gt; <span class="kw">for </span>TransactionInput {
+<span class="kw">impl </span>TryFrom&lt;pla::v3::transaction::TransactionInput&gt; <span class="kw">for </span>TransactionInput {
     <span class="kw">type </span>Error = DBTypeConversionError;
 
-    <span class="kw">fn </span>try_from(item: pla::v2::transaction::TransactionInput) -&gt; <span class="prelude-ty">Result</span>&lt;<span class="self">Self</span>, <span class="self">Self</span>::Error&gt; {
+    <span class="kw">fn </span>try_from(item: pla::v3::transaction::TransactionInput) -&gt; <span class="prelude-ty">Result</span>&lt;<span class="self">Self</span>, <span class="self">Self</span>::Error&gt; {
         <span class="prelude-val">Ok</span>(TransactionInput {
             tx_id: item.transaction_id.into(),
             tx_idx: item
@@ -1974,9 +1972,9 @@
     }
 }
 
-<span class="kw">impl </span>From&lt;TransactionInput&gt; <span class="kw">for </span>pla::v2::transaction::TransactionInput {
+<span class="kw">impl </span>From&lt;TransactionInput&gt; <span class="kw">for </span>pla::v3::transaction::TransactionInput {
     <span class="kw">fn </span>from(item: TransactionInput) -&gt; <span class="self">Self </span>{
-        pla::v2::transaction::TransactionInput {
+        pla::v3::transaction::TransactionInput {
             transaction_id: item.tx_id.into(),
             index: item.tx_idx.into(),
         }
@@ -2007,20 +2005,20 @@
     </span>inline_datum: <span class="prelude-ty">Option</span>&lt;PlutusData&gt;,
 }
 
-<span class="kw">impl </span>TryFrom&lt;pla::v2::datum::OutputDatum&gt; <span class="kw">for </span>OutputDatum {
+<span class="kw">impl </span>TryFrom&lt;pla::v3::datum::OutputDatum&gt; <span class="kw">for </span>OutputDatum {
     <span class="kw">type </span>Error = DBTypeConversionError;
 
-    <span class="kw">fn </span>try_from(item: pla::v2::datum::OutputDatum) -&gt; <span class="prelude-ty">Result</span>&lt;<span class="self">Self</span>, <span class="self">Self</span>::Error&gt; {
+    <span class="kw">fn </span>try_from(item: pla::v3::datum::OutputDatum) -&gt; <span class="prelude-ty">Result</span>&lt;<span class="self">Self</span>, <span class="self">Self</span>::Error&gt; {
         <span class="prelude-val">Ok</span>(<span class="kw">match </span>item {
-            pla::v2::datum::OutputDatum::DatumHash(dh) =&gt; OutputDatum {
+            pla::v3::datum::OutputDatum::DatumHash(dh) =&gt; OutputDatum {
                 datum_hash: <span class="prelude-val">Some</span>(dh.into()),
                 inline_datum: <span class="prelude-val">None</span>,
             },
-            pla::v2::datum::OutputDatum::InlineDatum(pla::v2::datum::Datum(datum)) =&gt; OutputDatum {
+            pla::v3::datum::OutputDatum::InlineDatum(pla::v3::datum::Datum(datum)) =&gt; OutputDatum {
                 datum_hash: <span class="prelude-val">None</span>,
                 inline_datum: <span class="prelude-val">Some</span>(datum.try_into()<span class="question-mark">?</span>),
             },
-            pla::v2::datum::OutputDatum::None =&gt; OutputDatum {
+            pla::v3::datum::OutputDatum::None =&gt; OutputDatum {
                 datum_hash: <span class="prelude-val">None</span>,
                 inline_datum: <span class="prelude-val">None</span>,
             },
@@ -2028,7 +2026,7 @@
     }
 }
 
-<span class="kw">impl </span>TryFrom&lt;OutputDatum&gt; <span class="kw">for </span>pla::v2::datum::OutputDatum {
+<span class="kw">impl </span>TryFrom&lt;OutputDatum&gt; <span class="kw">for </span>pla::v3::datum::OutputDatum {
     <span class="kw">type </span>Error = DBTypeConversionError;
 
     <span class="kw">fn </span>try_from(item: OutputDatum) -&gt; <span class="prelude-ty">Result</span>&lt;<span class="self">Self</span>, <span class="self">Self</span>::Error&gt; {
@@ -2036,14 +2034,14 @@
             OutputDatum {
                 datum_hash: <span class="prelude-val">Some</span>(dh_db),
                 ..
-            } =&gt; pla::v2::datum::OutputDatum::DatumHash(dh_db.into()),
+            } =&gt; pla::v3::datum::OutputDatum::DatumHash(dh_db.into()),
             OutputDatum {
                 inline_datum: <span class="prelude-val">Some</span>(datum_db),
                 ..
-            } =&gt; pla::v2::datum::OutputDatum::InlineDatum(pla::v2::datum::Datum(
+            } =&gt; pla::v3::datum::OutputDatum::InlineDatum(pla::v3::datum::Datum(
                 datum_db.try_into()<span class="question-mark">?</span>,
             )),
-            <span class="kw">_ </span>=&gt; pla::v2::datum::OutputDatum::None,
+            <span class="kw">_ </span>=&gt; pla::v3::datum::OutputDatum::None,
         })
     }
 }
@@ -2078,10 +2076,10 @@
     </span>reference_script: <span class="prelude-ty">Option</span>&lt;ScriptHash&gt;,
 }
 
-<span class="kw">impl </span>TryFrom&lt;pla::v2::transaction::TransactionOutput&gt; <span class="kw">for </span>TransactionOutput {
+<span class="kw">impl </span>TryFrom&lt;pla::v3::transaction::TransactionOutput&gt; <span class="kw">for </span>TransactionOutput {
     <span class="kw">type </span>Error = DBTypeConversionError;
 
-    <span class="kw">fn </span>try_from(item: pla::v2::transaction::TransactionOutput) -&gt; <span class="prelude-ty">Result</span>&lt;<span class="self">Self</span>, <span class="self">Self</span>::Error&gt; {
+    <span class="kw">fn </span>try_from(item: pla::v3::transaction::TransactionOutput) -&gt; <span class="prelude-ty">Result</span>&lt;<span class="self">Self</span>, <span class="self">Self</span>::Error&gt; {
         <span class="prelude-val">Ok</span>(TransactionOutput {
             address: item.address.try_into()<span class="question-mark">?</span>,
             assets: item.value.try_into()<span class="question-mark">?</span>,
@@ -2091,15 +2089,15 @@
     }
 }
 
-<span class="kw">impl </span>TryFrom&lt;TransactionOutput&gt; <span class="kw">for </span>pla::v2::transaction::TransactionOutput {
+<span class="kw">impl </span>TryFrom&lt;TransactionOutput&gt; <span class="kw">for </span>pla::v3::transaction::TransactionOutput {
     <span class="kw">type </span>Error = DBTypeConversionError;
 
     <span class="kw">fn </span>try_from(item: TransactionOutput) -&gt; <span class="prelude-ty">Result</span>&lt;<span class="self">Self</span>, <span class="self">Self</span>::Error&gt; {
-        <span class="prelude-val">Ok</span>(pla::v2::transaction::TransactionOutput {
+        <span class="prelude-val">Ok</span>(pla::v3::transaction::TransactionOutput {
             address: item.address.try_into()<span class="question-mark">?</span>,
             value: item.assets.into(),
             datum: item.datum.try_into()<span class="question-mark">?</span>,
-            reference_script: item.reference_script.map(pla::v2::script::ScriptHash::from),
+            reference_script: item.reference_script.map(pla::v3::script::ScriptHash::from),
         })
     }
 }
@@ -2128,10 +2126,10 @@
     </span>output: TransactionOutput,
 }
 
-<span class="kw">impl </span>TryFrom&lt;pla::v2::transaction::TxInInfo&gt; <span class="kw">for </span>TxInInfo {
+<span class="kw">impl </span>TryFrom&lt;pla::v3::transaction::TxInInfo&gt; <span class="kw">for </span>TxInInfo {
     <span class="kw">type </span>Error = DBTypeConversionError;
 
-    <span class="kw">fn </span>try_from(item: pla::v2::transaction::TxInInfo) -&gt; <span class="prelude-ty">Result</span>&lt;<span class="self">Self</span>, <span class="self">Self</span>::Error&gt; {
+    <span class="kw">fn </span>try_from(item: pla::v3::transaction::TxInInfo) -&gt; <span class="prelude-ty">Result</span>&lt;<span class="self">Self</span>, <span class="self">Self</span>::Error&gt; {
         <span class="prelude-val">Ok</span>(TxInInfo {
             reference: item.reference.try_into()<span class="question-mark">?</span>,
             output: item.output.try_into()<span class="question-mark">?</span>,
@@ -2139,11 +2137,11 @@
     }
 }
 
-<span class="kw">impl </span>TryFrom&lt;TxInInfo&gt; <span class="kw">for </span>pla::v2::transaction::TxInInfo {
+<span class="kw">impl </span>TryFrom&lt;TxInInfo&gt; <span class="kw">for </span>pla::v3::transaction::TxInInfo {
     <span class="kw">type </span>Error = DBTypeConversionError;
 
     <span class="kw">fn </span>try_from(item: TxInInfo) -&gt; <span class="prelude-ty">Result</span>&lt;<span class="self">Self</span>, <span class="self">Self</span>::Error&gt; {
-        <span class="prelude-val">Ok</span>(pla::v2::transaction::TxInInfo {
+        <span class="prelude-val">Ok</span>(pla::v3::transaction::TxInInfo {
             reference: item.reference.into(),
             output: item.output.try_into()<span class="question-mark">?</span>,
         })
