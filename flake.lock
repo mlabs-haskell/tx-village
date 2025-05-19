@@ -2558,16 +2558,15 @@
         ]
       },
       "locked": {
-        "lastModified": 1740493924,
-        "narHash": "sha256-DY45aCHxvjlpH7tqDtiK9GrHJ2MJkQF92h++ushgZGs=",
-        "owner": "szg251",
+        "lastModified": 1746794123,
+        "narHash": "sha256-zKdIg8SHiGmDXhAjBZfG7L2WVbtpw0RVuj2k9pOMPpE=",
+        "owner": "mlabs-haskell",
         "repo": "cardano-devnet-flake",
-        "rev": "fd48e995d112220bfe84a7011a7b3b8568a69afd",
+        "rev": "71ba8bd49816ce2bda389f33701c321f1ba791fa",
         "type": "github"
       },
       "original": {
-        "owner": "szg251",
-        "ref": "szg251/node-10",
+        "owner": "mlabs-haskell",
         "repo": "cardano-devnet-flake",
         "type": "github"
       }
