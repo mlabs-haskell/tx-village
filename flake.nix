@@ -1,5 +1,5 @@
 {
-  description = "Cardano Open Oracle Protocol";
+  description = "Tx village - Cardano transaction builder ecosystem";
 
   inputs = {
     # LambdaBuffers as source of truth for many inputs
@@ -12,7 +12,7 @@
     nixpkgs.follows = "lbf/nixpkgs";
     flake-parts.follows = "lbf/flake-parts";
 
-    ## Code quality automation
+    # Code quality automation
     pre-commit-hooks.follows = "lbf/pre-commit-hooks";
     hci-effects.follows = "lbf/hci-effects";
 
@@ -25,12 +25,12 @@
     # Light-weight wrapper around cardano-node
     ogmios.url = "github:mlabs-haskell/ogmios-nix/v6.11.2";
 
-    cardano-nix.url = "github:mlabs-haskell/cardano.nix";
-
+    # Local Cardano devnet for integration testing
     cardano-devnet-flake.url = "github:szg251/cardano-devnet-flake?ref=szg251/node-10";
 
     cardano-node.follows = "cardano-devnet-flake/cardano-node";
 
+    # Tools for integration testing
     process-compose-flake.url = "github:Platonic-Systems/process-compose-flake";
     services-flake.url = "github:juspay/services-flake";
   };
@@ -53,7 +53,6 @@
         ./extras/tx-indexer-testsuite/build.nix
         ./tx-indexer/build.nix
         ./ledger-sim/build.nix
-        ./dev-net/build.nix
 
         # Extras
         ./extras/tx-bakery-testsuite/validation/build.nix
