@@ -2163,12 +2163,10 @@
       "inputs": {
         "flake-utils": "flake-utils",
         "haskellNix": [
-          "cardano-devnet-flake",
           "cardano-node",
           "haskellNix"
         ],
         "nixpkgs": [
-          "cardano-devnet-flake",
           "cardano-node",
           "nixpkgs"
         ],
@@ -2547,26 +2545,21 @@
         "type": "github"
       }
     },
-    "cardano-devnet-flake": {
+    "cardano-devnet": {
       "inputs": {
-        "cardano-node": "cardano-node",
-        "flake-parts": "flake-parts",
-        "nixpkgs": [
-          "cardano-devnet-flake",
-          "cardano-node",
-          "nixpkgs"
-        ]
+        "flake-parts": "flake-parts"
       },
       "locked": {
-        "lastModified": 1746794123,
-        "narHash": "sha256-zKdIg8SHiGmDXhAjBZfG7L2WVbtpw0RVuj2k9pOMPpE=",
+        "lastModified": 1749408005,
+        "narHash": "sha256-4874+8Y6CeaBwBt28ZWEIXOfbvOuvdASevMmz+zdkWo=",
         "owner": "mlabs-haskell",
         "repo": "cardano-devnet-flake",
-        "rev": "71ba8bd49816ce2bda389f33701c321f1ba791fa",
+        "rev": "fc9ed3af88716119f161c10c5e4584714b918a32",
         "type": "github"
       },
       "original": {
         "owner": "mlabs-haskell",
+        "ref": "szg251/process-compose",
         "repo": "cardano-devnet-flake",
         "type": "github"
       }
@@ -2803,13 +2796,11 @@
         "hackageNix": "hackageNix",
         "haskellNix": "haskellNix",
         "hostNixpkgs": [
-          "cardano-devnet-flake",
           "cardano-node",
           "nixpkgs"
         ],
         "iohkNix": "iohkNix",
         "nixpkgs": [
-          "cardano-devnet-flake",
           "cardano-node",
           "haskellNix",
           "nixpkgs-unstable"
@@ -3981,7 +3972,6 @@
     "devshell": {
       "inputs": {
         "flake-utils": [
-          "cardano-devnet-flake",
           "cardano-node",
           "cardano-automation",
           "tullia",
@@ -3989,7 +3979,6 @@
           "flake-utils"
         ],
         "nixpkgs": [
-          "cardano-devnet-flake",
           "cardano-node",
           "cardano-automation",
           "tullia",
@@ -4338,7 +4327,6 @@
     "dmerge": {
       "inputs": {
         "nixlib": [
-          "cardano-devnet-flake",
           "cardano-node",
           "cardano-automation",
           "tullia",
@@ -4346,7 +4334,6 @@
           "nixpkgs"
         ],
         "yants": [
-          "cardano-devnet-flake",
           "cardano-node",
           "cardano-automation",
           "tullia",
@@ -4529,19 +4516,16 @@
     "dmerge_2": {
       "inputs": {
         "haumea": [
-          "cardano-devnet-flake",
           "cardano-node",
           "std",
           "haumea"
         ],
         "nixlib": [
-          "cardano-devnet-flake",
           "cardano-node",
           "std",
           "lib"
         ],
         "yants": [
-          "cardano-devnet-flake",
           "cardano-node",
           "std",
           "yants"
@@ -5994,11 +5978,11 @@
         "nixpkgs-lib": "nixpkgs-lib"
       },
       "locked": {
-        "lastModified": 1738453229,
-        "narHash": "sha256-7H9XgNiGLKN1G1CgRh0vUL4AheZSYzPm+zmZ7vxbJdo=",
+        "lastModified": 1740872218,
+        "narHash": "sha256-ZaMw0pdoUKigLpv9HiNDH2Pjnosg7NBYMJlHTIsHEUo=",
         "owner": "hercules-ci",
         "repo": "flake-parts",
-        "rev": "32ea77a06711b758da0ad9bd6a844c5740a87abd",
+        "rev": "3876f6b87db82f33775b1ef5ea343986105db764",
         "type": "github"
       },
       "original": {
@@ -8819,7 +8803,6 @@
         "ghc910X": "ghc910X",
         "ghc911": "ghc911",
         "hackage": [
-          "cardano-devnet-flake",
           "cardano-node",
           "hackageNix"
         ],
@@ -8836,7 +8819,6 @@
         "hydra": "hydra",
         "iserv-proxy": "iserv-proxy",
         "nixpkgs": [
-          "cardano-devnet-flake",
           "cardano-node",
           "nixpkgs"
         ],
@@ -9380,7 +9362,6 @@
     "haumea": {
       "inputs": {
         "nixpkgs": [
-          "cardano-devnet-flake",
           "cardano-node",
           "std",
           "lib"
@@ -12234,7 +12215,6 @@
       "inputs": {
         "nix": "nix",
         "nixpkgs": [
-          "cardano-devnet-flake",
           "cardano-node",
           "haskellNix",
           "hydra",
@@ -12650,7 +12630,6 @@
     "incl": {
       "inputs": {
         "nixlib": [
-          "cardano-devnet-flake",
           "cardano-node",
           "std",
           "lib"
@@ -13077,7 +13056,6 @@
       "inputs": {
         "blst": "blst",
         "nixpkgs": [
-          "cardano-devnet-flake",
           "cardano-node",
           "nixpkgs"
         ],
@@ -14086,7 +14064,6 @@
       "inputs": {
         "flake-utils": "flake-utils_4",
         "nixpkgs": [
-          "cardano-devnet-flake",
           "cardano-node",
           "cardano-automation",
           "tullia",
@@ -14391,7 +14368,6 @@
       "inputs": {
         "flake-compat": "flake-compat",
         "flake-utils": [
-          "cardano-devnet-flake",
           "cardano-node",
           "cardano-automation",
           "tullia",
@@ -14400,14 +14376,12 @@
         ],
         "gomod2nix": "gomod2nix",
         "nixpkgs": [
-          "cardano-devnet-flake",
           "cardano-node",
           "cardano-automation",
           "tullia",
           "nixpkgs"
         ],
         "nixpkgs-lib": [
-          "cardano-devnet-flake",
           "cardano-node",
           "cardano-automation",
           "tullia",
@@ -15349,7 +15323,6 @@
     "nixago": {
       "inputs": {
         "flake-utils": [
-          "cardano-devnet-flake",
           "cardano-node",
           "cardano-automation",
           "tullia",
@@ -15357,7 +15330,6 @@
           "flake-utils"
         ],
         "nixago-exts": [
-          "cardano-devnet-flake",
           "cardano-node",
           "cardano-automation",
           "tullia",
@@ -15365,7 +15337,6 @@
           "blank"
         ],
         "nixpkgs": [
-          "cardano-devnet-flake",
           "cardano-node",
           "cardano-automation",
           "tullia",
@@ -17633,14 +17604,14 @@
     },
     "nixpkgs-lib": {
       "locked": {
-        "lastModified": 1738452942,
-        "narHash": "sha256-vJzFZGaCpnmo7I6i416HaBLpC+hvcURh/BQwROcGIp8=",
+        "lastModified": 1740872140,
+        "narHash": "sha256-3wHafybyRfpUCLoE8M+uPVZinImg3xX+Nm6gEfN3G8I=",
         "type": "tarball",
-        "url": "https://github.com/NixOS/nixpkgs/archive/072a6db25e947df2f31aab9eccd0ab75d5b2da11.tar.gz"
+        "url": "https://github.com/NixOS/nixpkgs/archive/6d3702243441165a03f699f64416f635220f4f15.tar.gz"
       },
       "original": {
         "type": "tarball",
-        "url": "https://github.com/NixOS/nixpkgs/archive/072a6db25e947df2f31aab9eccd0ab75d5b2da11.tar.gz"
+        "url": "https://github.com/NixOS/nixpkgs/archive/6d3702243441165a03f699f64416f635220f4f15.tar.gz"
       }
     },
     "nixpkgs-lib_10": {
@@ -20656,14 +20627,12 @@
       "inputs": {
         "call-flake": "call-flake",
         "nixpkgs": [
-          "cardano-devnet-flake",
           "cardano-node",
           "std",
           "nixpkgs"
         ],
         "nosys": "nosys",
         "yants": [
-          "cardano-devnet-flake",
           "cardano-node",
           "std",
           "yants"
@@ -21464,11 +21433,8 @@
     },
     "root": {
       "inputs": {
-        "cardano-devnet-flake": "cardano-devnet-flake",
-        "cardano-node": [
-          "cardano-devnet-flake",
-          "cardano-node"
-        ],
+        "cardano-devnet": "cardano-devnet",
+        "cardano-node": "cardano-node",
         "ctl": [
           "lbf",
           "ctl"
@@ -22535,7 +22501,6 @@
         "dmerge": "dmerge",
         "flake-utils": "flake-utils_3",
         "makes": [
-          "cardano-devnet-flake",
           "cardano-node",
           "cardano-automation",
           "tullia",
@@ -22544,7 +22509,6 @@
         ],
         "mdbook-kroki-preprocessor": "mdbook-kroki-preprocessor",
         "microvm": [
-          "cardano-devnet-flake",
           "cardano-node",
           "cardano-automation",
           "tullia",
@@ -22809,14 +22773,12 @@
     "std_2": {
       "inputs": {
         "arion": [
-          "cardano-devnet-flake",
           "cardano-node",
           "std",
           "blank"
         ],
         "blank": "blank_2",
         "devshell": [
-          "cardano-devnet-flake",
           "cardano-node",
           "std",
           "blank"
@@ -22826,25 +22788,21 @@
         "incl": "incl",
         "lib": "lib",
         "makes": [
-          "cardano-devnet-flake",
           "cardano-node",
           "std",
           "blank"
         ],
         "microvm": [
-          "cardano-devnet-flake",
           "cardano-node",
           "std",
           "blank"
         ],
         "n2c": [
-          "cardano-devnet-flake",
           "cardano-node",
           "std",
           "blank"
         ],
         "nixago": [
-          "cardano-devnet-flake",
           "cardano-node",
           "std",
           "blank"
@@ -22853,7 +22811,6 @@
         "paisano": "paisano",
         "paisano-tui": "paisano-tui",
         "terranix": [
-          "cardano-devnet-flake",
           "cardano-node",
           "std",
           "blank"
@@ -23618,7 +23575,6 @@
         "nix-nomad": "nix-nomad",
         "nix2container": "nix2container",
         "nixpkgs": [
-          "cardano-devnet-flake",
           "cardano-node",
           "cardano-automation",
           "nixpkgs"
@@ -24135,7 +24091,6 @@
     "yants": {
       "inputs": {
         "nixpkgs": [
-          "cardano-devnet-flake",
           "cardano-node",
           "cardano-automation",
           "tullia",
@@ -24264,7 +24219,6 @@
     "yants_2": {
       "inputs": {
         "nixpkgs": [
-          "cardano-devnet-flake",
           "cardano-node",
           "std",
           "lib"
