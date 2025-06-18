@@ -26,7 +26,7 @@
     ogmios.url = "github:mlabs-haskell/ogmios-nix/v6.11.2";
 
     # Local Cardano devnet for integration testing
-    cardano-devnet.url = "github:mlabs-haskell/cardano-devnet-flake?ref=szg251/process-compose";
+    cardano-devnet.url = "github:mlabs-haskell/cardano-devnet-flake";
 
     cardano-node.url = "github:IntersectMBO/cardano-node/10.1.4";
 

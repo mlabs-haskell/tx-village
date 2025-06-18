@@ -20,13 +20,13 @@ bigdecimal = "0.3"
 num-traits = "0.2"
 num-derive = "0.3"
 sqlx = { version = "0.8.3", features = [
-  "postgres",
-  "chrono",
-  "macros",
-  "uuid",
-  "json",
-  "runtime-tokio",
-  "tls-rustls",
+    "postgres",
+    "chrono",
+    "macros",
+    "uuid",
+    "json",
+    "runtime-tokio",
+    "tls-rustls",
 ], optional = true }
 anyhow = "1.0.95"
 log = "0.4.22"
@@ -41,14 +41,14 @@ tracing = "0.1"
 strum = "0.24"
 strum_macros = "0.24"
 frunk = "0.4.3"
-tx-bakery = { version = "2.0.0-beta.4", path = ".extras/tx-bakery-v2" }
+tx-bakery = { version = "2.0.0", path = ".extras/tx-bakery-v2" }
 plutus-ledger-api = { version = "^3.0.2", features = ["chrono", "serde"] }
 chrono = "0.4.39"
 futures = "0.3.31"
 diesel = { version = "2.2.6", features = [
-  "postgres",
-  "serde_json",
-  "r2d2",
+    "postgres",
+    "serde_json",
+    "r2d2",
 ], optional = true }
 itertools = "0.13.0"
 serde_with = "3.12.0"
