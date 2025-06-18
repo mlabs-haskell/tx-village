@@ -26,9 +26,9 @@
     ogmios.url = "github:mlabs-haskell/ogmios-nix/v6.11.2";
 
     # Local Cardano devnet for integration testing
-    cardano-devnet-flake.url = "github:mlabs-haskell/cardano-devnet-flake";
+    cardano-devnet.url = "github:mlabs-haskell/cardano-devnet-flake";
 
-    cardano-node.follows = "cardano-devnet-flake/cardano-node";
+    cardano-node.url = "github:IntersectMBO/cardano-node/10.1.4";
 
     # Tools for integration testing
     process-compose-flake.url = "github:Platonic-Systems/process-compose-flake";
@@ -43,7 +43,6 @@
         ./pre-commit.nix
         ./hercules-ci.nix
         inputs.process-compose-flake.flakeModule
-        inputs.cardano-devnet-flake.flakeModule
 
         # Libraries
         ./tx-bakery/build.nix
