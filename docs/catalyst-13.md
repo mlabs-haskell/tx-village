@@ -25,7 +25,7 @@ Catalyst URL:
    - test case using reference scripts (fee calculation for transactions using
      reference scripts have changed in Conway, this required changed in the
      codebase):
-     [mlabs-haskell/tx-village/blob/v2.0.0/extras/tx-bakery-testsuite/tests/tests/main.rs#L1079-L1101](mlabs-haskell/tx-village/blob/v2.0.0/extras/tx-bakery-testsuite/tests/tests/main.rs#L1079-L1101)
+     [mlabs-haskell/tx-village/blob/v2.0.0/extras/tx-bakery-testsuite/tests/tests/main.rs#L1079-L1101](https://github.com/mlabs-haskell/tx-village/blob/v2.0.0/extras/tx-bakery-testsuite/tests/tests/main.rs#L1079-L1101)
    - tx-bakery test logs (running devnet with
      [cardano-node 10.1.4](https://github.com/mlabs-haskell/tx-village/blob/v2.0.0/flake.nix#L31)):
      [https://hercules-ci.com/accounts/github/mlabs-haskell/derivations/%2Fnix%2Fstore%2Fpfbz1s4h8v6w4aa35qpxphkmnl4gv0d8-tx-bakery-testsuite-check.drv/log?via-job=87e12c47-dc76-4220-b088-811b00db084e](https://hercules-ci.com/accounts/github/mlabs-haskell/derivations/%2Fnix%2Fstore%2Fpfbz1s4h8v6w4aa35qpxphkmnl4gv0d8-tx-bakery-testsuite-check.drv/log?via-job=87e12c47-dc76-4220-b088-811b00db084e)
