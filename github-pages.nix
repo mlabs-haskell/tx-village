@@ -25,6 +25,9 @@
 
         - [Contributing guideline](https://github.com/mlabs-haskell/tx-village/blob/main/CONTRIBUTING.md)
         - [License](https://github.com/mlabs-haskell/tx-village/blob/main/LICENSE)
+
+        ## Conway reports
+        - [Catalyst F13 report - MLabs: Tooling upgrade for Conway compatibility](https://github.com/mlabs-haskell/docs/catalyst-13.md)
       '';
 
       github-pages = pkgs.stdenv.mkDerivation {
