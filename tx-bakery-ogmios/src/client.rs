@@ -7,7 +7,6 @@ use derive_builder::Builder;
 use jsonrpsee::core::traits::ToRpcParams;
 use jsonrpsee::{
     core::client::ClientT,
-    core::params::ObjectParams,
     rpc_params,
     ws_client::{WsClient, WsClientBuilder},
 };
@@ -33,12 +32,12 @@ use url::Url;
 use super::{
     api::{
         to_redeemer_tag, AcquireMempoolResponse, EvaluateTransactionParams,
-        EvaluateTransactionResponse, NextTransactionResponse, OgmiosHealth, OutputReference,
+        EvaluateTransactionResponse, OgmiosHealth, OutputReference,
         QueryLedgerStateEraSummariesResponse, QueryLedgerStateProtocolParametersResponse,
         QueryLedgerStateTipResponse, QueryLedgerStateUtxoByAddressParams,
         QueryLedgerStateUtxoByOutputReferenceParams, QueryLedgerStateUtxoResponse,
         QueryNetworkStartTimeResponse, ReleaseMempoolResponse, SubmitTransactionParams,
-        SubmitTransactionResponse, TransactionCbor,
+        SubmitTransactionResponse, TransactionCbor, TransactionId,
     },
     error::{OgmiosError, Result},
 };
@@ -146,18 +145,10 @@ impl OgmiosClient {
         self.request("releaseMempool", rpc_params![]).await
     }
 
-    async fn next_transaction(&self) -> Result<NextTransactionResponse> {
-        let mut params = ObjectParams::new();
-        params.insert("fields", ()).unwrap();
-        self.request("nextTransaction", params).await
+    async fn has_transaction(&self, transaction_hash: &TransactionHash) -> Result<bool> {
+        let params = TransactionId::from(transaction_hash);
+        self.request("hasTransaction", params).await
     }
-
-    // TODO: hasTransaction returns a false even when there's a transaction in mempool
-    // Bug report: https://github.com/CardanoSolutions/ogmios/issues/376
-    // async fn has_transaction(&self, transaction_hash: &TransactionHash) -> Result<bool> {
-    //     let params = TransactionId::from(transaction_hash);
-    //     self.request("hasTransaction", params).await
-    // }
 
     /// Make a request to ogmios JSON RPC
     /// Ogmios slightly deviates from the JSON RPC standard, so I couldn't use a 3rd party library
@@ -362,21 +353,7 @@ impl Submitter for OgmiosClient {
             loop {
                 let _ = self.acquire_mempool().await?;
 
-                // TODO: hasTransaction returns a false even when there's a transaction in mempool
-                // Bug report: https://github.com/CardanoSolutions/ogmios/issues/376
-                //
-                // let has_tx = self.has_transaction(tx_hash).await?;
-                let mut has_tx = false;
-                while let NextTransactionResponse::TransactionId {
-                    transaction: Some(resp),
-                } = self.next_transaction().await?
-                {
-                    has_tx = has_tx || resp == tx_hash.into();
-
-                    if has_tx {
-                        break;
-                    }
-                }
+                let has_tx = self.has_transaction(tx_hash).await?;
 
                 if !has_tx {
                     let _ = self.release_mempool().await?;
