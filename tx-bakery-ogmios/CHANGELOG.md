@@ -1,11 +1,17 @@
+<!-- markdownlint-disable no-duplicate-heading -->
+
 # Changelog
 
 This changelog is based on [Keep A
 Changelog](https://keepachangelog.com/en/1.1.0).
 
-## v2.0.0
+## v2.1.0
 
-### Added
+### Changed
+
+- Use Ogmios HasTransaction (upstream bug fixed in cardano-node)
+
+## v2.0.0
 
 ### Changed
 
