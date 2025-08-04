@@ -70,7 +70,7 @@
               ln -s ${./wallets} ./wallets
             '';
             checkPhase = ''
-              ${self'.packages.tx-bakery-tests}/bin/tx-bakery-tests-ci --tui=false
+              ${self'.packages.tx-bakery-tests-ci}/bin/tx-bakery-tests-ci --tui=false
             '';
             buildPhase = ''
               mkdir $out

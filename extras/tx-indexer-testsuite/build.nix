@@ -51,7 +51,7 @@
             ln -s ${./tests/fixtures} ./tests/fixtures
           '';
           checkPhase = ''
-            ${self'.packages.tx-indexer-tests}/bin/tx-indexer-tests --tui=false
+            ${self'.packages.tx-indexer-tests-ci}/bin/tx-indexer-tests-ci --tui=false
           '';
           buildPhase = ''
             mkdir $out
