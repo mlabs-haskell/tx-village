@@ -41,7 +41,7 @@
 
     in
     {
-      devShells.dev-tx-bakery-test-scripts = hsFlake.devShell;
+      devShells.dev-tx-bakery-test-scripts = hsFlake.devShells.default;
 
       packages = {
         # WARN(bladyjoker): We have to pick the hsFlake.packages like this otherwise flake-parts goes into `infinite recursion`.

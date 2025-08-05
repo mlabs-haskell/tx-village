@@ -76,7 +76,7 @@
             }
             // lib.optionalAttrs (envName == "tx-bakery-tests") {
               build = {
-                command = "cargo build";
+                command = "cargo build --tests";
               };
             };
         };

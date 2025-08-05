@@ -106,7 +106,7 @@
             }
             // lib.optionalAttrs (envName == "tx-indexer-tests") {
               build = {
-                command = "cargo build";
+                command = "cargo build --tests";
               };
             };
         };
