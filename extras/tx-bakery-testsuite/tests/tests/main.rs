@@ -923,69 +923,6 @@ mod tests {
 
     #[tokio::test]
     #[serial]
-    async fn test_is_eq_validator_v2() -> Result<()> {
-        let config = read_config("data/tx-bakery-test-scripts-config.json");
-        let eq_validator = ScriptOrRef::from_bytes_v2(config.eq_validator_v2.0)
-            .unwrap()
-            .as_validator();
-        let (example_eq_datum_a, _) = setup_test_data();
-
-        let test_runtime = TestRuntime::setup_testnet().await;
-
-        let wallet = test_runtime.get_own_wallet().await;
-        let ogmios = test_runtime.ogmios_client();
-
-        let tx_hash_lock_a = lock_eq_datum::build_and_submit(
-            &wallet,
-            ogmios,
-            ogmios,
-            eq_validator.clone(),
-            &example_eq_datum_a,
-        )
-        .await?;
-
-        ogmios.await_tx_confirm(&tx_hash_lock_a).await?;
-
-        // TODO(chfanghr): We need something more thorough than this
-        assert_eq!(
-            ogmios
-                .query_utxos_by_ref(vec![
-                    &TransactionInput {
-                        transaction_id: tx_hash_lock_a.clone(),
-                        index: 0u8.into(),
-                    },
-                    &TransactionInput {
-                        transaction_id: tx_hash_lock_a.clone(),
-                        index: 1u8.into(),
-                    },
-                    &TransactionInput {
-                        transaction_id: tx_hash_lock_a.clone(),
-                        index: 3u8.into(),
-                    }
-                ])
-                .await?
-                .into_keys()
-                .map(|r| r.index)
-                .collect::<Vec<_>>(),
-            vec![0.into(), 1.into()],
-        );
-
-        let tx_hash_claim_a = claim_eq_datum::build_and_submit(
-            &wallet,
-            ogmios,
-            ogmios,
-            eq_validator,
-            &EqRedeemer::IsEqual(example_eq_datum_a.clone()),
-            &example_eq_datum_a,
-        )
-        .await?;
-
-        ogmios.await_tx_confirm(&tx_hash_claim_a).await?;
-        Ok(())
-    }
-
-    #[tokio::test]
-    #[serial]
     async fn test_mint() -> Result<()> {
         let config = read_config("data/tx-bakery-test-scripts-config.json");
         let minting_policy = ScriptOrRef::from_bytes_v3(config.minting_policy.0)

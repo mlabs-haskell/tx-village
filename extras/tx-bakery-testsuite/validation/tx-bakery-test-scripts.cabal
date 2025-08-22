@@ -97,7 +97,6 @@ library
     Demo.Mint
     Demo.RefInput
     Demo.Validation
-    Demo.ValidationV2
 
 executable tx-bakery-test-scripts-cli
   import:         common-language
