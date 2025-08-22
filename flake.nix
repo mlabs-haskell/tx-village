@@ -6,7 +6,7 @@
     lbf.url = "github:mlabs-haskell/lambda-buffers";
 
     # Flake monorepo toolkit
-    flake-lang.url = "github:mlabs-haskell/flake-lang.nix";
+    flake-lang.follows = "lbf/flake-lang";
 
     # Nix
     nixpkgs.follows = "lbf/nixpkgs";
@@ -15,9 +15,6 @@
     # Code quality automation
     pre-commit-hooks.follows = "lbf/pre-commit-hooks";
     hci-effects.follows = "lbf/hci-effects";
-
-    # Cardano transaction library (transaction building)
-    ctl.follows = "lbf/ctl";
 
     # Plutarch (Plutus validation scripts)
     plutarch.follows = "lbf/plutarch";
