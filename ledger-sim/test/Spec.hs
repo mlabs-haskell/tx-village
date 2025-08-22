@@ -97,7 +97,7 @@ tests dummyScriptHash ledgerCfg =
           let cs = Value.CurrencySymbol $ getScriptHash dummyScriptHash
               mintVal =
                 Value.assetClassValue
-                  (Value.AssetClass (cs, fromString "A"))
+                  (Value.AssetClass (cs, Value.TokenName $ fromString "A"))
                   1
           currentTime <- gets ls'currentTime
           void . submitTx $
@@ -283,7 +283,7 @@ tests dummyScriptHash ledgerCfg =
             cs = Value.CurrencySymbol $ getScriptHash dummyScriptHash
             mintVal =
               Value.assetClassValue
-                (Value.AssetClass (cs, fromString "A"))
+                (Value.AssetClass (cs, Value.TokenName $ fromString "A"))
                 1
           SubmissionResult txId _ _ <-
             submitTx $
@@ -345,7 +345,7 @@ tests dummyScriptHash ledgerCfg =
         $ let cs = Value.CurrencySymbol $ getScriptHash dummyScriptHash
               mintVal =
                 Value.assetClassValue
-                  (Value.AssetClass (cs, fromString "A"))
+                  (Value.AssetClass (cs, Value.TokenName $ fromString "A"))
                   1
            in void . submitTx $
                 TxInfo
@@ -491,7 +491,7 @@ tests dummyScriptHash ledgerCfg =
           let cs = Value.CurrencySymbol $ getScriptHash dummyScriptHash
               mintVal =
                 Value.assetClassValue
-                  (Value.AssetClass (cs, fromString "A"))
+                  (Value.AssetClass (cs, Value.TokenName $ fromString "A"))
                   1
           void . submitTx $
             TxInfo
@@ -638,7 +638,7 @@ tests dummyScriptHash ledgerCfg =
             cs = Value.CurrencySymbol $ getScriptHash dummyScriptHash
             mintVal =
               Value.assetClassValue
-                (Value.AssetClass (cs, fromString "A"))
+                (Value.AssetClass (cs, Value.TokenName $ fromString "A"))
                 1
           SubmissionResult txId _ _ <-
             submitTx $
@@ -709,7 +709,7 @@ tests dummyScriptHash ledgerCfg =
             cs = Value.CurrencySymbol $ getScriptHash dummyScriptHash
             mintVal =
               Value.assetClassValue
-                (Value.AssetClass (cs, fromString "A"))
+                (Value.AssetClass (cs, Value.TokenName $ fromString "A"))
                 1
           void . submitTx $
             TxInfo
@@ -756,7 +756,7 @@ tests dummyScriptHash ledgerCfg =
             cs = Value.CurrencySymbol $ getScriptHash dummyScriptHash
             mintVal =
               Value.assetClassValue
-                (Value.AssetClass (cs, fromString "A"))
+                (Value.AssetClass (cs, Value.TokenName $ fromString "A"))
                 1
            in
             void . submitTx $
