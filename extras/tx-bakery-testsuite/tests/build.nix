@@ -42,15 +42,13 @@
           self'.packages.tx-bakery-tests
         ];
 
-        devShellHook =
-          config.settings.shell.hook
-          + ''
-            echo "TxBakery testsuite"
-            echo ""
-            echo "Run tx-bakery-tests to execute the testsuite."
-            echo "or tx-bakery-tests up ogmios devnet to spin up an environment"
-            echo ""
-          '';
+        devShellHook = config.settings.shell.hook + ''
+          echo "TxBakery testsuite"
+          echo ""
+          echo "Run tx-bakery-tests to execute the testsuite."
+          echo "or tx-bakery-tests up ogmios devnet to spin up an environment"
+          echo ""
+        '';
 
       };
     in

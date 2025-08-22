@@ -37,48 +37,46 @@
             };
           };
 
-          settings.processes =
-            {
-              tests = {
-                command = environments.${envName}.testsuite;
-                depends_on =
-                  {
-                    devnet.condition = "process_healthy";
-                    ogmios.condition = "process_healthy";
-                  }
-                  // lib.optionalAttrs (envName == "tx-bakery-tests") {
-                    build.condition = "process_completed";
-                  };
-                availability = {
-                  exit_on_end = true;
-                  exit_on_skipped = true;
-                };
+          settings.processes = {
+            tests = {
+              command = environments.${envName}.testsuite;
+              depends_on = {
+                devnet.condition = "process_healthy";
+                ogmios.condition = "process_healthy";
+              }
+              // lib.optionalAttrs (envName == "tx-bakery-tests") {
+                build.condition = "process_completed";
               };
-
-              ogmios = {
-                command = ''
-                  ${inputs'.ogmios.packages."ogmios:exe:ogmios"}/bin/ogmios \
-                  --node-socket .devnet/node.socket \
-                  --node-config .devnet/config.json
-                '';
-                readiness_probe = {
-                  http_get = {
-                    host = "127.0.0.1";
-                    port = 1337;
-                    path = "/health";
-                  };
-                  initial_delay_seconds = 2;
-                  period_seconds = 2;
-                };
-                depends_on.devnet.condition = "process_healthy";
-              };
-
-            }
-            // lib.optionalAttrs (envName == "tx-bakery-tests") {
-              build = {
-                command = "cargo build --tests";
+              availability = {
+                exit_on_end = true;
+                exit_on_skipped = true;
               };
             };
+
+            ogmios = {
+              command = ''
+                ${inputs'.ogmios.packages."ogmios:exe:ogmios"}/bin/ogmios \
+                --node-socket .devnet/node.socket \
+                --node-config .devnet/config.json
+              '';
+              readiness_probe = {
+                http_get = {
+                  host = "127.0.0.1";
+                  port = 1337;
+                  path = "/health";
+                };
+                initial_delay_seconds = 2;
+                period_seconds = 2;
+              };
+              depends_on.devnet.condition = "process_healthy";
+            };
+
+          }
+          // lib.optionalAttrs (envName == "tx-bakery-tests") {
+            build = {
+              command = "cargo build --tests";
+            };
+          };
         };
       };
     in
