@@ -31,7 +31,8 @@ let
   ddls = [
     ./lib-migrations/00000000000001_plutus/up.sql
     ./lib-migrations/00000000000002_sync_progress/up.sql
-  ] ++ extraDDLs;
+  ]
+  ++ extraDDLs;
 
   init-db = pkgs.writeShellApplication {
     name = "init-db";

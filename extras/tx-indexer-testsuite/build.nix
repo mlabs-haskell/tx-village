@@ -25,17 +25,15 @@
           self'.packages.tx-indexer-tests
         ];
 
-        devShellHook =
-          config.settings.shell.hook
-          + ''
-            ln -sf ${../../tx-indexer}/lib-migrations
+        devShellHook = config.settings.shell.hook + ''
+          ln -sf ${../../tx-indexer}/lib-migrations
 
-            echo "TxIndexer testsuite"
-            echo ""
-            echo "Run tx-indexer-tests to execute the testsuite."
-            echo "or tx-indexer-tests up db_migration ogmios devnet to spin up an environment"
-            echo ""
-          '';
+          echo "TxIndexer testsuite"
+          echo ""
+          echo "Run tx-indexer-tests to execute the testsuite."
+          echo "or tx-indexer-tests up db_migration ogmios devnet to spin up an environment"
+          echo ""
+        '';
       };
     in
     {

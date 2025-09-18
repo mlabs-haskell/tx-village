@@ -52,63 +52,61 @@
             };
           };
 
-          settings.processes =
-            {
-              tests = {
-                command = environments.${envName}.testsuite;
-                depends_on =
-                  {
-                    devnet.condition = "process_healthy";
-                    ogmios.condition = "process_healthy";
-                    db.condition = "process_healthy";
-                    db_migration.condition = "process_completed_successfully";
-                  }
-                  // lib.optionalAttrs (envName == "tx-indexer-tests") {
-                    build.condition = "process_completed";
-                  };
-                availability = {
-                  exit_on_end = true;
-                  exit_on_skipped = true;
-                };
+          settings.processes = {
+            tests = {
+              command = environments.${envName}.testsuite;
+              depends_on = {
+                devnet.condition = "process_healthy";
+                ogmios.condition = "process_healthy";
+                db.condition = "process_healthy";
+                db_migration.condition = "process_completed_successfully";
+              }
+              // lib.optionalAttrs (envName == "tx-indexer-tests") {
+                build.condition = "process_completed";
               };
-
-              ogmios = {
-                command = ''
-                  ${inputs'.ogmios.packages."ogmios:exe:ogmios"}/bin/ogmios \
-                    --node-socket .devnet/node.socket \
-                    --node-config .devnet/config.json
-                '';
-                readiness_probe = {
-                  http_get = {
-                    host = "127.0.0.1";
-                    port = 1337;
-                    path = "/health";
-                  };
-                  initial_delay_seconds = 2;
-                  period_seconds = 2;
-                };
-                depends_on.devnet.condition = "process_healthy";
-              };
-
-              db_migration = {
-                command = ''
-                  ${pkgs.diesel-cli}/bin/diesel migration run \
-                    --database-url postgres://127.0.0.1:5555/tx_indexer \
-                    --migration-dir ${../../tx-indexer/lib-migrations}
-
-                  ${pkgs.diesel-cli}/bin/diesel migration run \
-                    --database-url postgres://127.0.0.1:5555/tx_indexer \
-                    --migration-dir ${./app-migrations}
-                '';
-                depends_on.db.condition = "process_healthy";
-
-              };
-            }
-            // lib.optionalAttrs (envName == "tx-indexer-tests") {
-              build = {
-                command = "cargo build --tests";
+              availability = {
+                exit_on_end = true;
+                exit_on_skipped = true;
               };
             };
+
+            ogmios = {
+              command = ''
+                ${inputs'.ogmios.packages."ogmios:exe:ogmios"}/bin/ogmios \
+                  --node-socket .devnet/node.socket \
+                  --node-config .devnet/config.json
+              '';
+              readiness_probe = {
+                http_get = {
+                  host = "127.0.0.1";
+                  port = 1337;
+                  path = "/health";
+                };
+                initial_delay_seconds = 2;
+                period_seconds = 2;
+              };
+              depends_on.devnet.condition = "process_healthy";
+            };
+
+            db_migration = {
+              command = ''
+                ${pkgs.diesel-cli}/bin/diesel migration run \
+                  --database-url postgres://127.0.0.1:5555/tx_indexer \
+                  --migration-dir ${../../tx-indexer/lib-migrations}
+
+                ${pkgs.diesel-cli}/bin/diesel migration run \
+                  --database-url postgres://127.0.0.1:5555/tx_indexer \
+                  --migration-dir ${./app-migrations}
+              '';
+              depends_on.db.condition = "process_healthy";
+
+            };
+          }
+          // lib.optionalAttrs (envName == "tx-indexer-tests") {
+            build = {
+              command = "cargo build --tests";
+            };
+          };
         };
       };
 
