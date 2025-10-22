@@ -41,8 +41,8 @@ tracing = "0.1"
 strum = "0.24"
 strum_macros = "0.24"
 frunk = "0.4.3"
-tx-bakery = { version = "2.0.0", path = ".extras/tx-bakery-v2" }
-plutus-ledger-api = { version = "^3.0.2", features = ["chrono", "serde"] }
+tx-bakery = { version = "~2.0.0", path = ".extras/tx-bakery-v2" }
+plutus-ledger-api = { version = "~3.0.2", features = ["chrono", "serde"] }
 chrono = "0.4.39"
 futures = "0.3.31"
 diesel = { version = "2.2.6", features = [

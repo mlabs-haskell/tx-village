@@ -21,7 +21,20 @@
             cabal-fmt.enable = true;
             fourmolu.enable = true;
             hlint.enable = true;
-            typos.enable = true;
+            typos = {
+              enable = true;
+              settings = {
+                ignored-words = [
+                  "TypeLits"
+                  "BA"
+                  "numer"
+                ];
+                exclude = [
+                  "fourmolu.yaml"
+                  "genesis-*.json"
+                ];
+              };
+            };
             markdownlint.enable = true;
             dhall-format.enable = true;
             purty.enable = true;
@@ -29,10 +42,6 @@
 
           settings = {
             ormolu.cabalDefaultExtensions = true;
-            typos = {
-              config = builtins.readFile ./.typos.toml;
-              exclude = "fourmolu.yaml";
-            };
           };
         };
       };

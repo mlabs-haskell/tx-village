@@ -176,7 +176,7 @@ impl OgmiosClient {
 
 impl ChainQuery for OgmiosClient {
     fn get_network(&self) -> Network {
-        self.config.network.clone()
+        self.config.network
     }
 
     async fn query_system_start(&self) -> std::result::Result<DateTime<Utc>, ChainQueryError> {

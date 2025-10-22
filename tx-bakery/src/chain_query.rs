@@ -46,7 +46,7 @@ pub trait ChainQuery {
 }
 
 /// Cardano network discriminant
-#[derive(Debug, Clone, Deserialize)]
+#[derive(Debug, Clone, Copy, Deserialize)]
 pub enum Network {
     Testnet = 0b0000,
     Mainnet = 0b0001,
@@ -54,10 +54,7 @@ pub enum Network {
 
 impl Network {
     pub fn to_network_id(&self) -> u8 {
-        match self {
-            Network::Testnet => 0b0000,
-            Network::Mainnet => 0b0001,
-        }
+        *self as u8
     }
 }
 

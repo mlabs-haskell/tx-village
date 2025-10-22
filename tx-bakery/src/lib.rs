@@ -134,14 +134,14 @@ impl TxBakery {
         let era_summaries = chain_query.query_era_summaries().await?;
         let network = chain_query.get_network();
 
-        Self::init_with_config(&network, &protocol_params, system_start, era_summaries).await
+        Self::init_with_config(network, &protocol_params, system_start, era_summaries).await
     }
 
     /// Init TxBakey with the required configurations
     /// This allows to directly inject configurations, and handle them separately from the bakery
     /// (for example prefetch and cache them)
     pub async fn init_with_config(
-        network: &Network,
+        network: Network,
         protocol_params: &ProtocolParameters,
         system_start: DateTime<Utc>,
         era_summaries: Vec<EraSummary>,
@@ -643,7 +643,7 @@ impl TxBakery {
         )?;
 
         if let Some(validity_start) = validity_start {
-            tx_builder.set_validity_start_interval_bignum(validity_start);
+            tx_builder.set_validity_start_interval_bignum(&validity_start);
         }
         if let Some(ttl) = ttl {
             tx_builder.set_ttl_bignum(&ttl);
