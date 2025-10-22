@@ -16,7 +16,10 @@ chrono = "0.4.42"
 nix = { version = "0.28.0", features = ["signal"] }
 data-encoding = "2.9.0"
 derive_builder = "0.12.0"
-plutus-ledger-api = { version = "^3.1.0", features = ["lbf", "chrono"] }
+plutus-ledger-api = { version = "3.1.0", features = [
+  "chrono",
+  "lbf",
+], git = "https://github.com/mlabs-haskell/plutus-ledger-api-rust", branch = "szg251/serde" }
 serde = "1.0.228"
 serde_json = "1.0.145"
 reqwest = { version = "0.11.27", features = ["json"] }
