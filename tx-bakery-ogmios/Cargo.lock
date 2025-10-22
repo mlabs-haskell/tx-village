@@ -1082,7 +1082,7 @@ checksum = "469fb0b9cefa57e3ef31275ee7cacb78f2fdca44e4765491884a2b119d4eb130"
 [[package]]
 name = "is-plutus-data-derive"
 version = "1.0.0"
-source = "git+https://github.com/mlabs-haskell/plutus-ledger-api-rust?branch=szg251%2Fserde#99cafa5f41cfeaab5e856cbd668eae6b3e5728bd"
+source = "git+https://github.com/mlabs-haskell/plutus-ledger-api-rust?branch=szg251%2Fserde#f538d7bba80a1d7fe48650c9a819216143f74bcd"
 dependencies = [
  "proc-macro2",
  "quote",
@@ -1611,7 +1611,7 @@ checksum = "7edddbd0b52d732b21ad9a5fab5c704c14cd949e5e9a1ec5929a24fded1b904c"
 [[package]]
 name = "plutus-ledger-api"
 version = "3.1.0"
-source = "git+https://github.com/mlabs-haskell/plutus-ledger-api-rust?branch=szg251%2Fserde#99cafa5f41cfeaab5e856cbd668eae6b3e5728bd"
+source = "git+https://github.com/mlabs-haskell/plutus-ledger-api-rust?branch=szg251%2Fserde#f538d7bba80a1d7fe48650c9a819216143f74bcd"
 dependencies = [
  "anyhow",
  "cardano-serialization-lib",
