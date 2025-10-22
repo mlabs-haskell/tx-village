@@ -8,6 +8,8 @@ use plutus_ledger_api::{
         transaction::TransactionInput,
     },
 };
+#[cfg(feature = "serde")]
+use serde::{Deserialize, Serialize};
 
 use crate::error::{Error, Result};
 
@@ -19,6 +21,7 @@ pub enum Script {
 
 /// Plutus Script
 #[derive(Clone, Debug)]
+#[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
 pub enum ScriptOrRef {
     /// Script will be used from a reference input
     RefScript(TransactionInput, csl::PlutusScript),

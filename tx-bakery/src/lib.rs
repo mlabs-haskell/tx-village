@@ -23,6 +23,8 @@ use plutus_ledger_api::v3::{
     },
     value::{CurrencySymbol, Value},
 };
+#[cfg(feature = "serde")]
+use serde::{Deserialize, Serialize};
 use std::collections::BTreeMap;
 use submitter::Submitter;
 use tracing::{debug, info};
@@ -64,16 +66,6 @@ pub struct TxWithCtx<'a> {
     pub ex_units_map: Option<&'a BTreeMap<(csl::RedeemerTag, csl::BigNum), csl::ExUnits>>,
 }
 
-/// Options to deal with change outputs and collateral returns
-#[derive(Clone, Debug)]
-pub enum ChangeStrategy {
-    /// Send all change to an address
-    Address(Address),
-    /// Use the last output of the TransactionInfo as change output (modify it's value)
-    /// Collateral returns are following the address of the last output
-    LastOutput,
-}
-
 impl<'a> TxWithCtx<'a> {
     pub fn new(
         tx_info: &'a TransactionInfo,
@@ -107,8 +99,20 @@ impl<'a> TxWithCtx<'a> {
     }
 }
 
+/// Options to deal with change outputs and collateral returns
+#[derive(Clone, Debug)]
+#[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
+pub enum ChangeStrategy {
+    /// Send all change to an address
+    Address(Address),
+    /// Use the last output of the TransactionInfo as change output (modify it's value)
+    /// Collateral returns are following the address of the last output
+    LastOutput,
+}
+
 /// Options to deal with collateral selection
 #[derive(Clone, Debug)]
+#[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
 pub enum CollateralStrategy {
     /// Automatically pick a suitable UTxO from the transaction inputs
     Automatic {
