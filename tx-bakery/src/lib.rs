@@ -1,14 +1,14 @@
 //! Transaction Bakery
 
-use crate::error::{Error, Result};
+use crate::error::Error;
 use crate::metadata::TransactionMetadata;
+use crate::strategies::{change_strategy::ChangeStrategy, collateral_strategy::CollateralStrategy};
 use crate::time::time_range_into_slots;
 use crate::wallet::Wallet;
 use anyhow::anyhow;
 use chain_query::{ChainQuery, EraSummary, Network, ProtocolParameters};
 use chrono::{DateTime, Utc};
 use itertools::Itertools;
-use num_bigint::BigInt;
 use plutus_ledger_api::csl::{lib as csl, pla_to_csl::TryToCSL};
 use plutus_ledger_api::plutus_data::IsPlutusData;
 use plutus_ledger_api::v3::{
@@ -23,8 +23,6 @@ use plutus_ledger_api::v3::{
     },
     value::{CurrencySymbol, Value},
 };
-#[cfg(feature = "serde")]
-use serde::{Deserialize, Serialize};
 use std::collections::BTreeMap;
 use submitter::Submitter;
 use tracing::{debug, info};
@@ -35,6 +33,7 @@ pub mod chain_query;
 pub mod clap;
 pub mod error;
 pub mod metadata;
+pub mod strategies;
 pub mod submitter;
 pub mod time;
 pub mod tx_info_builder;
@@ -99,39 +98,10 @@ impl<'a> TxWithCtx<'a> {
     }
 }
 
-/// Options to deal with change outputs and collateral returns
-#[derive(Clone, Debug)]
-#[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
-pub enum ChangeStrategy {
-    /// Send all change to an address
-    Address(Address),
-    /// Use the last output of the TransactionInfo as change output (modify it's value)
-    /// Collateral returns are following the address of the last output
-    LastOutput,
-}
-
-/// Options to deal with collateral selection
-#[derive(Clone, Debug)]
-#[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
-pub enum CollateralStrategy {
-    /// Automatically pick a suitable UTxO from the transaction inputs
-    Automatic {
-        min_amount: u64,
-        max_utxo_count: usize,
-    },
-    /// Explicitly set a UTxO (doesn't have to be an input UTxO)
-    Explicit {
-        utxos: Vec<TxInInfo>,
-        min_amount: u64,
-    },
-    /// No collateral (for transaction without scripts)
-    None,
-}
-
 impl TxBakery {
     /// Query all the parameters required to build a transaction and store it for later use.
     /// This command will call the ChainQuery service to pull certain chain parameters
-    pub async fn init(chain_query: &impl ChainQuery) -> Result<Self> {
+    pub async fn init(chain_query: &impl ChainQuery) -> crate::error::Result<Self> {
         debug!("Initialising Transaction Bakery");
         let protocol_params = chain_query.query_protocol_params().await?;
         let system_start = chain_query.query_system_start().await?;
@@ -149,7 +119,7 @@ impl TxBakery {
         protocol_params: &ProtocolParameters,
         system_start: DateTime<Utc>,
         era_summaries: Vec<EraSummary>,
-    ) -> Result<Self> {
+    ) -> crate::error::Result<Self> {
         let data_cost =
             csl::DataCost::new_coins_per_byte(&protocol_params.min_utxo_deposit_coefficient);
 
@@ -207,7 +177,7 @@ impl TxBakery {
         input_datums: &BTreeMap<DatumHash, Datum>,
         scripts: &BTreeMap<ScriptHash, ScriptOrRef>,
         ex_units_map: Option<&BTreeMap<(csl::RedeemerTag, csl::BigNum), csl::ExUnits>>,
-    ) -> Result<csl::TxInputsBuilder> {
+    ) -> crate::error::Result<csl::TxInputsBuilder> {
         let mut tx_inputs_builder = csl::TxInputsBuilder::new();
 
         inputs
@@ -333,23 +303,16 @@ impl TxBakery {
     }
 
     /// Add transaction outputs to the builder
-    /// If the change strategy if LastOutput, then we are postponing the addition of this output
-    /// to balancing
     fn mk_outputs(
         &self,
-        outputs: &Vec<TransactionOutput>,
-        change_strategy: &ChangeStrategy,
+        outputs: &[TransactionOutput],
         scripts: &BTreeMap<ScriptHash, ScriptOrRef>,
-    ) -> Result<Vec<csl::TransactionOutput>> {
-        let normal_outputs = match change_strategy {
-            ChangeStrategy::Address(_) => outputs.as_slice(),
-            ChangeStrategy::LastOutput => &outputs[..(outputs.len() - 1)],
-        };
+    ) -> crate::error::Result<Vec<csl::TransactionOutput>> {
         let scripts = &scripts
             .iter()
             .map(|(hash, script)| (hash.clone(), script.clone().get_script()))
             .collect();
-        Ok(normal_outputs
+        Ok(outputs
             .iter()
             .map(|transaction_output| {
                 transaction_output
@@ -366,7 +329,7 @@ impl TxBakery {
         mint_redeemers: &BTreeMap<ScriptHash, Redeemer>,
         scripts: &BTreeMap<ScriptHash, ScriptOrRef>,
         ex_units_map: Option<&BTreeMap<(csl::RedeemerTag, csl::BigNum), csl::ExUnits>>,
-    ) -> Result<csl::MintBuilder> {
+    ) -> crate::error::Result<csl::MintBuilder> {
         let mut mint_builder = csl::MintBuilder::new();
         tx_mint
             .0
@@ -440,48 +403,7 @@ impl TxBakery {
         Ok(mint_builder)
     }
 
-    /// Find suitable UTxOs to be used as a collateral. Each UTxO has to be at a pub key address,
-    /// and the total Ada amount of must be at least the configured collateral amount
-    // TODO(szg251): we could calculate the exact minimum collateral amount using protocol params
-    fn find_collaterals(
-        &self,
-        min_collateral_amount: u64,
-        max_utxo_count: usize,
-
-        tx_inputs: &[TxInInfo],
-    ) -> Result<Vec<TxInInfo>> {
-        let min_collateral_amount = BigInt::from(min_collateral_amount);
-        let (amount, collaterals) = tx_inputs
-            .iter()
-            .sorted_by_key(|input| -input.output.value.get_ada_amount())
-            .take(max_utxo_count)
-            .fold(
-                (BigInt::ZERO, Vec::new()),
-                |(mut acc_amount, mut collaterals), tx_in_info| {
-                    if acc_amount < min_collateral_amount {
-                        if let Credential::PubKey(_) = tx_in_info.output.address.credential {
-                            let ada_amount = tx_in_info.output.value.get_ada_amount();
-                            acc_amount += ada_amount;
-                            collaterals.push(tx_in_info.clone());
-                        }
-                    };
-
-                    (acc_amount, collaterals)
-                },
-            );
-
-        if amount >= min_collateral_amount {
-            Ok(collaterals)
-        } else {
-            Err(Error::NotEnoughCollaterals {
-                amount,
-                required: min_collateral_amount,
-                utxos: collaterals,
-            })
-        }
-    }
-
-    fn mk_collaterals(&self, tx_inputs: &[TxInInfo]) -> Result<csl::TxInputsBuilder> {
+    fn mk_collaterals(&self, tx_inputs: &[TxInInfo]) -> crate::error::Result<csl::TxInputsBuilder> {
         let mut tx_inputs_builder = csl::TxInputsBuilder::new();
         for tx_input in tx_inputs {
             let TxInInfo { reference, output } = tx_input;
@@ -510,7 +432,10 @@ impl TxBakery {
     /// Convert a PLA TransactionInfo into a CSL transaction builder.
     /// The result is not yet balanced and witnesses are not added. This is useful for
     /// some further manual processing of the transaction before finalising.
-    pub fn mk_tx_builder(&self, tx: &TxWithCtx<'_>) -> Result<csl::TransactionBuilder> {
+    pub fn mk_tx_builder(
+        &self,
+        tx: &TxWithCtx<'_>,
+    ) -> crate::error::Result<csl::TransactionBuilder> {
         let mut tx_builder = self.create_tx_builder();
 
         let (input_redeemers, mint_redeemers) = tx.tx_info.redeemers.0.iter().fold(
@@ -577,59 +502,33 @@ impl TxBakery {
             tx.ex_units_map,
         )?);
 
-        let collateral_return_address = match tx.change_strategy {
-            ChangeStrategy::Address(addr) => addr,
-            ChangeStrategy::LastOutput => {
-                &tx.tx_info
-                    .outputs
-                    .last()
-                    .ok_or(Error::MissingChangeOutput)?
-                    .address
-            }
-        };
+        let collateral_return_address = tx.change_strategy.get_change_address(tx.tx_info)?;
+        let collaterals = tx.collateral_strategy.find_collaterals(tx.tx_info)?;
 
-        match &tx.collateral_strategy {
-            CollateralStrategy::Automatic {
-                min_amount,
-                max_utxo_count,
-            } => {
-                let tx_input =
-                    self.find_collaterals(*min_amount, *max_utxo_count, &tx.tx_info.inputs)?;
-                let collateral = self.mk_collaterals(&tx_input)?;
-                tx_builder.set_collateral(&collateral);
-                tx_builder
-                    .set_total_collateral_and_return(
-                        &csl::BigNum::from(*min_amount),
-                        &collateral_return_address
-                            .clone()
-                            .with_extra_info(self.network_id)
-                            .try_to_csl()?,
-                    )
-                    .map_err(|source| Error::TransactionBuildError(anyhow!(source)))?;
-            }
-            CollateralStrategy::Explicit { utxos, min_amount } => {
-                let collateral = self.mk_collaterals(utxos)?;
-                tx_builder.set_collateral(&collateral);
-                tx_builder
-                    .set_total_collateral_and_return(
-                        &csl::BigNum::from(*min_amount),
-                        &collateral_return_address
-                            .clone()
-                            .with_extra_info(self.network_id)
-                            .try_to_csl()?,
-                    )
-                    .map_err(|source| Error::TransactionBuildError(anyhow!(source)))?;
-            }
-            CollateralStrategy::None => {}
-        };
+        if !collaterals.is_empty() {
+            let collateral = self.mk_collaterals(&collaterals)?;
+            tx_builder.set_collateral(&collateral);
+            tx_builder
+                .set_total_collateral_and_return(
+                    &csl::BigNum::from(tx.collateral_strategy.min_collateral_amount()),
+                    &collateral_return_address
+                        .clone()
+                        .with_extra_info(self.network_id)
+                        .try_to_csl()?,
+                )
+                .map_err(|source| Error::TransactionBuildError(anyhow!(source)))?;
+        }
 
-        self.mk_outputs(&tx.tx_info.outputs, tx.change_strategy, tx.scripts)?
-            .iter()
-            .try_for_each(|tx_out| {
-                tx_builder
-                    .add_output(tx_out)
-                    .map_err(|source| Error::TransactionBuildError(anyhow!(source)))
-            })?;
+        self.mk_outputs(
+            tx.change_strategy.filter_outputs(&tx.tx_info.outputs),
+            tx.scripts,
+        )?
+        .iter()
+        .try_for_each(|tx_out| {
+            tx_builder
+                .add_output(tx_out)
+                .map_err(|source| Error::TransactionBuildError(anyhow!(source)))
+        })?;
 
         let (validity_start, ttl) = time_range_into_slots(
             &self.era_summaries,
@@ -659,7 +558,7 @@ impl TxBakery {
         Ok(tx_builder)
     }
 
-    pub fn mk_tx_body(&self, tx: &TxWithCtx<'_>) -> Result<csl::TransactionBody> {
+    pub fn mk_tx_body(&self, tx: &TxWithCtx<'_>) -> crate::error::Result<csl::TransactionBody> {
         let tx_builder = self.mk_tx_builder(tx)?;
 
         let (datums, redeemers) = TxBakery::extract_witnesses(tx.tx_info)?;
@@ -680,13 +579,13 @@ impl TxBakery {
     /// Redeemers execution units are set to 0
     fn extract_witnesses(
         tx_info: &TransactionInfo,
-    ) -> Result<(Vec<csl::PlutusData>, Vec<csl::Redeemer>)> {
+    ) -> crate::error::Result<(Vec<csl::PlutusData>, Vec<csl::Redeemer>)> {
         let datums = tx_info
             .datums
             .0
             .iter()
             .map(|(_dh, Datum(d))| Ok(d.to_plutus_data().try_to_csl()?))
-            .collect::<Result<_>>()?;
+            .collect::<crate::error::Result<_>>()?;
 
         let redeemers = tx_info
             .redeemers
@@ -722,7 +621,7 @@ impl TxBakery {
                     "Only spending and minting redeemers are supported".to_string(),
                 ))),
             })
-            .collect::<Result<_>>()?;
+            .collect::<crate::error::Result<_>>()?;
 
         Ok((datums, redeemers))
     }
@@ -731,7 +630,7 @@ impl TxBakery {
     fn collect_scripts(
         tx_info: &TransactionInfo,
         scripts: &BTreeMap<ScriptHash, ScriptOrRef>,
-    ) -> Result<(Vec<csl::PlutusScript>, Vec<csl::PlutusScript>)> {
+    ) -> crate::error::Result<(Vec<csl::PlutusScript>, Vec<csl::PlutusScript>)> {
         let res = tx_info
             .inputs
             .iter()
@@ -759,7 +658,7 @@ impl TxBakery {
                     .cloned()
                     .ok_or(Error::MissingScript((*script_hash).clone()))
             })
-            .collect::<Result<Vec<_>>>()?
+            .collect::<crate::error::Result<Vec<_>>>()?
             .into_iter()
             .partition_map(|script_or_ref| match script_or_ref {
                 ScriptOrRef::PlutusScript(script) => itertools::Either::Left(script),
@@ -815,7 +714,7 @@ impl TxBakery {
     fn apply_ex_units(
         redeemer: &csl::Redeemer,
         ex_units_map: &BTreeMap<(csl::RedeemerTag, csl::BigNum), csl::ExUnits>,
-    ) -> Result<csl::Redeemer> {
+    ) -> crate::error::Result<csl::Redeemer> {
         debug!("Apply execution units.");
         let key = (redeemer.tag(), redeemer.index());
         let ex_units = ex_units_map.get(&key).ok_or(Error::MissingExUnits(key))?;
@@ -836,7 +735,7 @@ impl TxBakery {
         wit_redeemers: &[csl::Redeemer],
         wit_scripts: &[csl::PlutusScript],
         ref_scripts: &[csl::PlutusScript],
-    ) -> Result<csl::TransactionBody> {
+    ) -> crate::error::Result<csl::TransactionBody> {
         debug!("Balance transaction");
         let mut redeemers = csl::Redeemers::new();
         wit_redeemers.iter().for_each(|red| redeemers.add(red));
@@ -849,26 +748,10 @@ impl TxBakery {
             ref_scripts,
         );
 
-        let (change_addr, change_datum) = match tx.change_strategy {
-            ChangeStrategy::Address(address) => {
-                (address.with_extra_info(self.network_id).try_to_csl()?, None)
-            }
-            ChangeStrategy::LastOutput => {
-                let last_output = tx
-                    .tx_info
-                    .outputs
-                    .last()
-                    .ok_or(Error::MissingChangeOutput)?;
+        let (change_addr, change_datum) = tx.change_strategy.get_change(tx)?;
+        let change_addr = change_addr.with_extra_info(self.network_id).try_to_csl()?;
 
-                (
-                    last_output
-                        .address
-                        .with_extra_info(self.network_id)
-                        .try_to_csl()?,
-                    last_output.datum.try_to_csl()?,
-                )
-            }
-        };
+        let change_datum = change_datum.try_to_csl()?;
 
         match change_datum {
             None => tx_builder
@@ -892,12 +775,12 @@ impl TxBakery {
         &self,
         submitter: &impl Submitter,
         tx: TxWithCtx<'_>,
-    ) -> Result<csl::FixedTransaction> {
+    ) -> crate::error::Result<csl::FixedTransaction> {
         info!("Bake balanced transaction.");
         let (datums, redeemers) = TxBakery::extract_witnesses(tx.tx_info)?;
         let (wit_scripts, ref_scripts) = TxBakery::collect_scripts(tx.tx_info, tx.scripts)?;
 
-        let aux_data: Result<Option<csl::AuxiliaryData>> = tx
+        let aux_data: crate::error::Result<Option<csl::AuxiliaryData>> = tx
             .metadata
             .map(|metadata| {
                 let mut aux_data = csl::AuxiliaryData::new();
@@ -932,7 +815,7 @@ impl TxBakery {
         let redeemers_w_ex_u = redeemers
             .iter()
             .map(|r| TxBakery::apply_ex_units(r, &ex_units))
-            .collect::<Result<Vec<_>>>()?;
+            .collect::<crate::error::Result<Vec<_>>>()?;
 
         let tx_body = self.balance_transaction(
             &tx,
@@ -973,7 +856,7 @@ impl TxBakery {
         submitter: &impl Submitter,
         wallet: &impl Wallet,
         tx: TxWithCtx<'_>,
-    ) -> Result<csl::FixedTransaction> {
+    ) -> crate::error::Result<csl::FixedTransaction> {
         let tx = self.bake_balanced_tx(submitter, tx).await?;
         debug!("Signing transaction.");
         Ok(wallet.sign_transaction(&tx))
@@ -986,7 +869,7 @@ impl TxBakery {
         submitter: &impl Submitter,
         wallet: &impl Wallet,
         tx: TxWithCtx<'_>,
-    ) -> Result<TransactionHash> {
+    ) -> crate::error::Result<TransactionHash> {
         let tx = self.bake_signed_tx(submitter, wallet, tx).await?;
 
         debug!("Submitting transaction.");
