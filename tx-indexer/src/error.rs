@@ -1,3 +1,9 @@
+use thiserror::Error;
+
+use crate::{
+    from_pallas::FromPallasError, sources::cardano_node::MPSCError, types::v1::BlockParseError,
+};
+
 /// Specify what the indexer event handler should do for specific errors. See: `ErrorPolicyProvider`.
 /// The idea is that an error type, `E`, implements `ErrorPolicyProvider`.
 /// Based on the different variants of `E`, different `ErrorPolicy` can be returned, which influences
@@ -20,4 +26,34 @@ where
     Self: Sized,
 {
     fn get_error_policy(&self) -> ErrorPolicy<Self>;
+}
+
+#[derive(Debug, Error)]
+pub enum TxIndexerError<T> {
+    #[error(transparent)]
+    TracingError(#[from] tracing::subscriber::SetGlobalDefaultError),
+
+    #[error(transparent)]
+    MPSCError(#[from] MPSCError),
+
+    #[error(transparent)]
+    JoinError(#[from] tokio::task::JoinError),
+
+    #[error(transparent)]
+    FixtureFileReadingError(std::io::Error),
+
+    #[error(transparent)]
+    FromPallasError(#[from] FromPallasError),
+
+    #[error(transparent)]
+    EventHandlerError(T),
+
+    #[error("Couldn't store current sync progress: {0}")]
+    SyncProgressStoreFailure(diesel::result::Error),
+
+    #[error(transparent)]
+    BlockParseError(#[from] BlockParseError),
+
+    #[error(transparent)]
+    NodeClientError(#[from] pallas_network::miniprotocols::chainsync::ClientError),
 }

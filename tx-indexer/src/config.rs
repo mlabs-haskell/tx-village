@@ -1,15 +1,10 @@
+use tokio_util::sync::CancellationToken;
+
 use crate::{
-    filter::Filter,
-    handler::{callback::EventHandler, retry::RetryPolicy},
+    handler::{chain_event::EventHandler, retry::RetryPolicy},
+    types::cardano::Point,
 };
-use anyhow::anyhow;
-use core::str::FromStr;
-use oura::{sources::MagicArg, utils::ChainWellKnownInfo};
-use std::fmt;
-use std::fs::File;
-use std::io::BufReader;
-use std::{error::Error, path::PathBuf};
-use strum_macros::Display;
+use std::path::PathBuf;
 
 pub struct TxIndexerConfig<H: EventHandler> {
     pub handler: H,
@@ -19,20 +14,17 @@ pub struct TxIndexerConfig<H: EventHandler> {
     /// This only takes effect on ErrorPolicy for a particular error is `Retry`.
     /// Once retries are exhausted, the handler will error (same treatment as ErrorPolicy::Exit)
     pub retry_policy: RetryPolicy,
+    pub cancellation_token: CancellationToken,
 }
 
 pub enum TxIndexerSource {
     CardanoNode {
-        node_address: NodeAddress,
-        network: NetworkConfig,
+        node_address: PathBuf,
         /// Slot number and hash as hex string (optional).
         /// If not provided, sync will begin from the tip of the chain.
-        since_slot: Option<(u64, String)>,
-        /// Minimum depth a block has to be from the tip for it to be considered "confirmed"
-        /// See: https://oura.txpipe.io/v1/advanced/rollback_buffer
-        safe_block_depth: usize,
-        /// Filter transaction events by specific component(s).
-        event_filter: Filter,
+        network_magic: u64,
+        since_point: Option<Point>,
+        event_queue_size: usize,
     },
     FixtureFiles {
         dir_path: PathBuf,
@@ -43,177 +35,52 @@ impl<H: EventHandler> TxIndexerConfig<H> {
     #[allow(clippy::too_many_arguments)]
     pub fn cardano_node(
         handler: H,
-        node_address: NodeAddress,
-        network: NetworkConfig,
-        since_slot: Option<(u64, String)>,
-        safe_block_depth: usize,
-        event_filter: Filter,
-        retry_policy: RetryPolicy,
+        node_address: PathBuf,
+        network_magic: u64,
+        since_point: Option<Point>,
     ) -> Self {
         Self {
             handler,
             source: TxIndexerSource::CardanoNode {
                 node_address,
-                network,
-                since_slot,
-                safe_block_depth,
-                event_filter,
+                network_magic,
+                since_point,
+                event_queue_size: 10,
             },
-            retry_policy,
+            retry_policy: RetryPolicy::default(),
+            cancellation_token: CancellationToken::new(),
         }
     }
 
-    pub fn source_from_fixtures(handler: H, dir_path: PathBuf, retry_policy: RetryPolicy) -> Self {
+    pub fn source_from_fixtures(handler: H, dir_path: PathBuf) -> Self {
         Self {
             handler,
             source: TxIndexerSource::FixtureFiles { dir_path },
-            retry_policy,
+            retry_policy: RetryPolicy::default(),
+            cancellation_token: CancellationToken::new(),
         }
     }
-}
 
-/// Simple description on how to connect to a local or remote node.
-/// Used to build Oura source config.
-pub enum NodeAddress {
-    /// Path to Unix node.socket
-    UnixSocket(String),
-    /// Hostname and port number for TCP connection to remote node
-    TcpAddress(String, u16),
-}
-
-/// Typed network magic restricted to specific networks fully supported by Oura.
-#[derive(Clone, Debug, Display)]
-pub enum NetworkName {
-    PREPROD,
-    PREVIEW,
-    MAINNET,
-}
-
-#[derive(Clone, Debug)]
-pub enum NetworkConfig {
-    ConfigPath {
-        node_config_path: String,
-        magic: u64,
-    },
-    WellKnown(NetworkName),
-    Config {
-        chain_info: ChainWellKnownInfo,
-        magic: u64,
-    },
-}
-
-#[derive(Clone, Debug, PartialEq, Eq)]
-pub struct NetworkNameParseErr;
-
-impl fmt::Display for NetworkNameParseErr {
-    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        "provided string was not `preprod` or `preview` or `mainnet`".fmt(f)
-    }
-}
-impl Error for NetworkNameParseErr {}
-
-impl FromStr for NetworkName {
-    type Err = NetworkNameParseErr;
-    fn from_str(s: &str) -> Result<NetworkName, Self::Err> {
-        match &s.to_lowercase()[..] {
-            "preprod" => Ok(NetworkName::PREPROD),
-            "preview" => Ok(NetworkName::PREVIEW),
-            "mainnet" => Ok(NetworkName::MAINNET),
-            _ => Err(NetworkNameParseErr),
-        }
-    }
-}
-
-impl NetworkConfig {
-    pub fn to_magic_arg(&self) -> MagicArg {
-        MagicArg(match self {
-            NetworkConfig::WellKnown(network_name) => match network_name {
-                NetworkName::PREPROD => pallas::network::miniprotocols::PRE_PRODUCTION_MAGIC,
-                NetworkName::PREVIEW => pallas::network::miniprotocols::PREVIEW_MAGIC,
-                NetworkName::MAINNET => pallas::network::miniprotocols::MAINNET_MAGIC,
-            },
-            NetworkConfig::ConfigPath { magic, .. } => *magic,
-            NetworkConfig::Config { magic, .. } => *magic,
-        })
-    }
-
-    pub fn to_chain_info(&self) -> Result<ChainWellKnownInfo, anyhow::Error> {
-        Ok(match self {
-            NetworkConfig::WellKnown(network_name) => match network_name {
-                NetworkName::PREPROD => ChainWellKnownInfo::preprod(),
-                NetworkName::PREVIEW => ChainWellKnownInfo::preview(),
-                NetworkName::MAINNET => ChainWellKnownInfo::mainnet(),
-            },
-            NetworkConfig::Config { chain_info, .. } => chain_info.clone(),
-            NetworkConfig::ConfigPath {
-                node_config_path, ..
+    pub fn with_event_queue_size(&mut self, queue_size: usize) -> &mut Self {
+        match &mut self.source {
+            TxIndexerSource::CardanoNode {
+                ref mut event_queue_size,
+                ..
             } => {
-                let file = File::open(node_config_path.clone())
-                    .map_err(|err| anyhow!("Chain Info not found at given path: {}", err))?;
-                let reader = BufReader::new(file);
-                serde_json::from_reader(reader).expect("Invalid JSON format for ChainWellKnownInfo")
+                *event_queue_size = queue_size;
+                self
             }
-        })
-    }
-}
-
-// Encapsulating usage of deprecated stuff (impossible to construct struct without it).
-// This avoids having to put "#![allow(deprecated)]" on the top of this file.
-pub mod deprecation_usage {
-    #![allow(deprecated)]
-
-    use oura::mapper::Config as MapperConfig;
-    use oura::sources::n2c::Config as N2CConfig;
-    use oura::sources::n2n::Config as N2NConfig;
-    use oura::sources::{AddressArg, IntersectArg, MagicArg, PointArg};
-
-    pub fn n2c_config(
-        addr: AddressArg,
-        magic: MagicArg,
-        since_slot: Option<(u64, String)>,
-        safe_block_depth: usize,
-    ) -> N2CConfig {
-        N2CConfig {
-            address: addr,
-            magic: Some(magic),
-            intersect: since_slot
-                .map(|since_slot| IntersectArg::Point(PointArg(since_slot.0, since_slot.1))),
-            mapper: MapperConfig {
-                include_transaction_details: true,
-                ..Default::default()
-            },
-            min_depth: safe_block_depth,
-            retry_policy: None,
-            finalize: None,
-            // Deprecated fields
-            since: None,
-            well_known: None,
+            TxIndexerSource::FixtureFiles { .. } => self,
         }
     }
 
-    pub fn n2n_config(
-        addr: AddressArg,
-        magic: MagicArg,
-        since_slot: Option<(u64, String)>,
-        safe_block_depth: usize,
-    ) -> N2NConfig {
-        N2NConfig {
-            address: addr,
-            magic: Some(magic),
-            intersect: since_slot
-                .map(|since_slot| IntersectArg::Point(PointArg(since_slot.0, since_slot.1))),
-            mapper: MapperConfig {
-                include_transaction_details: true,
-                ..Default::default()
-            },
-            min_depth: safe_block_depth,
-            retry_policy: None,
-            finalize: None,
-            // Deprecated fields
-            since: None,
-            well_known: None,
-        }
+    pub fn with_retry_policy(mut self, retry_policy: RetryPolicy) -> Self {
+        self.retry_policy = retry_policy;
+        self
+    }
+
+    pub fn with_cancellation_token(mut self, cancellation_token: CancellationToken) -> Self {
+        self.cancellation_token = cancellation_token;
+        self
     }
 }
-
-pub use self::deprecation_usage::*;

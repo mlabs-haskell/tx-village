@@ -5,6 +5,8 @@ Cardano chain indexer builder framework
 This is framework to build domain-specific indexing solutions, handling
 Cardano transactions as events and persisting the to a PostgreSQL database.
 
+Warning: tx-indexer is still under development and not production ready.
+
 ## Domain-specific
 
 Although it's possible to implement general-use indexer, we have seen that
@@ -16,10 +18,8 @@ allows to build a database schema with the domain requirements in the focus:
 
 ## Event-based
 
-This is a thin layer built on top of Oura providing some additional features,
-and as such, it is following the event-based structure. We capture transactions,
-convert them into plutus-ledger-api types so it's convenient to work with,
-and emit them as events.
+We capture blocks convert them into plutus-ledger-api types so it's convenient
+to work with, and emit them as events.
 
 ## Features
 

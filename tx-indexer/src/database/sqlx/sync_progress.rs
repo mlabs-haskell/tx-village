@@ -1,4 +1,3 @@
-use data_encoding::HEXLOWER;
 use sqlx::{Connection, FromRow, PgConnection};
 use tracing::{debug, info_span, span, Instrument, Level};
 
@@ -12,7 +11,7 @@ impl SyncProgressTable {
     pub fn new(block_slot: u64, block_hash: String) -> Result<SyncProgressTable, anyhow::Error> {
         Ok(SyncProgressTable {
             block_slot: block_slot as i64,
-            block_hash: HEXLOWER.decode(block_hash.as_bytes())?,
+            block_hash: hex::decode(block_hash.as_bytes())?,
         })
     }
 
@@ -82,7 +81,7 @@ impl SyncProgressTable {
                 |Self {
                      block_slot,
                      block_hash,
-                 }| (block_slot as u64, HEXLOWER.encode(&block_hash)),
+                 }| (block_slot as u64, hex::encode(&block_hash)),
             )
             .or(since_slot.zip(since_block)))
     }

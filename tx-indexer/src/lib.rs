@@ -1,10 +1,11 @@
-pub mod aux;
 pub mod config;
 pub mod database;
+// pub mod era_summaries;
 pub mod error;
-pub mod filter;
-pub(crate) mod from_oura;
+pub mod from_pallas;
 pub mod handler;
+pub mod sources;
+pub mod types;
 pub use indexer::TxIndexer;
 mod indexer;
 pub mod progress_tracker;

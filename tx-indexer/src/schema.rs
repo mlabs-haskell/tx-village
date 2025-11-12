@@ -1,5 +1,5 @@
 diesel::table! {
-    use crate::database::plutus::sql_types::*;
+    use crate::database::plutus::db_types::sql_types::*;
     use diesel::sql_types::*;
 
     sync_progress (processed) {

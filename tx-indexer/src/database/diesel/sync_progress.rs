@@ -1,6 +1,10 @@
-use data_encoding::HEXLOWER;
 use diesel::{prelude::*, Connection};
 use tracing::{debug, info_span, span, Level};
+
+use crate::{
+    error::TxIndexerError,
+    types::cardano::{BlockHash, Point},
+};
 
 #[derive(
     Clone, Debug, Eq, PartialEq, diesel::Queryable, diesel::Selectable, diesel::Insertable,
@@ -13,12 +17,16 @@ pub struct SyncProgressTable {
 }
 
 impl SyncProgressTable {
-    pub fn new(block_slot: u64, block_hash: String) -> Result<SyncProgressTable, anyhow::Error> {
-        Ok(SyncProgressTable {
+    pub fn new(point: Point) -> SyncProgressTable {
+        let Point {
+            block_slot,
+            block_hash: BlockHash(block_hash),
+        } = point;
+        SyncProgressTable {
             block_slot: block_slot as i64,
-            block_hash: HEXLOWER.decode(block_hash.as_bytes())?,
+            block_hash,
             processed: false,
-        })
+        }
     }
 
     /// Obtain the sync status of the DB
@@ -74,12 +82,12 @@ impl SyncProgressTable {
         Ok(())
     }
 
-    pub fn get_or(
+    pub fn get_or<HandlerError>(
         conn: &mut diesel::PgConnection,
         since_slot: Option<u64>,
-        since_block: Option<String>,
-    ) -> Result<Option<(u64, String)>, anyhow::Error> {
-        let sync_status = Self::get(conn)?;
+        since_block: Option<BlockHash>,
+    ) -> Result<Option<Point>, TxIndexerError<HandlerError>> {
+        let sync_status = Self::get(conn).map_err(TxIndexerError::SyncProgressStoreFailure)?;
 
         Ok(sync_status
             .map(
@@ -87,8 +95,18 @@ impl SyncProgressTable {
                      block_slot,
                      block_hash,
                      ..
-                 }| (block_slot as u64, HEXLOWER.encode(&block_hash)),
+                 }| Point {
+                    block_slot: block_slot as u64,
+                    block_hash: BlockHash(block_hash),
+                },
             )
-            .or(since_slot.zip(since_block)))
+            .or_else(|| {
+                since_slot
+                    .zip(since_block)
+                    .map(|(block_slot, block_hash)| Point {
+                        block_hash,
+                        block_slot,
+                    })
+            }))
     }
 }
