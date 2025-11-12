@@ -25,7 +25,7 @@
     # Local Cardano devnet for integration testing
     cardano-devnet.url = "github:mlabs-haskell/cardano-devnet-flake";
 
-    cardano-node.url = "github:IntersectMBO/cardano-node/10.1.4";
+    cardano-node.url = "github:IntersectMBO/cardano-node/10.4.1";
 
     # Tools for integration testing
     process-compose-flake.url = "github:Platonic-Systems/process-compose-flake";

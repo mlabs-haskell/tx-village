@@ -476,13 +476,6 @@ pub(crate) struct ReleaseMempoolResponse {
     pub released: String,
 }
 
-#[derive(Clone, Debug, Serialize, Deserialize)]
-#[serde(untagged)]
-pub(crate) enum NextTransactionResponse {
-    // We could request a full transaction
-    TransactionId { transaction: Option<TransactionId> },
-}
-
 pub type QueryLedgerStateProtocolParametersResponse = ProtocolParameters;
 
 #[derive(Clone, Debug, Serialize, Deserialize)]

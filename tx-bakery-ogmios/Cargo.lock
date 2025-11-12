@@ -573,7 +573,7 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "39cab71617ae0d63f51a36d69f866391735b51691dbda63cf6f96d042b63efeb"
 dependencies = [
  "libc",
- "windows-sys 0.61.2",
+ "windows-sys 0.52.0",
 ]
 
 [[package]]
@@ -1082,7 +1082,7 @@ checksum = "469fb0b9cefa57e3ef31275ee7cacb78f2fdca44e4765491884a2b119d4eb130"
 [[package]]
 name = "is-plutus-data-derive"
 version = "1.0.0"
-source = "git+https://github.com/mlabs-haskell/plutus-ledger-api-rust?branch=szg251%2Fserde#f538d7bba80a1d7fe48650c9a819216143f74bcd"
+source = "git+https://github.com/mlabs-haskell/plutus-ledger-api-rust?branch=szg251%2Fserde#2d7af2ebb2e43e455ede2151b1a6646566e89fe3"
 dependencies = [
  "proc-macro2",
  "quote",
@@ -1610,8 +1610,8 @@ checksum = "7edddbd0b52d732b21ad9a5fab5c704c14cd949e5e9a1ec5929a24fded1b904c"
 
 [[package]]
 name = "plutus-ledger-api"
-version = "3.1.0"
-source = "git+https://github.com/mlabs-haskell/plutus-ledger-api-rust?branch=szg251%2Fserde#f538d7bba80a1d7fe48650c9a819216143f74bcd"
+version = "4.0.0-alpha"
+source = "git+https://github.com/mlabs-haskell/plutus-ledger-api-rust?branch=szg251%2Fserde#2d7af2ebb2e43e455ede2151b1a6646566e89fe3"
 dependencies = [
  "anyhow",
  "cardano-serialization-lib",
@@ -1932,7 +1932,7 @@ dependencies = [
  "errno",
  "libc",
  "linux-raw-sys",
- "windows-sys 0.61.2",
+ "windows-sys 0.52.0",
 ]
 
 [[package]]
@@ -2409,7 +2409,7 @@ dependencies = [
  "getrandom 0.3.4",
  "once_cell",
  "rustix",
- "windows-sys 0.61.2",
+ "windows-sys 0.52.0",
 ]
 
 [[package]]
@@ -2908,7 +2908,7 @@ version = "0.1.11"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "c2a7b1c03c876122aa43f3020e6c3c3ee5c05081c9a00739faf7503aeba10d22"
 dependencies = [
- "windows-sys 0.61.2",
+ "windows-sys 0.48.0",
 ]
 
 [[package]]
