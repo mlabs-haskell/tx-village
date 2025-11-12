@@ -1,15 +1,21 @@
 use std::path::PathBuf;
 
-use super::{error::UtxoIndexerError, table::utxos::UtxosTable};
+use anyhow::Context;
+use async_trait::async_trait;
 use diesel::{
     r2d2::{ConnectionManager, Pool},
     Connection, PgConnection,
 };
-use tracing::{event, span, warn, Instrument, Level};
+use num_bigint::BigInt;
+use tokio_util::sync::CancellationToken;
+use tracing::{event, info, warn, Level};
 use tx_indexer::{
     database::diesel::sync_progress::SyncProgressTable,
-    handler::{callback::EventHandler, chain_event::ChainEvent},
+    handler::chain_event::{ChainEvent, EventHandler},
+    types::{cardano::Point, plutus::MultiEraTransaction},
 };
+
+use super::{error::UtxoIndexerError, table::utxos::UtxosTable};
 
 #[derive(Clone)]
 pub enum UtxoIndexerHandler {
@@ -18,6 +24,8 @@ pub enum UtxoIndexerHandler {
     },
     Fixture {
         fixture_path: PathBuf,
+        max_slot: u64,
+        cancellation_token: CancellationToken,
     },
 }
 
@@ -26,53 +34,98 @@ impl UtxoIndexerHandler {
         UtxoIndexerHandler::Postgres { db_pool }
     }
 
-    pub fn fixture(fixture_path: PathBuf) -> Self {
-        UtxoIndexerHandler::Fixture { fixture_path }
+    pub fn fixture(
+        fixture_path: PathBuf,
+        max_slot: u64,
+        cancellation_token: CancellationToken,
+    ) -> Self {
+        UtxoIndexerHandler::Fixture {
+            fixture_path,
+            max_slot,
+            cancellation_token,
+        }
     }
 }
 
+#[async_trait]
 impl EventHandler for UtxoIndexerHandler {
     type Error = UtxoIndexerError;
 
-    async fn handle(&self, event: ChainEvent) -> Result<(), Self::Error> {
-        let span = span!(Level::DEBUG, "HandlingEvent", event=?event);
+    async fn handle(&self, event: &ChainEvent) -> Result<(), Self::Error> {
         async move {
             match self {
-                UtxoIndexerHandler::Fixture { fixture_path } => {
+                UtxoIndexerHandler::Fixture {
+                    fixture_path,
+                    max_slot,
+                    cancellation_token,
+                } => {
+                    if let ChainEvent::RollForward { block_slot, .. } = event {
+                        if block_slot > max_slot {
+                            cancellation_token.cancel();
+                            info!("Reached max slot, exiting...");
+                            return Ok(());
+                        }
+                    }
+
                     let chain_event_json = serde_json::to_string(&event).unwrap();
                     let mut file_path = fixture_path.clone();
-                    file_path.push(format!("{}.json", chrono::Local::now().timestamp_millis()));
+                    file_path.push(format!(
+                        "{}.json",
+                        chrono::Local::now()
+                            .timestamp_nanos_opt()
+                            .context("timestamp out of range")?
+                    ));
 
-                    std::fs::write(file_path, chain_event_json).unwrap();
+                    std::fs::write(file_path, chain_event_json)
+                        .context("couldn't write to fixture path")?;
 
                     Ok(())
                 }
                 UtxoIndexerHandler::Postgres { db_pool } => {
                     let mut conn = db_pool.get().unwrap();
-
                     match event {
-                        ChainEvent::TransactionEvent { transaction, time } => {
-                            let tx_slot = time.slot;
-                            let span =
-                                span!(Level::DEBUG, "HandlingTransactionEvent", ?transaction.hash);
-                            async move {
-                                for new_utxo in transaction.outputs {
-                                    UtxosTable::new(new_utxo, tx_slot)?.store(&mut conn)?;
+                        ChainEvent::RollForward {
+                            transactions,
+                            block_slot,
+                            block_hash,
+                            ..
+                        } => {
+                            for (i, transaction) in transactions.iter().enumerate() {
+                                let MultiEraTransaction {
+                                    id,
+                                    inputs,
+                                    outputs,
+                                    ..
+                                } = transaction;
+                                let utxo_ref = &plutus_ledger_api::v3::TransactionInput {
+                                    transaction_id: id.clone(),
+                                    index: BigInt::from(i),
+                                };
+
+                                for output in outputs {
+                                    UtxosTable::new(utxo_ref.clone(), output.clone(), *block_slot)?
+                                        .store(&mut conn)?;
                                 }
 
-                                for utxo_ref in transaction.inputs {
-                                    UtxosTable::delete_by_id(utxo_ref, tx_slot, &mut conn)?;
+                                for input in inputs {
+                                    UtxosTable::delete_by_id(
+                                        input.clone(),
+                                        *block_slot,
+                                        &mut conn,
+                                    )?;
                                 }
-
-                                event!(Level::INFO, name = "UTxO Stored");
-                                Ok(())
                             }
-                            .instrument(span)
-                            .await
+
+                            event!(Level::INFO, name = "UTxO Stored");
+
+                            SyncProgressTable::new(Point::new(block_hash.clone(), *block_slot))
+                                .store(&mut conn)?;
+
+                            Ok::<(), Self::Error>(())
                         }
-                        ChainEvent::RollbackEvent { block_slot, .. } => conn.transaction(|txn| {
+                        ChainEvent::Rollback { block_slot, .. } => conn.transaction(|txn| {
                             let rollback_result =
-                                UtxosTable::rollback_after_block(txn, block_slot)?;
+                                UtxosTable::rollback_after_block(txn, *block_slot)?;
 
                             warn!(
                             name = "RollbackHandled",
@@ -82,22 +135,11 @@ impl EventHandler for UtxoIndexerHandler {
 
                             Ok::<(), Self::Error>(())
                         }),
-                        ChainEvent::SyncProgressEvent {
-                            block_slot,
-                            block_hash,
-                            ..
-                        } => {
-                            SyncProgressTable::new(block_slot, block_hash)
-                                .map_err(UtxoIndexerError::Internal)?
-                                .store(&mut conn)?;
-
-                            Ok(())
-                        }
+                        ChainEvent::Heartbeat { .. } => Ok(()),
                     }
                 }
             }
         }
-        .instrument(span)
         .await
     }
 }

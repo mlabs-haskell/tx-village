@@ -1,5 +1,5 @@
 diesel::table! {
-    use tx_indexer::database::plutus::sql_types::*;
+    use tx_indexer::database::plutus::db_types::sql_types::*;
     use diesel::sql_types::*;
 
     testdb (id) {
@@ -26,13 +26,13 @@ diesel::table! {
 }
 
 diesel::table! {
-    use tx_indexer::database::plutus::sql_types::*;
+    use tx_indexer::database::plutus::db_types::sql_types::*;
     use diesel::sql_types::*;
 
     utxos (utxo_ref) {
         utxo_ref -> TransactionInput,
         value -> Value,
-        address -> Address,
+        address -> Text,
         datum -> OutputDatum,
         created_at -> Slot,
         deleted_at -> Nullable<Slot>,

@@ -1,4 +1,4 @@
-use anyhow::Result;
+use anyhow::Context;
 use clap::Parser;
 use diesel::{
     pg::PgConnection,
@@ -10,47 +10,42 @@ use plutus_ledger_api::v3::{
     value::{CurrencySymbol, Value},
 };
 use prettytable::{format, row, Table};
-use std::{default::Default, fmt::Debug, path::PathBuf};
+use std::{fmt::Debug, path::PathBuf};
+use tokio_util::sync::CancellationToken;
 use tracing::Level;
 use tx_indexer::{
-    aux::{ParseAddress, ParseCurrencySymbol},
-    config::{NetworkConfig, NetworkName, NodeAddress, TxIndexerConfig},
+    config::TxIndexerConfig,
     database::diesel::sync_progress::SyncProgressTable,
-    filter::Filter,
+    types::cardano::{BlockHash, Point},
     TxIndexer,
 };
-use tx_indexer_testsuite::utxo_db::{handler::UtxoIndexerHandler, table::utxos::UtxosTable};
+use tx_indexer_testsuite::utxo_db::{
+    error::UtxoIndexerError, handler::UtxoIndexerHandler, table::utxos::UtxosTable,
+};
+
+#[derive(clap::Subcommand, Debug)]
+enum Command {
+    /// Run the Indexer
+    Index(IndexArgs),
+
+    /// Store blocks as files for testing
+    CreateFixtures(CreateFixtureArgs),
+
+    /// Query indexed data
+    #[command(subcommand)]
+    Query(QueryCommand),
+}
 
 #[derive(Debug, Parser)]
-struct IndexStartArgs {
+struct IndexArgs {
     /// Cardano node socket path
     #[arg(long)]
-    socket_path: String,
-
-    /// Network name (preprod | preview | mainnet)
-    #[arg(
-        short('n'),
-        long,
-        value_parser = clap::value_parser!(NetworkName),
-        required_unless_present="network",
-        conflicts_with="network_magic"
-    )]
-    network: Option<NetworkName>,
+    socket_path: PathBuf,
 
     /// Network magic number
-    #[arg(
-        short('m'),
-        long("magic"),
-        requires = "node_config_path",
-        conflicts_with = "network"
-    )]
-
+    #[arg(short('m'), long("magic"))]
     /// Network identified by magic number and chain info file
-    network_magic: Option<u64>,
-
-    /// Cardano node configuration path
-    #[arg(long)]
-    node_config_path: Option<String>,
+    network_magic: u64,
 
     /// Sync from this slot
     #[arg(short, long, requires = "since_block_hash")]
@@ -60,52 +55,53 @@ struct IndexStartArgs {
     #[arg(short('a'), long, requires = "since_slot")]
     since_block_hash: Option<String>,
 
-    /// Filter for transactions minting this currency symbol (multiple allowed)
-    #[arg(short('c'), long = "curr_symbol")]
-    curr_symbols: Vec<ParseCurrencySymbol>,
-
     /// PostgreSQL database URL
-    #[arg(
-        long,
-        required_unless_present = "fixture_dump_path",
-        conflicts_with = "fixture_dump_path"
-    )]
-    postgres_url: Option<String>,
+    #[arg(long)]
+    postgres_url: String,
+}
+
+#[derive(Debug, Parser)]
+struct CreateFixtureArgs {
+    /// Cardano node socket path
+    #[arg(long)]
+    socket_path: PathBuf,
+
+    /// Network magic number
+    #[arg(short('m'), long("magic"))]
+    /// Network identified by magic number and chain info file
+    network_magic: u64,
+
+    /// Sync from this slot
+    #[arg(short, long, requires = "since_block_hash")]
+    since_slot: Option<u64>,
+
+    /// Sync from this block hash
+    #[arg(short('a'), long, requires = "since_slot")]
+    since_block_hash: Option<String>,
 
     /// Filepath of the fixture files
-    #[arg(
-        long,
-        required_unless_present = "postgres_url",
-        conflicts_with = "postgres_url"
-    )]
-    fixture_dump_path: Option<PathBuf>,
+    #[arg(long, default_value = "./tests/fixtures")]
+    dump_path: PathBuf,
+
+    #[arg(long, default_value = "1000")]
+    slots: u64,
+}
+
+#[derive(clap::Subcommand, Debug)]
+enum QueryCommand {
+    /// Get UTxO set by address
+    UtxosAt(UtxosAtArgs),
 }
 
 #[derive(Debug, Parser)]
 struct UtxosAtArgs {
     /// Filter UTxOs by address
     #[arg(long)]
-    address: ParseAddress,
+    address: String,
 
     /// PostgreSQL database URL
     #[arg(long)]
     postgres_url: String,
-}
-
-#[derive(clap::Subcommand, Debug)]
-enum IndexCommand {
-    /// Start the indexer
-    Start(IndexStartArgs),
-
-    /// Get UTxO set
-    UtxosAt(UtxosAtArgs),
-}
-
-#[derive(clap::Subcommand, Debug)]
-enum Command {
-    /// Run the Index command
-    #[command(subcommand)]
-    Index(IndexCommand),
 }
 
 /// Infinity Query command line interface
@@ -120,7 +116,7 @@ struct Args {
 }
 
 #[tokio::main]
-async fn main() -> Result<(), Box<dyn std::error::Error>> {
+async fn main() -> anyhow::Result<()> {
     let args = Args::parse();
 
     // Set up tracing logger (logs to stdout).
@@ -135,67 +131,85 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     tracing::subscriber::set_global_default(collector)?;
 
     match args.command {
-        Command::Index(index_cmd) => match index_cmd {
-            IndexCommand::Start(IndexStartArgs {
-                socket_path,
-                network,
-                network_magic,
-                node_config_path,
+        Command::Index(IndexArgs {
+            socket_path,
+            network_magic,
+            since_slot,
+            since_block_hash,
+            postgres_url,
+        }) => {
+            let manager = ConnectionManager::<PgConnection>::new(postgres_url);
+
+            let pg_pool = Pool::builder()
+                .test_on_check_out(true)
+                .build(manager)
+                .expect("Could not build connection pool");
+
+            let mut conn = pg_pool.get().unwrap();
+
+            let since_block_hash = since_block_hash
+                .map(|hex_str| {
+                    Ok::<BlockHash, anyhow::Error>(BlockHash(
+                        hex::decode(hex_str).context("cannot decode block hash hex")?,
+                    ))
+                })
+                .transpose()?;
+
+            let handler = UtxoIndexerHandler::postgres(pg_pool);
+
+            let sync_progress = SyncProgressTable::get_or::<UtxoIndexerError>(
+                &mut conn,
                 since_slot,
                 since_block_hash,
-                curr_symbols,
-                postgres_url,
-                fixture_dump_path,
-            }) => {
-                let network_config = network_magic
-                    .map(|magic| NetworkConfig::ConfigPath {
-                        magic,
-                        node_config_path: node_config_path.unwrap(),
-                    })
-                    .or(network.map(NetworkConfig::WellKnown))
-                    .unwrap();
+            )
+            .context("couldn't get current sync progress from db")?;
 
-                let (handler, sync_progress) = if let Some(postgres_url) = postgres_url {
-                    let manager = ConnectionManager::<PgConnection>::new(postgres_url);
+            TxIndexer::run(TxIndexerConfig::cardano_node(
+                handler,
+                socket_path,
+                network_magic,
+                sync_progress,
+            ))
+            .await?;
 
-                    let pg_pool = Pool::builder()
-                        .test_on_check_out(true)
-                        .build(manager)
-                        .expect("Could not build connection pool");
+            Ok(())
+        }
+        Command::CreateFixtures(CreateFixtureArgs {
+            socket_path,
+            network_magic,
+            since_slot,
+            since_block_hash,
+            dump_path,
+            slots,
+        }) => {
+            let since_block_hash = since_block_hash
+                .map(|hex_str| {
+                    Ok::<BlockHash, anyhow::Error>(BlockHash(
+                        hex::decode(hex_str).context("cannot decode block hash hex")?,
+                    ))
+                })
+                .transpose()?;
 
-                    let mut conn = pg_pool.get().unwrap();
+            let max_slot = since_slot.unwrap_or(0) + slots;
 
-                    let sync_progress =
-                        SyncProgressTable::get_or(&mut conn, since_slot, since_block_hash)?;
+            let cancellation_token = CancellationToken::new();
+            let handler =
+                UtxoIndexerHandler::fixture(dump_path, max_slot, cancellation_token.clone());
 
-                    (UtxoIndexerHandler::postgres(pg_pool), sync_progress)
-                } else {
-                    (
-                        UtxoIndexerHandler::fixture(fixture_dump_path.unwrap()),
-                        since_slot.zip(since_block_hash),
-                    )
-                };
+            let sync_progress = since_slot
+                .zip(since_block_hash)
+                .map(|(slot, hash)| Point::new(hash, slot));
 
-                TxIndexer::run(TxIndexerConfig::cardano_node(
-                    handler,
-                    NodeAddress::UnixSocket(socket_path),
-                    network_config,
-                    sync_progress,
-                    4,
-                    Filter {
-                        curr_symbols: curr_symbols
-                            .into_iter()
-                            .map(|ParseCurrencySymbol(cur_sym)| cur_sym)
-                            .collect(),
-                    },
-                    Default::default(),
-                ))
-                .await?
-                .join()?;
+            let config =
+                TxIndexerConfig::cardano_node(handler, socket_path, network_magic, sync_progress)
+                    .with_cancellation_token(cancellation_token);
 
-                Ok(())
-            }
-            IndexCommand::UtxosAt(UtxosAtArgs {
+            TxIndexer::run(config).await?;
+
+            Ok(())
+        }
+        Command::Query(query_subcommand) => match query_subcommand {
+            QueryCommand::UtxosAt(UtxosAtArgs {
                 postgres_url,
                 address,
             }) => {
@@ -208,7 +222,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
 
                 let mut conn = pg_pool.get().unwrap();
 
-                let utxos = UtxosTable::list_by_address(address.0, &mut conn)?;
+                let utxos = UtxosTable::list_by_address(&address, &mut conn)?;
 
                 let mut table = Table::new();
                 table.set_titles(row!["UTxO", "Datum", "Value"]);

@@ -1,12 +1,9 @@
 use crate::utxo_db::error::UtxoIndexerError;
 use diesel::prelude::*;
-use plutus_ledger_api::v3::{
-    address::Address,
-    transaction::{TransactionInput, TxInInfo},
-};
+use plutus_ledger_api::v3::transaction::TransactionInput;
 use strum_macros::Display;
 use tracing::{error, info_span};
-use tx_indexer::database::plutus as db;
+use tx_indexer::{database::plutus::db_types as db, types::plutus::MultiEraTransactionOutput};
 
 #[derive(
     Clone, Debug, Eq, PartialEq, diesel::Queryable, diesel::Selectable, diesel::Insertable,
@@ -15,7 +12,7 @@ use tx_indexer::database::plutus as db;
 pub struct UtxosTable {
     pub utxo_ref: db::TransactionInput,
     pub value: db::Value,
-    pub address: db::Address,
+    pub address: String,
     pub datum: db::OutputDatum,
     pub created_at: db::Slot,
     pub deleted_at: Option<db::Slot>,
@@ -31,25 +28,29 @@ where
 }
 
 impl UtxosTable {
-    pub fn new(utxo: TxInInfo, created_at: u64) -> Result<Self, db::DBTypeConversionError> {
+    pub fn new(
+        utxo_ref: TransactionInput,
+        output: MultiEraTransactionOutput,
+        created_at: u64,
+    ) -> Result<Self, db::DBTypeConversionError> {
         Ok(Self {
-            utxo_ref: utxo.reference.try_into()?,
-            value: utxo.output.value.try_into()?,
-            address: utxo.output.address.try_into()?,
-            datum: utxo.output.datum.try_into()?,
+            utxo_ref: utxo_ref.try_into()?,
+            value: output.value.try_into()?,
+            address: output.address.serialize(),
+            datum: output.datum.try_into()?,
             created_at: created_at.into(),
             deleted_at: None,
         })
     }
 
     pub fn list_by_address(
-        addr: Address,
+        addr: &str,
         conn: &mut diesel::PgConnection,
     ) -> Result<Vec<Self>, UtxoIndexerError> {
         use crate::schema::utxos::dsl::*;
 
         utxos
-            .filter(address.eq(db::Address::try_from(addr)?))
+            .filter(address.eq(addr))
             .select(UtxosTable::as_select())
             .load(conn)
             .map_err(|err| {

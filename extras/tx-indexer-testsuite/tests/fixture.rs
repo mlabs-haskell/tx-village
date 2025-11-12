@@ -2,22 +2,23 @@
 mod fixture_tests {
     use std::{path::PathBuf, str::FromStr};
 
+    use anyhow::Context;
     use diesel::{
         prelude::*,
         r2d2::{ConnectionManager, Pool},
         PgConnection,
     };
-    use plutus_ledger_api::v3::{address::Address, transaction::TransactionInput};
+    use plutus_ledger_api::v3::transaction::TransactionInput;
     use serial_test::serial;
     use tracing::Level;
-    use tx_indexer::database::plutus as db;
+    use tx_indexer::database::plutus::db_types as db;
     use tx_indexer::{config::TxIndexerConfig, TxIndexer};
     use tx_indexer_testsuite::schema::utxos::dsl::*;
     use tx_indexer_testsuite::utxo_db::{handler::UtxoIndexerHandler, table::utxos::UtxosTable};
 
     #[tokio::test]
     #[serial]
-    async fn fixture_replay() -> std::result::Result<(), oura::Error> {
+    async fn fixture_replay() -> anyhow::Result<()> {
         // Set up tracing logger (logs to stdout).
         let collector = tracing_subscriber::fmt()
             .with_max_level(Level::ERROR)
@@ -41,12 +42,9 @@ mod fixture_tests {
         TxIndexer::run(TxIndexerConfig::source_from_fixtures(
             handler,
             PathBuf::from("tests/fixtures"),
-            Default::default(),
         ))
         .await
-        .expect("Failed to spawn indexer")
-        .join()
-        .unwrap();
+        .context("Failed to spawn indexer")?;
 
         let tx_ref = TransactionInput::from_str(
             "e819ce5140d3ec3e4d00d163d49a1de0625b410a3aaab149000eaf7a1aca6d4a#0",
@@ -54,15 +52,12 @@ mod fixture_tests {
         .unwrap();
 
         let utxo = utxos
-            .find(db::TransactionInput::try_from(tx_ref).unwrap())
+            .find(db::TransactionInput::try_from(tx_ref).context("couldn't convert utxo ref")?)
             .select(UtxosTable::as_select())
             .first(&mut conn)?;
 
         assert_eq!(
-            Address::try_from(utxo.address)
-                .unwrap()
-                .with_extra_info(1)
-                .to_string(),
+            utxo.address,
             "addr1wy5yehcpw4e3r32rltrww40e6ezdckr9v9l0ehptsxeynlgpemay4"
         );
 

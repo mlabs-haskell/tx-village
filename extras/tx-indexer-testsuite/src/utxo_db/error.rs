@@ -1,6 +1,7 @@
+use plutus_ledger_api::csl::pla_to_csl::TryFromPLAError;
 use thiserror::Error;
 use tx_indexer::{
-    database::plutus::DBTypeConversionError,
+    database::plutus::db_types::DBTypeConversionError,
     error::{ErrorPolicy, ErrorPolicyProvider},
 };
 
@@ -14,10 +15,16 @@ pub enum UtxoIndexerError {
 
     #[error("Internal error occurred: {0}")]
     Internal(anyhow::Error),
+
+    #[error(transparent)]
+    TryFromPLAError(#[from] TryFromPLAError),
+
+    #[error(transparent)]
+    Other(#[from] anyhow::Error),
 }
 
 impl ErrorPolicyProvider for UtxoIndexerError {
     fn get_error_policy(&self) -> ErrorPolicy<Self> {
-        ErrorPolicy::Skip
+        ErrorPolicy::Exit
     }
 }

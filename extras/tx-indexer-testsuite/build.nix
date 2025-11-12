@@ -22,7 +22,7 @@
         buildInputs = [ pkgs.postgresql_16.lib ];
 
         devShellTools = [
-          self'.packages.tx-indexer-tests
+          # self'.packages.tx-indexer-tests
         ];
 
         devShellHook = config.settings.shell.hook + ''
