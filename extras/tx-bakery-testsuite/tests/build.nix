@@ -31,7 +31,17 @@
 
           # LB base schema and runtime libs
           inputs'.lbf.packages.lbf-prelude-rust
-          inputs'.lbf.packages.lbf-plutus-rust
+          (inputs'.lbf.packages.lbf-plutus-rust.overrideAttrs (oldAttrs: {
+            fixupPhase = ''
+              echo "Applying custom postPatch command"
+
+              cat $out/Cargo.toml | 
+              ${pkgs.yj}/bin/yj -tj | 
+              ${pkgs.jq}/bin/jq '.dependencies."plutus-ledger-api".version="4.0.0-alpha" | .dependencies."plutus-ledger-api".git="https://github.com/mlabs-haskell/plutus-ledger-api-rust" | .dependencies."plutus-ledger-api".branch="szg251/serde"' |
+              ${pkgs.yj}/bin/yj -jt > tmp.toml
+              mv tmp.toml $out/Cargo.toml
+            '';
+          }))
 
           # Demo API
           config.packages.lbf-tx-bakery-tests-config-api-rust

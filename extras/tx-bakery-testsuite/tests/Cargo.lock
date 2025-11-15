@@ -477,7 +477,7 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "39cab71617ae0d63f51a36d69f866391735b51691dbda63cf6f96d042b63efeb"
 dependencies = [
  "libc",
- "windows-sys 0.61.2",
+ "windows-sys 0.52.0",
 ]
 
 [[package]]
@@ -980,19 +980,7 @@ checksum = "469fb0b9cefa57e3ef31275ee7cacb78f2fdca44e4765491884a2b119d4eb130"
 [[package]]
 name = "is-plutus-data-derive"
 version = "1.0.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "b8833aaa98fd02a031afb0640e7d6259ac29fd22c646299114793ddea5795639"
-dependencies = [
- "proc-macro2",
- "quote",
- "syn 2.0.107",
- "thiserror",
-]
-
-[[package]]
-name = "is-plutus-data-derive"
-version = "1.0.0"
-source = "git+https://github.com/mlabs-haskell/plutus-ledger-api-rust?branch=szg251%2Fserde#99cafa5f41cfeaab5e856cbd668eae6b3e5728bd"
+source = "git+https://github.com/mlabs-haskell/plutus-ledger-api-rust?branch=szg251%2Fserde#cc05e53f09c901003a502d91cc374334b47a4952"
 dependencies = [
  "proc-macro2",
  "quote",
@@ -1139,7 +1127,7 @@ name = "lbf-plutus"
 version = "0.1.0"
 dependencies = [
  "lbf-prelude",
- "plutus-ledger-api 3.1.0 (registry+https://github.com/rust-lang/crates.io-index)",
+ "plutus-ledger-api",
 ]
 
 [[package]]
@@ -1167,7 +1155,7 @@ dependencies = [
  "lbf-prelude",
  "lbr-prelude",
  "num-bigint",
- "plutus-ledger-api 3.1.0 (git+https://github.com/mlabs-haskell/plutus-ledger-api-rust?branch=szg251%2Fserde)",
+ "plutus-ledger-api",
  "serde_json",
 ]
 
@@ -1545,36 +1533,15 @@ checksum = "7edddbd0b52d732b21ad9a5fab5c704c14cd949e5e9a1ec5929a24fded1b904c"
 
 [[package]]
 name = "plutus-ledger-api"
-version = "3.1.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "2b1e082eae586833f73a2a43336b45403c0700b78e3c0881c90fb827b8af8a65"
-dependencies = [
- "anyhow",
- "cardano-serialization-lib",
- "data-encoding",
- "impl_ops",
- "is-plutus-data-derive 1.0.0 (registry+https://github.com/rust-lang/crates.io-index)",
- "lbr-prelude",
- "linked-hash-map",
- "nom",
- "num-bigint",
- "num-traits",
- "proptest",
- "serde_json",
- "thiserror",
-]
-
-[[package]]
-name = "plutus-ledger-api"
-version = "3.1.0"
-source = "git+https://github.com/mlabs-haskell/plutus-ledger-api-rust?branch=szg251%2Fserde#99cafa5f41cfeaab5e856cbd668eae6b3e5728bd"
+version = "4.0.0-alpha"
+source = "git+https://github.com/mlabs-haskell/plutus-ledger-api-rust?branch=szg251%2Fserde#cc05e53f09c901003a502d91cc374334b47a4952"
 dependencies = [
  "anyhow",
  "cardano-serialization-lib",
  "chrono",
  "hex",
  "impl_ops",
- "is-plutus-data-derive 1.0.0 (git+https://github.com/mlabs-haskell/plutus-ledger-api-rust?branch=szg251%2Fserde)",
+ "is-plutus-data-derive",
  "lbr-prelude",
  "linked-hash-map",
  "nom",
@@ -1888,7 +1855,7 @@ dependencies = [
  "errno",
  "libc",
  "linux-raw-sys",
- "windows-sys 0.61.2",
+ "windows-sys 0.52.0",
 ]
 
 [[package]]
@@ -2405,7 +2372,7 @@ dependencies = [
  "getrandom 0.3.4",
  "once_cell",
  "rustix",
- "windows-sys 0.61.2",
+ "windows-sys 0.52.0",
 ]
 
 [[package]]
@@ -2677,7 +2644,7 @@ dependencies = [
  "jsonrpsee",
  "num-bigint",
  "num-traits",
- "plutus-ledger-api 3.1.0 (git+https://github.com/mlabs-haskell/plutus-ledger-api-rust?branch=szg251%2Fserde)",
+ "plutus-ledger-api",
  "serde",
  "serde_json",
  "thiserror",
@@ -2701,7 +2668,7 @@ dependencies = [
  "nix",
  "num",
  "num-bigint",
- "plutus-ledger-api 3.1.0 (git+https://github.com/mlabs-haskell/plutus-ledger-api-rust?branch=szg251%2Fserde)",
+ "plutus-ledger-api",
  "reqwest",
  "serde",
  "serde_json",
@@ -2723,7 +2690,7 @@ dependencies = [
  "lbf-tx-bakery-tests-plutus-api",
  "lbr-prelude",
  "num-bigint",
- "plutus-ledger-api 3.1.0 (git+https://github.com/mlabs-haskell/plutus-ledger-api-rust?branch=szg251%2Fserde)",
+ "plutus-ledger-api",
  "proptest",
  "serial_test",
  "tokio",
@@ -2917,7 +2884,7 @@ version = "0.1.11"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "c2a7b1c03c876122aa43f3020e6c3c3ee5c05081c9a00739faf7503aeba10d22"
 dependencies = [
- "windows-sys 0.61.2",
+ "windows-sys 0.48.0",
 ]
 
 [[package]]

@@ -24,7 +24,6 @@
               git = "https://github.com/mlabs-haskell/plutus-ledger-api-rust";
               branch = "szg251/serde";
             };
-
           };
         };
 

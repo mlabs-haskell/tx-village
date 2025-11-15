@@ -2,7 +2,9 @@
 
 use crate::error::Error;
 use crate::metadata::TransactionMetadata;
-use crate::strategies::{change_strategy::ChangeStrategy, collateral_strategy::CollateralStrategy};
+pub use crate::strategies::{
+    change_strategy::ChangeStrategy, collateral_strategy::CollateralStrategy,
+};
 use crate::time::time_range_into_slots;
 use crate::wallet::Wallet;
 use anyhow::anyhow;

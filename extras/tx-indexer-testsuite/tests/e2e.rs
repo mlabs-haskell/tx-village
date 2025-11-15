@@ -21,12 +21,11 @@ mod e2e_tests {
     use tracing::Level;
     use tx_bakery::{
         chain_query::{ChainQuery, Network},
-        strategies::{change_strategy::ChangeStrategy, collateral_strategy::CollateralStrategy},
         submitter::Submitter,
         tx_info_builder::TxScaffold,
         utils::{key_wallet::KeyWallet, script::ScriptOrRef},
         wallet::Wallet,
-        TxBakery, TxWithCtx,
+        ChangeStrategy, CollateralStrategy, TxBakery, TxWithCtx,
     };
     use tx_bakery_ogmios::client::{OgmiosClient, OgmiosClientConfigBuilder};
     use tx_indexer::{
