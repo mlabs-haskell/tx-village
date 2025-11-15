@@ -7,7 +7,7 @@ mod plutus_database_roundtrips {
         sample_transaction_input, sample_transaction_output, sample_tx_in_info, sample_value,
     };
     use plutus_ledger_api as pla;
-    use tx_indexer::database::plutus::*;
+    use tx_indexer::database::plutus::db_types::*;
 
     mod diesel_decoding {
         use anyhow::{Context, Result};

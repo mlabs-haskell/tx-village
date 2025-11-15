@@ -8,7 +8,7 @@ CREATE TABLE testdb (
   pub_key_hash PLUTUS.ED25519_PUB_KEY_HASH,
   script_hash PLUTUS.SCRIPT_HASH,
   datum_hash PLUTUS.DATUM_HASH,
-  slot PLUTUS.SLOT,
+  slot CARDANO.SLOT,
   plutus_data PLUTUS.PLUTUS_DATA,
   cred PLUTUS.CREDENTIAL,
   chain_pointer PLUTUS.CHAIN_POINTER,

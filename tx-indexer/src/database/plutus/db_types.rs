@@ -180,7 +180,7 @@ pub struct Slot(
 #[cfg(feature = "sqlx")]
 impl ::sqlx::Type<::sqlx::postgres::Postgres> for Slot {
     fn type_info() -> ::sqlx::postgres::PgTypeInfo {
-        ::sqlx::postgres::PgTypeInfo::with_name("plutus.slot")
+        ::sqlx::postgres::PgTypeInfo::with_name("cardano.slot")
     }
     fn compatible(ty: &sqlx::postgres::PgTypeInfo) -> ::std::primitive::bool {
         Self::type_info() == *ty || <i64 as ::sqlx::Type<::sqlx::Postgres>>::compatible(ty)

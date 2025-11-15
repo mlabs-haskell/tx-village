@@ -47,7 +47,7 @@ mod fixture_tests {
         .context("Failed to spawn indexer")?;
 
         let tx_ref = TransactionInput::from_str(
-            "e819ce5140d3ec3e4d00d163d49a1de0625b410a3aaab149000eaf7a1aca6d4a#0",
+            "a8fa4293645facb2a0332f4dfc442dff3fc9ca021c95ee908df5d9605e3825be#0",
         )
         .unwrap();
 
@@ -58,7 +58,7 @@ mod fixture_tests {
 
         assert_eq!(
             utxo.address,
-            "addr1wy5yehcpw4e3r32rltrww40e6ezdckr9v9l0ehptsxeynlgpemay4"
+            "addr_test1vp8cprhse9pnnv7f4l3n6pj0afq2hjm6f7r2205dz0583egagfjah"
         );
 
         Ok(())

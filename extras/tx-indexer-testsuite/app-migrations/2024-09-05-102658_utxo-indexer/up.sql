@@ -1,9 +1,9 @@
 CREATE TABLE utxos (
   utxo_ref PLUTUS.TRANSACTION_INPUT PRIMARY KEY,
   value PLUTUS.VALUE NOT NULL,
-  address PLUTUS.ADDRESS NOT NULL,
+  address TEXT NOT NULL,
   datum PLUTUS.OUTPUT_DATUM NOT NULL,
 
-  created_at PLUTUS.SLOT NOT NULL,
-  deleted_at PLUTUS.SLOT
+  created_at CARDANO.SLOT NOT NULL,
+  deleted_at CARDANO.SLOT
 );

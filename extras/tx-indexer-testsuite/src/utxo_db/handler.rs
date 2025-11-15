@@ -90,19 +90,19 @@ impl EventHandler for UtxoIndexerHandler {
                             block_hash,
                             ..
                         } => {
-                            for (i, transaction) in transactions.iter().enumerate() {
+                            for transaction in transactions.iter() {
                                 let MultiEraTransaction {
                                     id,
                                     inputs,
                                     outputs,
                                     ..
                                 } = transaction;
-                                let utxo_ref = &plutus_ledger_api::v3::TransactionInput {
-                                    transaction_id: id.clone(),
-                                    index: BigInt::from(i),
-                                };
 
-                                for output in outputs {
+                                for (i, output) in outputs.iter().enumerate() {
+                                    let utxo_ref = &plutus_ledger_api::v3::TransactionInput {
+                                        transaction_id: id.clone(),
+                                        index: BigInt::from(i),
+                                    };
                                     UtxosTable::new(utxo_ref.clone(), output.clone(), *block_slot)?
                                         .store(&mut conn)?;
                                 }
